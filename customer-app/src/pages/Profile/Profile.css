@@ -1,0 +1,112 @@
+.profile-page {
+    padding: var(--spacing-lg) var(--spacing-md);
+    background: var(--bg-gray);
+    min-height: calc(100vh - var(--bottom-nav-height));
+}
+
+/* User Card */
+.user-card {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.user-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--white);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.user-info {
+    flex: 1;
+    color: var(--white);
+}
+
+.user-name {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: var(--spacing-xs);
+}
+
+.user-phone,
+.user-email {
+    font-size: 14px;
+    opacity: 0.9;
+    margin: 0;
+}
+
+/* Menu Section */
+.menu-section {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--bg-gray);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.menu-item:last-child {
+    border-bottom: none;
+}
+
+.menu-item:hover {
+    background: var(--bg-gray);
+}
+
+.menu-icon {
+    font-size: 32px;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-gray);
+    border-radius: var(--radius-md);
+}
+
+.menu-content {
+    flex: 1;
+}
+
+.menu-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--black);
+    margin-bottom: 2px;
+}
+
+.menu-description {
+    font-size: 13px;
+    color: var(--gray);
+}
+
+.menu-arrow {
+    font-size: 24px;
+    color: var(--gray);
+}
+
+/* Logout Button */
+.logout-btn {
+    width: 100%;
+}
