@@ -56,8 +56,8 @@ router.post('/send-otp', async (req, res) => {
             message: 'OTP sent successfully',
             data: {
                 phone,
-                // Remove this in production!
-                otp: process.env.NODE_ENV === 'development' ? otp : undefined
+                // Remove this when real SMS is implemented!
+                otp: otp
             }
         });
     } catch (error) {
