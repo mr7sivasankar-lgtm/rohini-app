@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { protect } from '../middleware/auth.js';
+import sendOTP from '../utils/sms.js';
 
 const router = express.Router();
 
@@ -47,17 +48,21 @@ router.post('/send-otp', async (req, res) => {
             await user.save();
         }
 
-        // In production, send OTP via SMS service (Twilio/MSG91)
-        // For development, just log it
-        console.log(`OTP for ${phone}: ${otp}`);
+        // Send OTP via Twilio SMS
+        const smsSent = await sendOTP(phone, otp);
+
+        if (!smsSent) {
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to send OTP. Please try again.'
+            });
+        }
 
         res.status(200).json({
             success: true,
             message: 'OTP sent successfully',
             data: {
-                phone,
-                // Remove this when real SMS is implemented!
-                otp: otp
+                phone
             }
         });
     } catch (error) {
