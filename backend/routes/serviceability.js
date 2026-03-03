@@ -69,8 +69,8 @@ router.post('/check', async (req, res) => {
 });
 
 // ============================================================
-// PUBLIC: Geocode search (proxy to Nominatim to avoid CORS)
-// GET /api/serviceability/geocode/search?q=puttur
+// PUBLIC: Geocode search (Photon API for fuzzy/typo-tolerant search)
+// GET /api/serviceability/geocode/search?q=tirpati
 // ============================================================
 router.get('/geocode/search', async (req, res) => {
     try {
@@ -79,30 +79,61 @@ router.get('/geocode/search', async (req, res) => {
             return res.json({ success: true, data: [] });
         }
 
-        const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)},India&format=json&addressdetails=1&limit=5`,
-            {
-                headers: {
-                    'Accept-Language': 'en',
-                    'User-Agent': 'RohiniApp/1.0'
-                }
-            }
-        );
-        const data = await response.json();
+        let results = [];
 
-        // Format results
-        const results = data.map(item => {
-            const addr = item.address || {};
-            return {
-                displayName: item.display_name,
-                latitude: parseFloat(item.lat),
-                longitude: parseFloat(item.lon),
-                locality: addr.suburb || addr.neighbourhood || addr.village || addr.town || '',
-                city: addr.city || addr.state_district || addr.county || '',
-                state: addr.state || '',
-                pincode: addr.postcode || ''
-            };
-        });
+        // Try Photon API first (fuzzy/typo-tolerant, same OSM data)
+        try {
+            const photonRes = await fetch(
+                `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5&lang=en&lat=20.5937&lon=78.9629`,
+                { headers: { 'User-Agent': 'RohiniApp/1.0' } }
+            );
+            const photonData = await photonRes.json();
+
+            if (photonData.features && photonData.features.length > 0) {
+                results = photonData.features
+                    .filter(f => {
+                        const country = f.properties?.country;
+                        return !country || country === 'India';
+                    })
+                    .map(f => {
+                        const p = f.properties || {};
+                        const coords = f.geometry?.coordinates || [];
+                        return {
+                            displayName: [p.name, p.city, p.state, p.country].filter(Boolean).join(', '),
+                            latitude: coords[1] || 0,
+                            longitude: coords[0] || 0,
+                            locality: p.name || p.district || '',
+                            city: p.city || p.county || p.state || '',
+                            state: p.state || '',
+                            pincode: p.postcode || ''
+                        };
+                    });
+            }
+        } catch (photonErr) {
+            console.error('Photon API error, falling back to Nominatim:', photonErr.message);
+        }
+
+        // Fallback to Nominatim if Photon returned nothing
+        if (results.length === 0) {
+            const nomRes = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)},India&format=json&addressdetails=1&limit=5`,
+                { headers: { 'Accept-Language': 'en', 'User-Agent': 'RohiniApp/1.0' } }
+            );
+            const nomData = await nomRes.json();
+
+            results = nomData.map(item => {
+                const addr = item.address || {};
+                return {
+                    displayName: item.display_name,
+                    latitude: parseFloat(item.lat),
+                    longitude: parseFloat(item.lon),
+                    locality: addr.suburb || addr.neighbourhood || addr.village || addr.town || '',
+                    city: addr.city || addr.state_district || addr.county || '',
+                    state: addr.state || '',
+                    pincode: addr.postcode || ''
+                };
+            });
+        }
 
         res.json({ success: true, data: results });
     } catch (error) {
