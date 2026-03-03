@@ -4,7 +4,6 @@ import { CartProvider } from './contexts/CartContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import { LocationProvider } from './contexts/LocationContext';
 import ErrorBoundary from './components/ErrorBoundary';
-import LocationGate from './components/LocationGate';
 
 // Components
 import BottomNav from './components/BottomNav';
@@ -165,15 +164,13 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <LocationProvider>
-            <LocationGate>
-              <CartProvider>
-                <WishlistProvider>
-                  <div className="app-container">
-                    <AppRoutes />
-                  </div>
-                </WishlistProvider>
-              </CartProvider>
-            </LocationGate>
+            <CartProvider>
+              <WishlistProvider>
+                <div className="app-container">
+                  <AppRoutes />
+                </div>
+              </WishlistProvider>
+            </CartProvider>
           </LocationProvider>
         </AuthProvider>
       </BrowserRouter>
