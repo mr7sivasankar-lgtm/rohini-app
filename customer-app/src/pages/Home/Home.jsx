@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useLocation } from '../../contexts/LocationContext';
@@ -7,7 +7,7 @@ import './Home.css';
 
 const Home = () => {
     const navigate = useNavigate();
-    const { locality, city, pincode, fullAddress, serviceable, loading: locLoading, detectLocation, setManualPincode, setManualAddress, permissionDenied } = useLocation();
+    const { locality, city, pincode, fullAddress, serviceable, loading: locLoading, detectLocation, setManualPincode, searchLocations, selectLocation, permissionDenied } = useLocation();
     const [banners, setBanners] = useState([]);
     const [categories, setCategories] = useState([]);
     const [products, setProducts] = useState([]);
@@ -15,9 +15,10 @@ const Home = () => {
     const [currentBanner, setCurrentBanner] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
     const [showLocationPicker, setShowLocationPicker] = useState(false);
-    const [manualPin, setManualPin] = useState('');
-    const [manualCity, setManualCity] = useState('');
-    const [pinError, setPinError] = useState('');
+    const [locSearch, setLocSearch] = useState('');
+    const [locSuggestions, setLocSuggestions] = useState([]);
+    const [locSearching, setLocSearching] = useState(false);
+    const searchTimerRef = useRef(null);
 
     useEffect(() => {
         fetchData();
@@ -57,26 +58,29 @@ const Home = () => {
         }
     };
 
-    const handleManualPincode = async () => {
-        if (!manualPin || manualPin.length !== 6) {
-            setPinError('Enter a valid 6-digit pincode');
+    // Debounced location search for autocomplete
+    const handleLocSearchChange = (value) => {
+        setLocSearch(value);
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+
+        if (value.length < 2) {
+            setLocSuggestions([]);
             return;
         }
-        setPinError('');
-        await setManualPincode(manualPin);
-        setShowLocationPicker(false);
-        setManualPin('');
+
+        setLocSearching(true);
+        searchTimerRef.current = setTimeout(async () => {
+            const results = await searchLocations(value);
+            setLocSuggestions(results);
+            setLocSearching(false);
+        }, 400);
     };
 
-    const handleManualCity = async () => {
-        if (!manualCity.trim()) {
-            setPinError('Enter a city name or address');
-            return;
-        }
-        setPinError('');
-        await setManualAddress(manualCity.trim());
+    const handleSelectLocation = async (result) => {
         setShowLocationPicker(false);
-        setManualCity('');
+        setLocSearch('');
+        setLocSuggestions([]);
+        await selectLocation(result);
     };
 
     const handleAutoDetect = () => {
@@ -113,7 +117,7 @@ const Home = () => {
                     <div className="location-picker-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="location-picker-header">
                             <h3>Choose your location</h3>
-                            <button className="location-picker-close" onClick={() => setShowLocationPicker(false)}>✕</button>
+                            <button className="location-picker-close" onClick={() => { setShowLocationPicker(false); setLocSearch(''); setLocSuggestions([]); }}>✕</button>
                         </div>
 
                         <button className="location-auto-btn" onClick={handleAutoDetect}>
@@ -129,36 +133,49 @@ const Home = () => {
                         </button>
 
                         <div className="location-divider">
-                            <span>or enter manually</span>
+                            <span>or search your area</span>
                         </div>
 
-                        <div className="location-manual">
+                        <div className="location-search-wrap">
                             <input
                                 type="text"
-                                placeholder="Enter city name or area"
-                                value={manualCity}
-                                onChange={(e) => setManualCity(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleManualCity()}
+                                className="location-search-input"
+                                placeholder="Type city, area or pincode..."
+                                value={locSearch}
+                                onChange={(e) => handleLocSearchChange(e.target.value)}
+                                autoFocus
                             />
-                            <button onClick={handleManualCity}>Go</button>
-                        </div>
+                            {locSearching && <div className="location-searching">Searching...</div>}
 
-                        <div className="location-divider">
-                            <span>or enter pincode</span>
-                        </div>
+                            {locSuggestions.length > 0 && (
+                                <div className="location-suggestions">
+                                    {locSuggestions.map((item, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="location-suggestion-item"
+                                            onClick={() => handleSelectLocation(item)}
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#667eea" strokeWidth="2">
+                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                <circle cx="12" cy="10" r="3" />
+                                            </svg>
+                                            <div className="suggestion-details">
+                                                <div className="suggestion-name">
+                                                    {item.locality || item.city || item.displayName?.split(',')[0]}
+                                                </div>
+                                                <div className="suggestion-sub">
+                                                    {[item.city, item.state, item.pincode].filter(Boolean).join(', ')}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
-                        <div className="location-manual">
-                            <input
-                                type="tel"
-                                placeholder="Enter 6-digit pincode"
-                                value={manualPin}
-                                onChange={(e) => setManualPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                onKeyDown={(e) => e.key === 'Enter' && handleManualPincode()}
-                                maxLength="6"
-                            />
-                            <button onClick={handleManualPincode}>Go</button>
+                            {locSearch.length >= 2 && !locSearching && locSuggestions.length === 0 && (
+                                <div className="location-no-results">No locations found</div>
+                            )}
                         </div>
-                        {pinError && <p className="location-pin-error">{pinError}</p>}
 
                         {fullAddress && (
                             <div className="location-current-info">

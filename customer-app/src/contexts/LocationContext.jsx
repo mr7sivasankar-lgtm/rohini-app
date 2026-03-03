@@ -46,10 +46,10 @@ export const LocationProvider = ({ children }) => {
                 let permissionDenied = false;
 
                 if (error.code === 1) {
-                    errorMsg = 'Location permission denied. Please allow location access or enter your pincode manually.';
+                    errorMsg = 'Location permission denied. Please search for your city or enter pincode.';
                     permissionDenied = true;
                 } else if (error.code === 2) {
-                    errorMsg = 'Unable to determine your location. Please enter your pincode manually.';
+                    errorMsg = 'Unable to determine your location. Please search for your city.';
                 } else if (error.code === 3) {
                     errorMsg = 'Location request timed out. Please try again.';
                 }
@@ -68,21 +68,17 @@ export const LocationProvider = ({ children }) => {
 
     const reverseGeocodeAndCheck = async (latitude, longitude) => {
         try {
-            // Reverse geocode using OpenStreetMap Nominatim (free, no API key)
-            const geoRes = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-                { headers: { 'Accept-Language': 'en' } }
-            );
-            const geoData = await geoRes.json();
+            // Use backend proxy for reverse geocoding (avoids CORS)
+            const geoRes = await api.get(`/serviceability/geocode/reverse?lat=${latitude}&lon=${longitude}`);
+            const geo = geoRes.data.data || {};
 
-            const address = geoData.address || {};
-            const locality = address.suburb || address.neighbourhood || address.village || address.town || '';
-            const city = address.city || address.state_district || address.county || '';
-            const state = address.state || '';
-            const pincode = address.postcode || '';
+            const locality = geo.locality || '';
+            const city = geo.city || '';
+            const state = geo.state || '';
+            const pincode = geo.pincode || '';
             const fullAddress = `${locality}${locality && city ? ', ' : ''}${city}`;
 
-            // Check serviceability with backend
+            // Check serviceability
             let serviceable = true;
             try {
                 const checkRes = await api.post('/serviceability/check', {
@@ -90,8 +86,7 @@ export const LocationProvider = ({ children }) => {
                 });
                 serviceable = checkRes.data.serviceable;
             } catch (err) {
-                console.error('Serviceability check failed, defaulting to serviceable:', err);
-                serviceable = true; // default to open if check fails
+                serviceable = true;
             }
 
             setLocation({
@@ -114,24 +109,65 @@ export const LocationProvider = ({ children }) => {
                 latitude,
                 longitude,
                 loading: false,
-                serviceable: true, // default to serviceable if geocoding fails
+                serviceable: true,
                 error: 'Could not detect area name'
             }));
         }
+    };
+
+    // Search locations (for autocomplete suggestions)
+    const searchLocations = async (query) => {
+        try {
+            const res = await api.get(`/serviceability/geocode/search?q=${encodeURIComponent(query)}`);
+            return res.data.data || [];
+        } catch (err) {
+            console.error('Search locations error:', err);
+            return [];
+        }
+    };
+
+    // Select a location from autocomplete results
+    const selectLocation = async (result) => {
+        setLocation(prev => ({ ...prev, loading: true, error: null }));
+
+        const { latitude, longitude, locality, city, state, pincode } = result;
+        const fullAddress = `${locality}${locality && city ? ', ' : ''}${city}`;
+
+        // Check serviceability
+        let serviceable = true;
+        try {
+            const checkRes = await api.post('/serviceability/check', {
+                latitude, longitude, pincode, city
+            });
+            serviceable = checkRes.data.serviceable;
+        } catch (err) {
+            serviceable = true;
+        }
+
+        setLocation({
+            latitude,
+            longitude,
+            locality,
+            city,
+            state,
+            pincode,
+            fullAddress,
+            serviceable,
+            loading: false,
+            error: null,
+            permissionDenied: false
+        });
     };
 
     const setManualPincode = async (pincode) => {
         setLocation(prev => ({ ...prev, loading: true, error: null }));
 
         try {
-            // Geocode pincode using Nominatim
-            const geoRes = await fetch(
-                `https://nominatim.openstreetmap.org/search?postalcode=${pincode}&country=India&format=json&addressdetails=1&limit=1`,
-                { headers: { 'Accept-Language': 'en' } }
-            );
-            const geoData = await geoRes.json();
+            // Use backend proxy to search by pincode
+            const res = await api.get(`/serviceability/geocode/search?q=${pincode}`);
+            const results = res.data.data || [];
 
-            if (geoData.length === 0) {
+            if (results.length === 0) {
                 setLocation(prev => ({
                     ...prev,
                     loading: false,
@@ -140,39 +176,7 @@ export const LocationProvider = ({ children }) => {
                 return;
             }
 
-            const result = geoData[0];
-            const latitude = parseFloat(result.lat);
-            const longitude = parseFloat(result.lon);
-            const address = result.address || {};
-            const locality = address.suburb || address.neighbourhood || address.village || address.town || '';
-            const city = address.city || address.state_district || address.county || '';
-            const state = address.state || '';
-            const fullAddress = `${locality}${locality && city ? ', ' : ''}${city}`;
-
-            // Check serviceability
-            let serviceable = true;
-            try {
-                const checkRes = await api.post('/serviceability/check', {
-                    latitude, longitude, pincode, city
-                });
-                serviceable = checkRes.data.serviceable;
-            } catch (err) {
-                serviceable = true;
-            }
-
-            setLocation({
-                latitude,
-                longitude,
-                locality,
-                city,
-                state,
-                pincode,
-                fullAddress,
-                serviceable,
-                loading: false,
-                error: null,
-                permissionDenied: false
-            });
+            await selectLocation(results[0]);
         } catch (error) {
             setLocation(prev => ({
                 ...prev,
@@ -182,75 +186,13 @@ export const LocationProvider = ({ children }) => {
         }
     };
 
-    const setManualAddress = async (addressText) => {
-        setLocation(prev => ({ ...prev, loading: true, error: null }));
-
-        try {
-            // Geocode free-text address/city using Nominatim
-            const geoRes = await fetch(
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressText)},India&format=json&addressdetails=1&limit=1`,
-                { headers: { 'Accept-Language': 'en' } }
-            );
-            const geoData = await geoRes.json();
-
-            if (geoData.length === 0) {
-                setLocation(prev => ({
-                    ...prev,
-                    loading: false,
-                    error: 'Location not found. Please try a different city or address.'
-                }));
-                return;
-            }
-
-            const result = geoData[0];
-            const latitude = parseFloat(result.lat);
-            const longitude = parseFloat(result.lon);
-            const address = result.address || {};
-            const locality = address.suburb || address.neighbourhood || address.village || address.town || '';
-            const city = address.city || address.state_district || address.county || addressText;
-            const state = address.state || '';
-            const pincode = address.postcode || '';
-            const fullAddress = `${locality}${locality && city ? ', ' : ''}${city}`;
-
-            // Check serviceability
-            let serviceable = true;
-            try {
-                const checkRes = await api.post('/serviceability/check', {
-                    latitude, longitude, pincode, city
-                });
-                serviceable = checkRes.data.serviceable;
-            } catch (err) {
-                serviceable = true;
-            }
-
-            setLocation({
-                latitude,
-                longitude,
-                locality,
-                city,
-                state,
-                pincode,
-                fullAddress,
-                serviceable,
-                loading: false,
-                error: null,
-                permissionDenied: false
-            });
-        } catch (error) {
-            setLocation(prev => ({
-                ...prev,
-                loading: false,
-                error: 'Error looking up address'
-            }));
-        }
-    };
-
     return (
         <LocationContext.Provider value={{
             ...location,
             detectLocation,
             setManualPincode,
-            setManualAddress
+            searchLocations,
+            selectLocation
         }}>
             {children}
         </LocationContext.Provider>

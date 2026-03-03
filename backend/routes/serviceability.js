@@ -69,6 +69,88 @@ router.post('/check', async (req, res) => {
 });
 
 // ============================================================
+// PUBLIC: Geocode search (proxy to Nominatim to avoid CORS)
+// GET /api/serviceability/geocode/search?q=puttur
+// ============================================================
+router.get('/geocode/search', async (req, res) => {
+    try {
+        const { q } = req.query;
+        if (!q || q.length < 2) {
+            return res.json({ success: true, data: [] });
+        }
+
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)},India&format=json&addressdetails=1&limit=5`,
+            {
+                headers: {
+                    'Accept-Language': 'en',
+                    'User-Agent': 'RohiniApp/1.0'
+                }
+            }
+        );
+        const data = await response.json();
+
+        // Format results
+        const results = data.map(item => {
+            const addr = item.address || {};
+            return {
+                displayName: item.display_name,
+                latitude: parseFloat(item.lat),
+                longitude: parseFloat(item.lon),
+                locality: addr.suburb || addr.neighbourhood || addr.village || addr.town || '',
+                city: addr.city || addr.state_district || addr.county || '',
+                state: addr.state || '',
+                pincode: addr.postcode || ''
+            };
+        });
+
+        res.json({ success: true, data: results });
+    } catch (error) {
+        console.error('Geocode search error:', error);
+        res.status(500).json({ success: false, message: 'Error searching location' });
+    }
+});
+
+// ============================================================
+// PUBLIC: Reverse geocode (proxy to Nominatim to avoid CORS)
+// GET /api/serviceability/geocode/reverse?lat=...&lon=...
+// ============================================================
+router.get('/geocode/reverse', async (req, res) => {
+    try {
+        const { lat, lon } = req.query;
+        if (!lat || !lon) {
+            return res.status(400).json({ success: false, message: 'lat and lon required' });
+        }
+
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
+            {
+                headers: {
+                    'Accept-Language': 'en',
+                    'User-Agent': 'RohiniApp/1.0'
+                }
+            }
+        );
+        const data = await response.json();
+        const addr = data.address || {};
+
+        res.json({
+            success: true,
+            data: {
+                displayName: data.display_name,
+                locality: addr.suburb || addr.neighbourhood || addr.village || addr.town || '',
+                city: addr.city || addr.state_district || addr.county || '',
+                state: addr.state || '',
+                pincode: addr.postcode || ''
+            }
+        });
+    } catch (error) {
+        console.error('Reverse geocode error:', error);
+        res.status(500).json({ success: false, message: 'Error reverse geocoding' });
+    }
+});
+
+// ============================================================
 // ADMIN: List all serviceable areas
 // GET /api/serviceability/areas
 // ============================================================
