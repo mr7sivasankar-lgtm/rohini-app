@@ -7,7 +7,7 @@ import './Home.css';
 
 const Home = () => {
     const navigate = useNavigate();
-    const { locality, city, pincode, fullAddress, serviceable, loading: locLoading, detectLocation, setManualPincode, permissionDenied } = useLocation();
+    const { locality, city, pincode, fullAddress, serviceable, loading: locLoading, detectLocation, setManualPincode, setManualAddress, permissionDenied } = useLocation();
     const [banners, setBanners] = useState([]);
     const [categories, setCategories] = useState([]);
     const [products, setProducts] = useState([]);
@@ -16,6 +16,7 @@ const Home = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showLocationPicker, setShowLocationPicker] = useState(false);
     const [manualPin, setManualPin] = useState('');
+    const [manualCity, setManualCity] = useState('');
     const [pinError, setPinError] = useState('');
 
     useEffect(() => {
@@ -65,6 +66,17 @@ const Home = () => {
         await setManualPincode(manualPin);
         setShowLocationPicker(false);
         setManualPin('');
+    };
+
+    const handleManualCity = async () => {
+        if (!manualCity.trim()) {
+            setPinError('Enter a city name or address');
+            return;
+        }
+        setPinError('');
+        await setManualAddress(manualCity.trim());
+        setShowLocationPicker(false);
+        setManualCity('');
     };
 
     const handleAutoDetect = () => {
@@ -117,6 +129,21 @@ const Home = () => {
                         </button>
 
                         <div className="location-divider">
+                            <span>or enter manually</span>
+                        </div>
+
+                        <div className="location-manual">
+                            <input
+                                type="text"
+                                placeholder="Enter city name or area"
+                                value={manualCity}
+                                onChange={(e) => setManualCity(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleManualCity()}
+                            />
+                            <button onClick={handleManualCity}>Go</button>
+                        </div>
+
+                        <div className="location-divider">
                             <span>or enter pincode</span>
                         </div>
 
@@ -126,6 +153,7 @@ const Home = () => {
                                 placeholder="Enter 6-digit pincode"
                                 value={manualPin}
                                 onChange={(e) => setManualPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                onKeyDown={(e) => e.key === 'Enter' && handleManualPincode()}
                                 maxLength="6"
                             />
                             <button onClick={handleManualPincode}>Go</button>

@@ -182,11 +182,75 @@ export const LocationProvider = ({ children }) => {
         }
     };
 
+    const setManualAddress = async (addressText) => {
+        setLocation(prev => ({ ...prev, loading: true, error: null }));
+
+        try {
+            // Geocode free-text address/city using Nominatim
+            const geoRes = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressText)},India&format=json&addressdetails=1&limit=1`,
+                { headers: { 'Accept-Language': 'en' } }
+            );
+            const geoData = await geoRes.json();
+
+            if (geoData.length === 0) {
+                setLocation(prev => ({
+                    ...prev,
+                    loading: false,
+                    error: 'Location not found. Please try a different city or address.'
+                }));
+                return;
+            }
+
+            const result = geoData[0];
+            const latitude = parseFloat(result.lat);
+            const longitude = parseFloat(result.lon);
+            const address = result.address || {};
+            const locality = address.suburb || address.neighbourhood || address.village || address.town || '';
+            const city = address.city || address.state_district || address.county || addressText;
+            const state = address.state || '';
+            const pincode = address.postcode || '';
+            const fullAddress = `${locality}${locality && city ? ', ' : ''}${city}`;
+
+            // Check serviceability
+            let serviceable = true;
+            try {
+                const checkRes = await api.post('/serviceability/check', {
+                    latitude, longitude, pincode, city
+                });
+                serviceable = checkRes.data.serviceable;
+            } catch (err) {
+                serviceable = true;
+            }
+
+            setLocation({
+                latitude,
+                longitude,
+                locality,
+                city,
+                state,
+                pincode,
+                fullAddress,
+                serviceable,
+                loading: false,
+                error: null,
+                permissionDenied: false
+            });
+        } catch (error) {
+            setLocation(prev => ({
+                ...prev,
+                loading: false,
+                error: 'Error looking up address'
+            }));
+        }
+    };
+
     return (
         <LocationContext.Provider value={{
             ...location,
             detectLocation,
-            setManualPincode
+            setManualPincode,
+            setManualAddress
         }}>
             {children}
         </LocationContext.Provider>
