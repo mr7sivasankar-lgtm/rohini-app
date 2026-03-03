@@ -18,6 +18,7 @@ import bannerRoutes from './routes/banners.js';
 import addressRoutes from './routes/addresses.js';
 import reviewRoutes from './routes/reviews.js';
 import serviceabilityRoutes from './routes/serviceability.js';
+import userRoutes from './routes/users.js';
 
 // Load environment variables
 dotenv.config();
@@ -84,6 +85,7 @@ app.use('/api/banners', bannerRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/serviceability', serviceabilityRoutes);
+app.use('/api/users', userRoutes);
 
 // 404 handler
 app.use((req, res) => {

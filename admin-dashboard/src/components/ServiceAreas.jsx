@@ -17,6 +17,7 @@ const ServiceAreas = () => {
     });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [editingId, setEditingId] = useState(null);
 
     useEffect(() => {
         fetchAreas();
@@ -68,12 +69,17 @@ const ServiceAreas = () => {
             if (form.type !== 'pincode') delete payload.pincode;
             if (form.type !== 'city') delete payload.city;
 
-            await api.post('/serviceability/areas', payload);
+            if (editingId) {
+                await api.put(`/serviceability/areas/${editingId}`, payload);
+            } else {
+                await api.post('/serviceability/areas', payload);
+            }
             setShowForm(false);
+            setEditingId(null);
             setForm({ type: 'city', name: '', city: '', state: '', pincode: '', latitude: '', longitude: '', radiusKm: 5 });
             fetchAreas();
         } catch (err) {
-            setError(err.response?.data?.message || 'Error adding area');
+            setError(err.response?.data?.message || 'Error saving area');
         } finally {
             setSaving(false);
         }
@@ -98,6 +104,21 @@ const ServiceAreas = () => {
         }
     };
 
+    const editArea = (area) => {
+        setEditingId(area._id);
+        setForm({
+            type: area.type,
+            name: area.name,
+            city: area.city || '',
+            state: area.state || '',
+            pincode: area.pincode || '',
+            latitude: area.latitude || '',
+            longitude: area.longitude || '',
+            radiusKm: area.radiusKm || 5
+        });
+        setShowForm(true);
+    };
+
     if (loading) return <div style={{ padding: 24 }}>Loading service areas...</div>;
 
     return (
@@ -105,7 +126,15 @@ const ServiceAreas = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <h2 style={{ margin: 0 }}>📍 Service Areas</h2>
                 <button
-                    onClick={() => setShowForm(!showForm)}
+                    onClick={() => {
+                        if (showForm) {
+                            setShowForm(false);
+                            setEditingId(null);
+                            setForm({ type: 'city', name: '', city: '', state: '', pincode: '', latitude: '', longitude: '', radiusKm: 5 });
+                        } else {
+                            setShowForm(true);
+                        }
+                    }}
                     style={{
                         padding: '10px 20px',
                         background: showForm ? '#ef4444' : '#667eea',
@@ -246,7 +275,7 @@ const ServiceAreas = () => {
                                 opacity: saving ? 0.7 : 1
                             }}
                         >
-                            {saving ? 'Saving...' : 'Add Service Area'}
+                            {saving ? 'Saving...' : editingId ? 'Update Area' : 'Add Service Area'}
                         </button>
                     </form>
                 </div>
@@ -322,21 +351,38 @@ const ServiceAreas = () => {
                                         </button>
                                     </td>
                                     <td style={tdStyle}>
-                                        <button
-                                            onClick={() => deleteArea(area._id)}
-                                            style={{
-                                                padding: '6px 12px',
-                                                background: '#fee2e2',
-                                                color: '#dc2626',
-                                                border: 'none',
-                                                borderRadius: 6,
-                                                cursor: 'pointer',
-                                                fontSize: 12,
-                                                fontWeight: 600
-                                            }}
-                                        >
-                                            Delete
-                                        </button>
+                                        <div style={{ display: 'flex', gap: 6 }}>
+                                            <button
+                                                onClick={() => editArea(area)}
+                                                style={{
+                                                    padding: '6px 12px',
+                                                    background: '#dbeafe',
+                                                    color: '#1e40af',
+                                                    border: 'none',
+                                                    borderRadius: 6,
+                                                    cursor: 'pointer',
+                                                    fontSize: 12,
+                                                    fontWeight: 600
+                                                }}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => deleteArea(area._id)}
+                                                style={{
+                                                    padding: '6px 12px',
+                                                    background: '#fee2e2',
+                                                    color: '#dc2626',
+                                                    border: 'none',
+                                                    borderRadius: 6,
+                                                    cursor: 'pointer',
+                                                    fontSize: 12,
+                                                    fontWeight: 600
+                                                }}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

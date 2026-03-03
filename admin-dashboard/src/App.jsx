@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import api, { IMAGE_BASE } from './utils/api';
 import ProductForm from './components/ProductForm';
 import ServiceAreas from './components/ServiceAreas';
+import Users from './components/Users';
 import './index.css';
 
 function App() {
@@ -158,6 +159,16 @@ function App() {
     }
   };
 
+  const deleteOrder = async (id) => {
+    if (!window.confirm('Delete this order permanently?')) return;
+    try {
+      await api.delete(`/orders/admin/${id}`);
+      fetchOrders();
+    } catch (error) {
+      alert('Failed to delete order');
+    }
+  };
+
   const handleDeleteProduct = async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
@@ -255,6 +266,9 @@ function App() {
         <div className={`menu-item ${activeTab === 'service-areas' ? 'active' : ''}`} onClick={() => setActiveTab('service-areas')}>
           📍 Service Areas
         </div>
+        <div className={`menu-item ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
+          👥 Users
+        </div>
         <div className="menu-item" onClick={handleLogout}>
           Logout
         </div>
@@ -342,7 +356,7 @@ function App() {
             </div>
 
             <div className="card">
-              <OrdersTable orders={orders} updateStatus={updateOrderStatus} />
+              <OrdersTable orders={orders} updateStatus={updateOrderStatus} deleteOrder={deleteOrder} />
             </div>
           </div>
         )}
@@ -429,12 +443,24 @@ function App() {
             </div>
           </div>
         )}
+
+        {activeTab === 'users' && (
+          <div>
+            <div className="page-header">
+              <h1>User Management</h1>
+              <p>View and manage registered users</p>
+            </div>
+            <div className="card">
+              <Users />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-const OrdersTable = ({ orders, updateStatus }) => {
+const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
   const statusOptions = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered'];
 
   return (
@@ -464,16 +490,35 @@ const OrdersTable = ({ orders, updateStatus }) => {
             </td>
             <td>{new Date(order.createdAt).toLocaleDateString()}</td>
             <td>
-              <select
-                className="input"
-                style={{ padding: 6, fontSize: 13 }}
-                value={order.status}
-                onChange={(e) => updateStatus(order._id, e.target.value)}
-              >
-                {statusOptions.map(status => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <select
+                  className="input"
+                  style={{ padding: 6, fontSize: 13 }}
+                  value={order.status}
+                  onChange={(e) => updateStatus(order._id, e.target.value)}
+                >
+                  {statusOptions.map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+                {deleteOrder && (
+                  <button
+                    onClick={() => deleteOrder(order._id)}
+                    style={{
+                      padding: '4px 8px',
+                      background: '#fee2e2',
+                      color: '#dc2626',
+                      border: 'none',
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      fontWeight: 600
+                    }}
+                  >
+                    🗑
+                  </button>
+                )}
+              </div>
             </td>
           </tr>
         ))}

@@ -113,8 +113,9 @@ router.post('/verify-otp', async (req, res) => {
             });
         }
 
-        // Mark user as verified
+        // Mark user as verified and track login
         user.isVerified = true;
+        user.lastLogin = new Date();
         user.otp = undefined;
         user.otpExpiry = undefined;
         await user.save();
