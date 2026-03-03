@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWishlist } from '../../contexts/WishlistContext';
+import { useLocation } from '../../contexts/LocationContext';
 import api, { IMAGE_BASE } from '../../utils/api';
 import './Home.css';
 
 const Home = () => {
     const navigate = useNavigate();
+    const { locality, city, pincode, fullAddress, loading: locLoading, detectLocation, setManualPincode, permissionDenied } = useLocation();
     const [banners, setBanners] = useState([]);
     const [categories, setCategories] = useState([]);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentBanner, setCurrentBanner] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showLocationPicker, setShowLocationPicker] = useState(false);
+    const [manualPin, setManualPin] = useState('');
+    const [pinError, setPinError] = useState('');
 
     useEffect(() => {
         fetchData();
@@ -51,12 +56,90 @@ const Home = () => {
         }
     };
 
+    const handleManualPincode = async () => {
+        if (!manualPin || manualPin.length !== 6) {
+            setPinError('Enter a valid 6-digit pincode');
+            return;
+        }
+        setPinError('');
+        await setManualPincode(manualPin);
+        setShowLocationPicker(false);
+        setManualPin('');
+    };
+
+    const handleAutoDetect = () => {
+        detectLocation();
+        setShowLocationPicker(false);
+    };
+
+    const locationLabel = locLoading
+        ? 'Detecting...'
+        : (fullAddress || pincode || 'Set Location');
+
     return (
         <div className="home-page">
             {/* Top Header */}
             <div className="home-header">
+                <div className="header-location" onClick={() => setShowLocationPicker(true)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                    </svg>
+                    <div className="header-location-text">
+                        <span className="header-location-label">{locationLabel}</span>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </div>
+                </div>
                 <h1 className="shop-title">GRS Fasho</h1>
             </div>
+
+            {/* Location Picker Modal */}
+            {showLocationPicker && (
+                <div className="location-picker-overlay" onClick={() => setShowLocationPicker(false)}>
+                    <div className="location-picker-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="location-picker-header">
+                            <h3>Choose your location</h3>
+                            <button className="location-picker-close" onClick={() => setShowLocationPicker(false)}>✕</button>
+                        </div>
+
+                        <button className="location-auto-btn" onClick={handleAutoDetect}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <circle cx="12" cy="12" r="3" />
+                                <line x1="12" y1="2" x2="12" y2="6" />
+                                <line x1="12" y1="18" x2="12" y2="22" />
+                                <line x1="2" y1="12" x2="6" y2="12" />
+                                <line x1="18" y1="12" x2="22" y2="12" />
+                            </svg>
+                            Use Current Location
+                        </button>
+
+                        <div className="location-divider">
+                            <span>or enter pincode</span>
+                        </div>
+
+                        <div className="location-manual">
+                            <input
+                                type="tel"
+                                placeholder="Enter 6-digit pincode"
+                                value={manualPin}
+                                onChange={(e) => setManualPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                maxLength="6"
+                            />
+                            <button onClick={handleManualPincode}>Go</button>
+                        </div>
+                        {pinError && <p className="location-pin-error">{pinError}</p>}
+
+                        {fullAddress && (
+                            <div className="location-current-info">
+                                <small>📍 Current: {fullAddress}{pincode ? ` — ${pincode}` : ''}</small>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Search Bar */}
             <div className="search-container">

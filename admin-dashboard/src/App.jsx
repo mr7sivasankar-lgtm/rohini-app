@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import api, { IMAGE_BASE } from './utils/api';
 import ProductForm from './components/ProductForm';
+import ServiceAreas from './components/ServiceAreas';
 import './index.css';
 
 function App() {
@@ -251,6 +252,9 @@ function App() {
         <div className={`menu-item ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>
           Products
         </div>
+        <div className={`menu-item ${activeTab === 'service-areas' ? 'active' : ''}`} onClick={() => setActiveTab('service-areas')}>
+          📍 Service Areas
+        </div>
         <div className="menu-item" onClick={handleLogout}>
           Logout
         </div>
@@ -411,6 +415,18 @@ function App() {
                 onSave={handleProductSaved}
               />
             )}
+          </div>
+        )}
+
+        {activeTab === 'service-areas' && (
+          <div>
+            <div className="page-header">
+              <h1>Service Areas</h1>
+              <p>Manage serviceable locations</p>
+            </div>
+            <div className="card">
+              <ServiceAreas />
+            </div>
           </div>
         )}
       </div>

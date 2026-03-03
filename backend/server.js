@@ -17,6 +17,7 @@ import orderRoutes from './routes/orders.js';
 import bannerRoutes from './routes/banners.js';
 import addressRoutes from './routes/addresses.js';
 import reviewRoutes from './routes/reviews.js';
+import serviceabilityRoutes from './routes/serviceability.js';
 
 // Load environment variables
 dotenv.config();
@@ -82,6 +83,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/serviceability', serviceabilityRoutes);
 
 // 404 handler
 app.use((req, res) => {

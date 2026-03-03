@@ -1,0 +1,120 @@
+/* Location Gate — Loading */
+.location-gate-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+.location-gate-icon {
+    animation: pulse-location 2s ease-in-out infinite;
+    margin-bottom: 20px;
+}
+
+.location-gate-text {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    opacity: 0.9;
+}
+
+.location-gate-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* Location Gate — Blocked */
+.location-gate-blocked {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+    padding: 30px;
+}
+
+.location-gate-blocked-content {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    padding: 40px 30px;
+    max-width: 360px;
+    width: 100%;
+}
+
+.location-gate-blocked-icon {
+    margin-bottom: 20px;
+    opacity: 0.9;
+    animation: pulse-location 2s ease-in-out infinite;
+}
+
+.location-gate-blocked-content h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.location-gate-blocked-area {
+    font-size: 14px;
+    opacity: 0.7;
+    margin-bottom: 16px;
+    font-weight: 500;
+}
+
+.location-gate-blocked-msg {
+    font-size: 16px;
+    line-height: 1.6;
+    opacity: 0.85;
+    margin-bottom: 24px;
+}
+
+.location-gate-blocked-wave span {
+    display: inline-block;
+    font-size: 40px;
+    animation: rocket 2s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes pulse-location {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rocket {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-12px);
+    }
+}
