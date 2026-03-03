@@ -29,6 +29,7 @@ function App() {
   const [newOrderCount, setNewOrderCount] = useState(0);
   const lastOrderCountRef = useRef(0);
   const notificationAudioRef = useRef(null);
+  const [notifDismissed, setNotifDismissed] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
@@ -276,7 +277,7 @@ function App() {
 
       <div className="main-content">
         {/* New Order Notification Bar */}
-        {newOrderCount > 0 && (
+        {newOrderCount > 0 && !notifDismissed && (
           <div style={{
             background: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
             color: 'white',
@@ -309,6 +310,20 @@ function App() {
               }}
             >
               View Orders →
+            </button>
+            <button
+              onClick={() => setNotifDismissed(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'rgba(255,255,255,0.8)',
+                fontSize: '18px',
+                cursor: 'pointer',
+                padding: '0 4px',
+                marginLeft: '8px'
+              }}
+            >
+              ✕
             </button>
           </div>
         )}

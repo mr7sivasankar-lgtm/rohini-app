@@ -125,43 +125,7 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
-// @route   GET /api/orders/:id
-// @desc    Get order by ID
-// @access  Private
-router.get('/:id', protect, async (req, res) => {
-    try {
-        const order = await Order.findById(req.params.id)
-            .populate('user', 'name phone email');
-
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found'
-            });
-        }
-
-        // Ensure user owns this order or is admin
-        if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-            return res.status(403).json({
-                success: false,
-                message: 'Not authorized to view this order'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            data: order
-        });
-    } catch (error) {
-        console.error('Get order error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching order'
-        });
-    }
-});
-
-// ADMIN ROUTES
+// ========== ADMIN ROUTES (must be BEFORE /:id) ==========
 
 // @route   GET /api/orders/admin/all
 // @desc    Get all orders (admin)
@@ -273,6 +237,44 @@ router.delete('/admin/:id', protect, adminOnly, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error deleting order'
+        });
+    }
+});
+
+// ========== DYNAMIC ROUTE (must be LAST) ==========
+
+// @route   GET /api/orders/:id
+// @desc    Get order by ID
+// @access  Private
+router.get('/:id', protect, async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id)
+            .populate('user', 'name phone email');
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Ensure user owns this order or is admin
+        if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to view this order'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: order
+        });
+    } catch (error) {
+        console.error('Get order error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching order'
         });
     }
 });
