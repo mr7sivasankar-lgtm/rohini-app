@@ -108,7 +108,7 @@ const Home = () => {
                         </svg>
                     </div>
                 </div>
-                <h1 className="shop-title">GRS Fasho</h1>
+                <h1 className="shop-title">Uchicca</h1>
             </div>
 
             {/* Location Picker Modal */}
