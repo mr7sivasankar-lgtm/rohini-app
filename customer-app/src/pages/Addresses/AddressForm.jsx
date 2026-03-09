@@ -21,6 +21,7 @@ const AddressForm = () => {
         isDefault: false
     });
     const [errors, setErrors] = useState({});
+    const [detectingLocation, setDetectingLocation] = useState(false);
 
     useEffect(() => {
         if (isEditMode) {
@@ -136,6 +137,40 @@ const AddressForm = () => {
 
             {/* Form */}
             <form className="address-form" onSubmit={handleSubmit}>
+                {/* Auto-detect Location */}
+                <div className="form-group">
+                    <button
+                        type="button"
+                        className="detect-location-btn"
+                        onClick={async () => {
+                            if (!navigator.geolocation) { alert('Geolocation not supported by your browser'); return; }
+                            setDetectingLocation(true);
+                            navigator.geolocation.getCurrentPosition(
+                                async (pos) => {
+                                    try {
+                                        const res = await api.get(`/geocode/reverse?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
+                                        if (res.data.success && res.data.data) {
+                                            const d = res.data.data;
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                city: d.city || prev.city,
+                                                state: d.state || prev.state,
+                                                pincode: d.pincode || prev.pincode,
+                                                street: d.address || prev.street
+                                            }));
+                                        }
+                                    } catch { alert('Could not detect location'); }
+                                    setDetectingLocation(false);
+                                },
+                                () => { alert('Location permission denied'); setDetectingLocation(false); }
+                            );
+                        }}
+                        disabled={detectingLocation}
+                    >
+                        {detectingLocation ? '⏳ Detecting...' : '📍 Auto-detect My Location'}
+                    </button>
+                </div>
+
                 {/* Full Name */}
                 <div className="form-group">
                     <label htmlFor="name">Full Name *</label>

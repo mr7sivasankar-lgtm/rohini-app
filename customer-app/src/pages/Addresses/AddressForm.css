@@ -109,7 +109,7 @@
     background: white;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    overflow: hidden;
+    overflow: visible;
     transition: border-color 0.2s;
 }
 
@@ -118,7 +118,7 @@
 }
 
 .phone-prefix {
-    padding: 12px 10px 12px 16px;
+    padding: 12px 12px 12px 14px;
     font-size: 14px;
     font-weight: 600;
     color: #64748b;
@@ -126,23 +126,50 @@
     border-right: 2px solid #e2e8f0;
     white-space: nowrap;
     flex-shrink: 0;
+    border-radius: 10px 0 0 10px;
 }
 
-.phone-input input {
+.form-group .phone-input input,
+.phone-input input[type="tel"] {
     border: none !important;
-    padding: 12px 16px 12px 12px;
-    flex: 1;
-    min-width: 0;
-    width: auto;
-    font-size: 14px;
-    color: #0f172a;
-    background: transparent;
+    border-radius: 0 10px 10px 0 !important;
+    padding: 12px 16px 12px 12px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    width: 0 !important;
+    font-size: 14px !important;
+    color: #0f172a !important;
+    background: white !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
-.phone-input input:focus {
-    border: none !important;
-    box-shadow: none;
-    outline: none;
+/* Detect Location Button */
+.detect-location-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #667eea10, #764ba210);
+    border: 2px solid #667eea;
+    border-radius: 12px;
+    color: #667eea;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.detect-location-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.detect-location-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 /* Form Row */
