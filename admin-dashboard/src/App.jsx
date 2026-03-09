@@ -31,6 +31,16 @@ function App() {
   const notificationAudioRef = useRef(null);
   const [notifDismissed, setNotifDismissed] = useState(false);
 
+  // Mobile Menu State
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Request Notification Permission on Load
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
     if (token) {
@@ -61,9 +71,25 @@ function App() {
         if (response.data.success) {
           const placedCount = response.data.stats?.placed || 0;
 
-          // If new orders arrived, play notification sound
+          // If new orders arrived, play notification sound and show Push Notification
           if (placedCount > lastOrderCountRef.current && lastOrderCountRef.current > 0) {
             playNotificationSound();
+
+            // Show Native Browser Push Notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+              const diff = placedCount - lastOrderCountRef.current;
+              const notif = new Notification('🛍️ New Order Received!', {
+                body: `You have ${diff} new order(s) waiting for acceptance.`,
+                icon: '/favicon.ico',
+                vibrate: [200, 100, 200]
+              });
+
+              notif.onclick = () => {
+                window.focus();
+                setActiveTab('orders');
+                notif.close();
+              };
+            }
           }
           lastOrderCountRef.current = placedCount;
           setNewOrderCount(placedCount);
@@ -201,6 +227,11 @@ function App() {
     setIsAuthenticated(false);
   };
 
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSidebarOpen(false); // Close sidebar on mobile
+  };
+
   if (loading) {
     return <div className="loading"><div className="spinner"></div></div>;
   }
@@ -243,12 +274,23 @@ function App() {
 
   return (
     <div className="admin-container">
-      <div className="sidebar">
-        <h2>📦 Admin Panel</h2>
-        <div className={`menu-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+      {/* Mobile Top Header */}
+      <div className="mobile-header">
+        <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)}>
+          ☰
+        </button>
+        <h2>Admin Panel</h2>
+      </div>
+
+      {/* Sidebar Overlay for Mobile */}
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
+
+      <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <h2 className="sidebar-title">📦 Admin Panel</h2>
+        <div className={`menu-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleTabChange('dashboard')}>
           Dashboard
         </div>
-        <div className={`menu-item ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
+        <div className={`menu-item ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => handleTabChange('orders')}>
           Orders
           {newOrderCount > 0 && <span style={{
             background: '#ff4444',
@@ -261,13 +303,13 @@ function App() {
             animation: 'pulse 2s infinite'
           }}>{newOrderCount}</span>}
         </div>
-        <div className={`menu-item ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>
+        <div className={`menu-item ${activeTab === 'products' ? 'active' : ''}`} onClick={() => handleTabChange('products')}>
           Products
         </div>
-        <div className={`menu-item ${activeTab === 'service-areas' ? 'active' : ''}`} onClick={() => setActiveTab('service-areas')}>
+        <div className={`menu-item ${activeTab === 'service-areas' ? 'active' : ''}`} onClick={() => handleTabChange('service-areas')}>
           📍 Service Areas
         </div>
-        <div className={`menu-item ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
+        <div className={`menu-item ${activeTab === 'users' ? 'active' : ''}`} onClick={() => handleTabChange('users')}>
           👥 Users
         </div>
         <div className="menu-item" onClick={handleLogout}>
@@ -358,7 +400,9 @@ function App() {
 
             <div className="card">
               <h2 style={{ marginBottom: 20 }}>Recent Orders</h2>
-              <OrdersTable orders={orders.slice(0, 10)} updateStatus={updateOrderStatus} />
+              <div className="table-responsive">
+                <OrdersTable orders={orders.slice(0, 10)} updateStatus={updateOrderStatus} />
+              </div>
             </div>
           </div>
         )}
@@ -371,7 +415,9 @@ function App() {
             </div>
 
             <div className="card">
-              <OrdersTable orders={orders} updateStatus={updateOrderStatus} deleteOrder={deleteOrder} />
+              <div className="table-responsive">
+                <OrdersTable orders={orders} updateStatus={updateOrderStatus} deleteOrder={deleteOrder} />
+              </div>
             </div>
           </div>
         )}
@@ -389,51 +435,55 @@ function App() {
                 <button className="btn btn-primary" onClick={handleAddNewProduct}>+ Add Product</button>
               </div>
 
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Image</th>
-                    <th>Name</th>
-                    <th>Brand</th>
-                    <th>Gender</th>
-                    <th>Price</th>
-                    <th>Stock</th>
-                    <th>Category</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map(product => (
-                    <tr key={product._id}>
-                      <td>
-                        <img
-                          src={getImageUrl(product.images[0])}
-                          alt={product.name}
-                          style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8 }}
-                          onError={(e) => e.target.style.display = 'none'}
-                        />
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 500 }}>{product.name}</div>
-                        <div style={{ fontSize: 12, color: '#666' }}>{product.description?.substring(0, 30)}...</div>
-                      </td>
-                      <td>{product.brand || '-'}</td>
-                      <td>{product.gender || '-'}</td>
-                      <td>${product.price}</td>
-                      <td>
-                        <span style={{ color: product.stock < 10 ? 'red' : 'green' }}>
-                          {product.stock}
-                        </span>
-                      </td>
-                      <td>{product.category?.name || 'N/A'}</td>
-                      <td>
-                        <button className="btn btn-secondary" style={{ marginRight: 8, padding: '4px 8px', fontSize: 12 }} onClick={() => handleEditProduct(product)}>Edit</button>
-                        <button className="btn btn-danger" style={{ padding: '4px 8px', fontSize: 12, backgroundColor: '#ff4444', color: 'white', border: 'none', borderRadius: 4 }} onClick={() => handleDeleteProduct(product._id)}>Delete</button>
-                      </td>
+              <div className="table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Image</th>
+                      <th>Name</th>
+                      <th>Brand</th>
+                      <th>Gender</th>
+                      <th>Price</th>
+                      <th>Stock</th>
+                      <th>Category</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {products.map(product => (
+                      <tr key={product._id}>
+                        <td>
+                          <img
+                            src={getImageUrl(product.images[0])}
+                            alt={product.name}
+                            style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8 }}
+                            onError={(e) => e.target.style.display = 'none'}
+                          />
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 500 }}>{product.name}</div>
+                          <div style={{ fontSize: 12, color: '#666' }}>{product.description?.substring(0, 30)}...</div>
+                        </td>
+                        <td>{product.brand || '-'}</td>
+                        <td>{product.gender || '-'}</td>
+                        <td>${product.price}</td>
+                        <td>
+                          <span style={{ color: product.stock < 10 ? 'red' : 'green' }}>
+                            {product.stock}
+                          </span>
+                        </td>
+                        <td>{product.category?.name || 'N/A'}</td>
+                        <td>
+                          <div className="action-buttons">
+                            <button className="btn btn-secondary" style={{ marginRight: 8, padding: '4px 8px', fontSize: 12 }} onClick={() => handleEditProduct(product)}>Edit</button>
+                            <button className="btn btn-danger" style={{ padding: '4px 8px', fontSize: 12, backgroundColor: '#ff4444', color: 'white', border: 'none', borderRadius: 4 }} onClick={() => handleDeleteProduct(product._id)}>Delete</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {showProductForm && (

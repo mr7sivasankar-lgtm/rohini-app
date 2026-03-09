@@ -33,6 +33,7 @@ body {
 .admin-container {
   min-height: 100vh;
   display: flex;
+  position: relative;
 }
 
 .sidebar {
@@ -43,6 +44,9 @@ body {
   position: fixed;
   height: 100vh;
   overflow-y: auto;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+  left: 0;
 }
 
 .sidebar h2 {
@@ -72,6 +76,7 @@ body {
   margin-left: 260px;
   flex: 1;
   padding: 32px;
+  transition: margin-left 0.3s ease;
 }
 
 .page-header {
@@ -327,5 +332,119 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* --- Mobile Responsiveness --- */
+
+/* Mobile Header */
+.mobile-header {
+  display: none;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--white);
+  box-shadow: var(--shadow-sm);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+}
+
+.mobile-header h2 {
+  font-size: 18px;
+  margin: 0;
+  color: var(--primary);
+}
+
+.mobile-menu-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--black);
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 950;
+  backdrop-filter: blur(2px);
+}
+
+/* Responsive Table container */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .admin-container {
+    flex-direction: column;
+  }
+
+  .mobile-header {
+    display: flex;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding: 80px 16px 24px;
+    /* Space for fixed mobile header */
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  .page-header h1 {
+    font-size: 24px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-content {
+    padding: 20px 15px;
+    width: 95%;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .table th,
+  .table td {
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .action-buttons button {
+    width: 100%;
+    margin-right: 0 !important;
   }
 }
