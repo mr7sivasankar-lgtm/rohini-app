@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWishlist } from '../../contexts/WishlistContext';
-import api, { IMAGE_BASE } from '../../utils/api';
+import api, { getImageUrl } from '../../utils/api';
 import './Wishlist.css';
 
 const Wishlist = () => {
@@ -66,7 +66,7 @@ const Wishlist = () => {
                                     <div className="wishlist-img-wrap">
                                         {product.images && product.images.length > 0 ? (
                                             <img
-                                                src={`${IMAGE_BASE}${product.images[0]}`}
+                                                src={getImageUrl(product.images[0])}
                                                 alt={product.name}
                                                 onError={(e) => {
                                                     e.target.src = 'https://via.placeholder.com/200x250/f3f4f6/9ca3af?text=No+Image';

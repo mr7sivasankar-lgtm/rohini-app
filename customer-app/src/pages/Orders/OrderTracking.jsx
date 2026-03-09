@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api, { IMAGE_BASE } from '../../utils/api';
+import api, { getImageUrl } from '../../utils/api';
 import './OrderTracking.css';
 
 const OrderTracking = () => {
@@ -75,7 +75,7 @@ const OrderTracking = () => {
                     <h3>Items ({order.items.length})</h3>
                     {order.items.map((item, index) => (
                         <div key={index} className="order-item">
-                            <img src={`${IMAGE_BASE}${item.image}`} alt={item.name} />
+                            <img src={getImageUrl(item.image)} alt={item.name} />
                             <div className="item-details">
                                 <div className="item-name">{item.name}</div>
                                 <div className="item-meta">Qty: {item.quantity} • ₹{item.price.toFixed(2)}</div>

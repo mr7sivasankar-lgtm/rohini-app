@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import api, { IMAGE_BASE } from './utils/api';
+import api, { getImageUrl } from './utils/api';
 import ProductForm from './components/ProductForm';
 import ServiceAreas from './components/ServiceAreas';
 import Users from './components/Users';
@@ -407,7 +407,7 @@ function App() {
                     <tr key={product._id}>
                       <td>
                         <img
-                          src={`${IMAGE_BASE}${product.images[0]}`}
+                          src={getImageUrl(product.images[0])}
                           alt={product.name}
                           style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8 }}
                           onError={(e) => e.target.style.display = 'none'}

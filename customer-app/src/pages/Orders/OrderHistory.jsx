@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { IMAGE_BASE } from '../../utils/api';
+import api, { getImageUrl } from '../../utils/api';
 import './OrderHistory.css';
 
 const OrderHistory = () => {
@@ -69,7 +69,7 @@ const OrderHistory = () => {
                             {order.items.slice(0, 3).map((item, index) => (
                                 <img
                                     key={index}
-                                    src={`${IMAGE_BASE}${item.image}`}
+                                    src={getImageUrl(item.image)}
                                     alt={item.name}
                                     onError={(e) => e.target.style.display = 'none'}
                                 />

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuth } from '../../contexts/AuthContext';
-import api, { IMAGE_BASE } from '../../utils/api';
+import api, { getImageUrl } from '../../utils/api';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
@@ -228,7 +228,7 @@ const ProductDetail = () => {
                     >
                         <img
                             className={`main-product-img ${imageAnimating ? 'fade-out' : 'fade-in'}`}
-                            src={`${IMAGE_BASE}${product.images[selectedImage]}`}
+                            src={getImageUrl(product.images[selectedImage])}
                             alt={product.name}
                             onError={(e) => e.target.src = 'https://via.placeholder.com/500x500?text=Product'}
                         />
@@ -254,7 +254,7 @@ const ProductDetail = () => {
                                     onClick={() => switchImage(index)}
                                 >
                                     <img
-                                        src={`${IMAGE_BASE}${img}`}
+                                        src={getImageUrl(img)}
                                         alt={`${product.name} ${index + 1}`}
                                         onError={(e) => e.target.src = 'https://via.placeholder.com/100x100?text=Img'}
                                     />
@@ -531,7 +531,7 @@ const ProductDetail = () => {
                             >
                                 <div className="similar-img-wrap">
                                     <img
-                                        src={`${IMAGE_BASE}${p.images?.[0]}`}
+                                        src={getImageUrl(p.images?.[0])}
                                         alt={p.name}
                                         onError={(e) => e.target.src = 'https://via.placeholder.com/200x200?text=Product'}
                                     />

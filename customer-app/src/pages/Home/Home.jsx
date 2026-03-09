@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useLocation } from '../../contexts/LocationContext';
-import api, { IMAGE_BASE } from '../../utils/api';
+import api, { getImageUrl } from '../../utils/api';
 import './Home.css';
 
 const Home = () => {
@@ -208,7 +208,7 @@ const Home = () => {
                     <div className="banner-slider" style={{ transform: `translateX(-${currentBanner * 100}%)` }}>
                         {banners.map((banner, index) => (
                             <div key={banner._id || index} className="banner-slide">
-                                <img src={`${IMAGE_BASE}${banner.image}`} alt={banner.title} />
+                                <img src={getImageUrl(banner.image)} alt={banner.title} />
                             </div>
                         ))}
                     </div>
@@ -258,7 +258,7 @@ const Home = () => {
                             >
                                 <div className="category-circle">
                                     {category.image ? (
-                                        <img src={`${IMAGE_BASE}${category.image}`} alt={category.name} />
+                                        <img src={getImageUrl(category.image)} alt={category.name} />
                                     ) : (
                                         <div className="category-placeholder">
                                             {category.name.charAt(0)}
@@ -361,7 +361,7 @@ const ProductCard = ({ product, onClick }) => {
             <div className="product-image-container">
                 {product.images && product.images.length > 0 ? (
                     <img
-                        src={`${IMAGE_BASE}${product.images[0]}`}
+                        src={getImageUrl(product.images[0])}
                         alt={product.name}
                         onError={(e) => {
                             e.target.src = 'https://via.placeholder.com/200x250/f3f4f6/9ca3af?text=No+Image';

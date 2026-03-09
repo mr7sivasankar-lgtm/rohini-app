@@ -2,7 +2,7 @@ import express from 'express';
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import { protect, adminOnly } from '../middleware/auth.js';
-import { uploadMultiple } from '../middleware/upload.js';
+import { uploadMultiple, cloudinary } from '../middleware/upload.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -157,8 +157,8 @@ router.post('/', protect, adminOnly, (req, res, next) => {
         const productData = JSON.parse(req.body.data);
         debugLog('JSON Parsed');
 
-        // Get uploaded image paths
-        const images = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+        // Get uploaded image URLs from Cloudinary
+        const images = req.files ? req.files.map(file => file.path) : [];
 
         const product = await Product.create({
             ...productData,
@@ -202,16 +202,19 @@ router.put('/:id', protect, adminOnly, uploadMultiple, async (req, res) => {
 
         const productData = JSON.parse(req.body.data);
 
-        // Handle removed images - delete from disk
+        // Handle removed images - delete from Cloudinary
         if (productData.removedImages && productData.removedImages.length > 0) {
             for (const imgPath of productData.removedImages) {
                 try {
-                    const fullPath = path.join(process.cwd(), imgPath);
-                    if (fs.existsSync(fullPath)) {
-                        fs.unlinkSync(fullPath);
+                    // Extract Cloudinary public ID from URL
+                    if (imgPath.includes('cloudinary.com')) {
+                        const parts = imgPath.split('/');
+                        const folderAndFile = parts.slice(parts.indexOf('upload') + 2).join('/');
+                        const publicId = folderAndFile.replace(/\.[^.]+$/, '');
+                        await cloudinary.uploader.destroy(publicId);
                     }
                 } catch (err) {
-                    console.error('Error deleting image file:', err);
+                    console.error('Error deleting image from Cloudinary:', err);
                 }
             }
             // Filter out removed images from existing product images
@@ -221,7 +224,7 @@ router.put('/:id', protect, adminOnly, uploadMultiple, async (req, res) => {
 
         // If new images uploaded, add them
         if (req.files && req.files.length > 0) {
-            const newImages = req.files.map(file => `/uploads/${file.filename}`);
+            const newImages = req.files.map(file => file.path);
             productData.images = [...(product.images || []), ...newImages];
         } else if (!productData.removedImages) {
             // Keep existing images if no new ones uploaded and no removals

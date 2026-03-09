@@ -66,7 +66,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', protect, adminOnly, uploadSingle, async (req, res) => {
     try {
         const categoryData = req.file ?
-            { ...req.body, image: `/uploads/${req.file.filename}` } :
+            { ...req.body, image: req.file.path } :
             req.body;
 
         const category = await Category.create(categoryData);
@@ -100,7 +100,7 @@ router.put('/:id', protect, adminOnly, uploadSingle, async (req, res) => {
         }
 
         const updateData = req.file ?
-            { ...req.body, image: `/uploads/${req.file.filename}` } :
+            { ...req.body, image: req.file.path } :
             req.body;
 
         Object.assign(category, updateData);

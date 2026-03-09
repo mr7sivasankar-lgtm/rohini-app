@@ -40,7 +40,7 @@ router.post('/', protect, adminOnly, uploadSingle, async (req, res) => {
 
         const bannerData = {
             ...req.body,
-            image: `/uploads/${req.file.filename}`
+            image: req.file.path
         };
 
         const banner = await Banner.create(bannerData);
@@ -74,7 +74,7 @@ router.put('/:id', protect, adminOnly, uploadSingle, async (req, res) => {
         }
 
         const updateData = req.file ?
-            { ...req.body, image: `/uploads/${req.file.filename}` } :
+            { ...req.body, image: req.file.path } :
             req.body;
 
         Object.assign(banner, updateData);

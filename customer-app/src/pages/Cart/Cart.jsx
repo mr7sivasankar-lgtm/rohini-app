@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
-import api, { IMAGE_BASE } from '../../utils/api';
+import api, { getImageUrl } from '../../utils/api';
 import './Cart.css';
 
 const Cart = () => {
@@ -124,7 +124,7 @@ const Cart = () => {
                         <div key={item._id} className="cart-item-card">
                             <div className="cart-item-img-wrap">
                                 <img
-                                    src={`${IMAGE_BASE}${item.product?.images?.[0]}`}
+                                    src={getImageUrl(item.product?.images?.[0])}
                                     alt={item.product?.name}
                                     className="cart-item-img"
                                     onError={(e) => e.target.src = 'https://via.placeholder.com/90x90?text=Img'}

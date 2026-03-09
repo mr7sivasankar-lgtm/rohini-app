@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api, { IMAGE_BASE } from '../utils/api';
+import api, { getImageUrl } from '../utils/api';
 
 const ProductForm = ({ product, categories, onClose, onSave }) => {
     // Basic Info
@@ -417,7 +417,7 @@ const ProductForm = ({ product, categories, onClose, onSave }) => {
                             {/* Existing images */}
                             {formData.images.map((img, i) => (
                                 <div key={`existing-${i}`} className="image-grid-item">
-                                    <img src={`${IMAGE_BASE}${img}`} alt={`Product ${i + 1}`} />
+                                    <img src={getImageUrl(img)} alt={`Product ${i + 1}`} />
                                     {i === 0 && files.length === 0 && <span className="primary-badge">Primary</span>}
                                     <button type="button" className="remove-img-btn" onClick={() => removeExistingImage(img)} title="Remove image">✕</button>
                                 </div>
