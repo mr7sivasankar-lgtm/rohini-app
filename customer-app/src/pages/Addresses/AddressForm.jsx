@@ -300,13 +300,14 @@ const AddressForm = () => {
                 {/* Set as Default */}
                 <div className="form-group checkbox-group">
                     <label className="checkbox-label">
+                        <span>Set as default address</span>
                         <input
                             type="checkbox"
+                            className="modern-toggle"
                             name="isDefault"
                             checked={formData.isDefault}
                             onChange={handleChange}
                         />
-                        <span>Set as default address</span>
                     </label>
                 </div>
 
