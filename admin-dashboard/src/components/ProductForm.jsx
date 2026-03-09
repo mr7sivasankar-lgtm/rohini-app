@@ -8,7 +8,7 @@ const ProductForm = ({ product, categories, onClose, onSave }) => {
         brand: '',
         gender: '',
         category: '', // This will hold the "Parent" category ID (e.g. Clothing)
-        subcategory: '', // This will hold the "Leaf" category ID (e.g. Dresses)
+        subcategory: [], // Array of "Leaf" category IDs (e.g. Dresses, Kurtis)
         description: '',
         price: '',
         originalPrice: '',
@@ -71,7 +71,9 @@ const ProductForm = ({ product, categories, onClose, onSave }) => {
                 brand: product.brand || '',
                 gender: product.gender || '',
                 category: product.category?._id || product.category || '',
-                subcategory: product.subcategory || '',
+                subcategory: Array.isArray(product.subcategory)
+                    ? product.subcategory.map(s => s._id || s)
+                    : (product.subcategory ? [product.subcategory._id || product.subcategory] : []),
                 description: product.description || '',
                 price: product.price || '',
                 originalPrice: product.originalPrice || '',
@@ -135,7 +137,7 @@ const ProductForm = ({ product, categories, onClose, onSave }) => {
         setParentCategories(parents);
 
         // Reset category, subcategory & sizes when gender changes
-        setFormData(prev => ({ ...prev, category: '', subcategory: '', sizes: [], colors: [] }));
+        setFormData(prev => ({ ...prev, category: '', subcategory: [], sizes: [], colors: [] }));
         setColorInput('');
     }, [formData.gender, categories]);
 
@@ -153,7 +155,7 @@ const ProductForm = ({ product, categories, onClose, onSave }) => {
         setSubCategories(subs);
 
         // Reset subcategory when category changes
-        setFormData(prev => ({ ...prev, subcategory: '' }));
+        setFormData(prev => ({ ...prev, subcategory: [] }));
     }, [formData.category, categories]);
 
 
@@ -221,7 +223,7 @@ const ProductForm = ({ product, categories, onClose, onSave }) => {
                 ...formData,
                 colors: formData.colors, // Already an array
                 category: formData.category,
-                subcategory: formData.subcategory || null,
+                subcategory: formData.subcategory.length > 0 ? formData.subcategory : [],
                 removedImages: removedImages
             };
 
@@ -294,11 +296,40 @@ const ProductForm = ({ product, categories, onClose, onSave }) => {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Subcategory</label>
-                                <select name="subcategory" value={formData.subcategory} onChange={handleChange} className="input" disabled={!formData.category}>
-                                    <option value="">Select Subcategory</option>
-                                    {subCategories.map(c => <option key={c._id} value={c._id}>{c.name.split(' (')[0]}</option>)}
-                                </select>
+                                <label>Subcategories</label>
+                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '8px 0' }}>
+                                    {!formData.category ? (
+                                        <span style={{ color: '#9ca3af', fontSize: 14 }}>Select a category first</span>
+                                    ) : subCategories.length === 0 ? (
+                                        <span style={{ color: '#9ca3af', fontSize: 14 }}>No subcategories available</span>
+                                    ) : (
+                                        subCategories.map(c => (
+                                            <label key={c._id} style={{
+                                                display: 'flex', alignItems: 'center', gap: 5,
+                                                padding: '5px 12px',
+                                                background: formData.subcategory.includes(c._id) ? '#e0e7ff' : '#f1f5f9',
+                                                borderRadius: 6, cursor: 'pointer', fontSize: 13,
+                                                border: formData.subcategory.includes(c._id) ? '1px solid #818cf8' : '1px solid transparent',
+                                                transition: 'all 0.15s'
+                                            }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.subcategory.includes(c._id)}
+                                                    onChange={() => {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            subcategory: prev.subcategory.includes(c._id)
+                                                                ? prev.subcategory.filter(id => id !== c._id)
+                                                                : [...prev.subcategory, c._id]
+                                                        }));
+                                                    }}
+                                                />
+                                                {c.name.split(' (')[0]}
+                                            </label>
+                                        ))
+                                    )}
+                                </div>
+                                <small style={{ color: '#888', fontSize: 12 }}>Select all subcategories this product belongs to</small>
                             </div>
                         </div>
 

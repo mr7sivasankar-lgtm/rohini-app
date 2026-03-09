@@ -201,7 +201,9 @@ const ProductDetail = () => {
         : product.price;
 
     const categoryName = product.category?.name || '';
-    const subcategoryName = product.subcategory?.name || '';
+    const subcategoryNames = Array.isArray(product.subcategory)
+        ? product.subcategory.map(s => s?.name || '').filter(Boolean)
+        : (product.subcategory?.name ? [product.subcategory.name] : []);
 
     const fabricDetails = [
         { label: 'Fabric', value: product.fabric },
@@ -282,7 +284,9 @@ const ProductDetail = () => {
                     {/* Category / Brand / Gender chips */}
                     <div className="product-meta-chips">
                         {categoryName && <span className="meta-chip">📂 {categoryName}</span>}
-                        {subcategoryName && <span className="meta-chip">🏷️ {subcategoryName}</span>}
+                        {subcategoryNames.map((name, idx) => (
+                            <span key={idx} className="meta-chip">🏷️ {name}</span>
+                        ))}
                         {product.brand && <span className="meta-chip">🏪 {product.brand}</span>}
                         {product.gender && <span className="meta-chip">👤 {product.gender}</span>}
                     </div>

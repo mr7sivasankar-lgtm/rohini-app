@@ -46,11 +46,11 @@ const productSchema = new mongoose.Schema({
         required: true,
         index: true
     },
-    subcategory: { // Specific Subcategory (e.g., Dresses)
+    subcategory: [{ // Specific Subcategories (e.g., Dresses, Kurtis & Tunics)
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category',
         index: true
-    },
+    }],
     gender: {
         type: String,
         enum: ['Male', 'Female', 'Kids', 'Unisex'],
