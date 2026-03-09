@@ -129,7 +129,7 @@ const ProductCard = ({ product, onClick }) => {
 
     return (
         <div className="product-card-search" onClick={onClick}>
-            <div className="product-image-container">
+            <div className={`product-image-container ${product.stock === 0 ? 'out-of-stock-container' : ''}`}>
                 {product.images && product.images.length > 0 ? (
                     <img
                         src={getImageUrl(product.images[0])}
@@ -140,6 +140,11 @@ const ProductCard = ({ product, onClick }) => {
                     />
                 ) : (
                     <div className="placeholder-image">No Image</div>
+                )}
+                {product.stock === 0 && (
+                    <div className="out-of-stock-overlay">
+                        <span>Out of Stock</span>
+                    </div>
                 )}
                 {product.discount > 0 && (
                     <span className="discount-badge">{product.discount}% OFF</span>

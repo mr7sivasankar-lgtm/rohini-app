@@ -184,3 +184,22 @@
         height: 20px;
     }
 }
+
+/* Review Button on Delivered Orders */
+.review-item-btn {
+    margin-top: 6px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #78350f;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.review-item-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}

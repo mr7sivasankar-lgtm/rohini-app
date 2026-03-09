@@ -358,7 +358,7 @@ const ProductCard = ({ product, onClick }) => {
 
     return (
         <div className="product-card-modern" onClick={onClick}>
-            <div className="product-image-container">
+            <div className={`product-image-container ${product.stock === 0 ? 'out-of-stock-container' : ''}`}>
                 {product.images && product.images.length > 0 ? (
                     <img
                         src={getImageUrl(product.images[0])}
@@ -369,6 +369,11 @@ const ProductCard = ({ product, onClick }) => {
                     />
                 ) : (
                     <div className="placeholder-image">No Image</div>
+                )}
+                {product.stock === 0 && (
+                    <div className="out-of-stock-overlay">
+                        <span>Out of Stock</span>
+                    </div>
                 )}
                 <button className={`wishlist-heart ${wishlisted ? 'active' : ''}`} onClick={handleWishlist} aria-label="Toggle wishlist">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill={wishlisted ? '#ef4444' : 'none'} stroke={wishlisted ? '#ef4444' : '#fff'} strokeWidth="2">

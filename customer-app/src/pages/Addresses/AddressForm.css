@@ -118,16 +118,26 @@
 }
 
 .phone-prefix {
-    padding: 12px 0 12px 16px;
+    padding: 12px 10px 12px 16px;
     font-size: 14px;
     font-weight: 600;
     color: #64748b;
-    background: #f8fafc;
+    background: #f1f5f9;
+    border-right: 2px solid #e2e8f0;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .phone-input input {
-    border: none;
+    border: none !important;
     padding-left: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.phone-input input:focus {
+    border: none !important;
+    box-shadow: none;
 }
 
 /* Form Row */
