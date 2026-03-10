@@ -18,7 +18,9 @@ const AddressForm = () => {
         pincode: '',
         phone: '',
         addressType: 'Home',
-        isDefault: false
+        isDefault: false,
+        latitude: null,
+        longitude: null
     });
     const [errors, setErrors] = useState({});
     const [detectingLocation, setDetectingLocation] = useState(false);
@@ -46,7 +48,9 @@ const AddressForm = () => {
                         pincode: address.pincode,
                         phone: address.phone,
                         addressType: address.addressType,
-                        isDefault: address.isDefault
+                        isDefault: address.isDefault,
+                        latitude: address.latitude || null,
+                        longitude: address.longitude || null
                     });
                 }
             }
@@ -156,7 +160,9 @@ const AddressForm = () => {
                                                 city: d.city || prev.city,
                                                 state: d.state || prev.state,
                                                 pincode: d.pincode || prev.pincode,
-                                                street: d.address || prev.street
+                                                street: d.address || prev.street,
+                                                latitude: pos.coords.latitude,
+                                                longitude: pos.coords.longitude
                                             }));
                                         }
                                     } catch { alert('Could not detect location'); }

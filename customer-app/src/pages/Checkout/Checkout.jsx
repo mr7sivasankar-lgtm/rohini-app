@@ -17,7 +17,9 @@ const Checkout = () => {
         fullAddress: '',
         city: '',
         district: '',
-        pincode: ''
+        pincode: '',
+        latitude: null,
+        longitude: null
     });
 
     const [phone, setPhone] = useState(user?.phone || '');
@@ -36,7 +38,9 @@ const Checkout = () => {
                             fullAddress: `${found.street}${found.landmark ? ', ' + found.landmark : ''}`,
                             city: found.city,
                             district: found.state,
-                            pincode: found.pincode
+                            pincode: found.pincode,
+                            latitude: found.latitude || null,
+                            longitude: found.longitude || null
                         });
                         if (found.phone) setPhone(found.phone);
                     }

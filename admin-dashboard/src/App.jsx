@@ -565,6 +565,28 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
               <div style={{ fontWeight: 500 }}>{order.shippingAddress?.fullAddress}</div>
               {order.shippingAddress?.city && <div>{order.shippingAddress.city}, {order.shippingAddress.pincode}</div>}
               {order.shippingAddress?.district && <div>{order.shippingAddress.district}</div>}
+              {order.shippingAddress?.latitude && order.shippingAddress?.longitude && (
+                <a
+                  href={`https://www.google.com/maps?q=${order.shippingAddress.latitude},${order.shippingAddress.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    marginTop: '8px',
+                    padding: '4px 8px',
+                    background: '#e0f2fe',
+                    color: '#0369a1',
+                    borderRadius: '4px',
+                    textDecoration: 'none',
+                    fontSize: '0.85em',
+                    fontWeight: 600
+                  }}
+                >
+                  📍 View on Map
+                </a>
+              )}
             </td>
             <td style={{ fontWeight: 600 }}>₹{order.total.toFixed(2)}</td>
             <td>

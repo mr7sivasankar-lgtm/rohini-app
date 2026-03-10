@@ -30,7 +30,7 @@ router.get('/', protect, async (req, res) => {
 // @access  Private
 router.post('/', protect, async (req, res) => {
     try {
-        const { name, street, landmark, city, state, pincode, phone, addressType, isDefault } = req.body;
+        const { name, street, landmark, city, state, pincode, phone, addressType, isDefault, latitude, longitude } = req.body;
 
         // Validation
         if (!name || !street || !city || !state || !pincode || !phone) {
@@ -50,7 +50,9 @@ router.post('/', protect, async (req, res) => {
             pincode,
             phone,
             addressType: addressType || 'Home',
-            isDefault: isDefault || false
+            isDefault: isDefault || false,
+            ...(latitude && { latitude }),
+            ...(longitude && { longitude })
         });
 
         res.status(201).json({
@@ -92,7 +94,7 @@ router.put('/:id', protect, async (req, res) => {
             });
         }
 
-        const { name, street, landmark, city, state, pincode, phone, addressType, isDefault } = req.body;
+        const { name, street, landmark, city, state, pincode, phone, addressType, isDefault, latitude, longitude } = req.body;
 
         // Update fields
         if (name) address.name = name;
@@ -104,6 +106,8 @@ router.put('/:id', protect, async (req, res) => {
         if (phone) address.phone = phone;
         if (addressType) address.addressType = addressType;
         if (isDefault !== undefined) address.isDefault = isDefault;
+        if (latitude !== undefined) address.latitude = latitude;
+        if (longitude !== undefined) address.longitude = longitude;
 
         await address.save();
 
