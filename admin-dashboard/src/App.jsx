@@ -534,7 +534,8 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
         <tr>
           <th>Order ID</th>
           <th>Customer</th>
-          <th>Items</th>
+          <th>Items Received</th>
+          <th>Delivery Address</th>
           <th>Total</th>
           <th>Status</th>
           <th>Date</th>
@@ -545,15 +546,36 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
         {orders.map(order => (
           <tr key={order._id}>
             <td>#{order.orderId}</td>
-            <td>{order.user?.name || 'N/A'}</td>
-            <td>{order.items.length}</td>
-            <td>${order.total.toFixed(2)}</td>
+            <td>
+              <div>{order.user?.name || 'N/A'}</div>
+              <div style={{ fontSize: '0.85em', color: '#666' }}>{order.contactInfo?.phone}</div>
+            </td>
+            <td>
+              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '0.9em' }}>
+                {order.items.map((item, idx) => (
+                  <li key={idx}>
+                    {item.name} <strong>(x{item.quantity})</strong>
+                    {item.size ? ` - Size: ${item.size}` : ''}
+                    {item.color ? ` - Color: ${item.color}` : ''}
+                  </li>
+                ))}
+              </ul>
+            </td>
+            <td style={{ maxWidth: '250px', fontSize: '0.9em' }}>
+              <div style={{ fontWeight: 500 }}>{order.shippingAddress?.fullAddress}</div>
+              {order.shippingAddress?.city && <div>{order.shippingAddress.city}, {order.shippingAddress.pincode}</div>}
+              {order.shippingAddress?.district && <div>{order.shippingAddress.district}</div>}
+            </td>
+            <td style={{ fontWeight: 600 }}>₹{order.total.toFixed(2)}</td>
             <td>
               <span className={`status-badge status-${order.status.toLowerCase().replace(' ', '-')}`}>
                 {order.status}
               </span>
             </td>
-            <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+            <td>
+              <div>{new Date(order.createdAt).toLocaleDateString('en-IN')}</div>
+              <div style={{ fontSize: '0.85em', color: '#666' }}>{new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
+            </td>
             <td>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <select
