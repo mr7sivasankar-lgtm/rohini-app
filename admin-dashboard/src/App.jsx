@@ -535,6 +535,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
           <th>Order ID</th>
           <th>Customer</th>
           <th>Items Received</th>
+          <th>Quantity</th>
           <th>Delivery Address</th>
           <th>Total</th>
           <th>Status</th>
@@ -560,6 +561,9 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
                   </li>
                 ))}
               </ul>
+            </td>
+            <td style={{ fontWeight: 600, textAlign: 'center', fontSize: '1.1em' }}>
+              {order.items.reduce((total, item) => total + item.quantity, 0)}
             </td>
             <td style={{ maxWidth: '250px', fontSize: '0.9em' }}>
               <div style={{ fontWeight: 500 }}>{order.shippingAddress?.fullAddress}</div>
