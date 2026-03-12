@@ -548,16 +548,38 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
           <tr key={order._id}>
             <td>#{order.orderId}</td>
             <td>
-              <div>{order.user?.name || 'N/A'}</div>
-              <div style={{ fontSize: '0.85em', color: '#666' }}>{order.contactInfo?.phone}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ background: '#e2e8f0', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
+                  👤
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{order.user?.name || 'N/A'}</div>
+                  <div style={{ fontSize: '0.85em', color: '#666' }}>{order.contactInfo?.phone}</div>
+                </div>
+              </div>
             </td>
             <td>
-              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '0.9em' }}>
+              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {order.items.map((item, idx) => (
-                  <li key={idx}>
-                    {item.name} <strong>(x{item.quantity})</strong>
-                    {item.size ? ` - Size: ${item.size}` : ''}
-                    {item.color ? ` - Color: ${item.color}` : ''}
+                  <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9em' }}>
+                    {item.image && (
+                      <img
+                        src={getImageUrl(item.image)}
+                        alt={item.name}
+                        style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #e2e8f0' }}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    )}
+                    <div>
+                      <div>{item.name} <strong>(x{item.quantity})</strong></div>
+                      {(item.size || item.color) && (
+                        <div style={{ fontSize: '0.9em', color: '#64748b' }}>
+                          {item.size ? `Size: ${item.size}` : ''}
+                          {item.size && item.color ? ' | ' : ''}
+                          {item.color ? `Color: ${item.color}` : ''}
+                        </div>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
