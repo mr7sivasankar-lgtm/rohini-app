@@ -194,6 +194,27 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
             });
         }
 
+        // Restore stock if the order represents a new 'Cancelled' state
+        if (status === 'Cancelled' && order.status !== 'Cancelled') {
+            for (const item of order.items) {
+                const product = await Product.findById(item.product);
+                if (product) {
+                    product.stock += item.quantity;
+                    await product.save();
+                }
+            }
+        } else if (order.status === 'Cancelled' && status !== 'Cancelled') {
+            // If they un-cancel it (e.g. back to Placed), reduce stock again
+            for (const item of order.items) {
+                const product = await Product.findById(item.product);
+                if (product) {
+                    product.stock -= item.quantity;
+                    if (product.stock < 0) product.stock = 0; // Prevent negative stock
+                    await product.save();
+                }
+            }
+        }
+
         order.status = status;
         order.statusHistory.push({
             status,
