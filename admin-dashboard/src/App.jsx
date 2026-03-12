@@ -526,7 +526,7 @@ function App() {
 }
 
 const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
-  const statusOptions = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered'];
+  const statusOptions = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
   return (
     <table className="table">
@@ -535,6 +535,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
           <th>Order ID</th>
           <th>Customer</th>
           <th>Items Received</th>
+          <th>Product Code</th>
           <th>Quantity</th>
           <th>Delivery Address</th>
           <th>Total</th>
@@ -574,11 +575,6 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
                     )}
                     <div>
                       <div>{item.name} <strong>(x{item.quantity})</strong></div>
-                      {item.productCode && (
-                        <div style={{ fontSize: '0.85em', color: '#3730a3', marginTop: '2px', fontWeight: 500 }}>
-                          Code: {item.productCode}
-                        </div>
-                      )}
                       {(item.size || item.color) && (
                         <div style={{ fontSize: '0.9em', color: '#64748b' }}>
                           {item.size ? `Size: ${item.size}` : ''}
@@ -590,6 +586,19 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
                   </li>
                 ))}
               </ul>
+            </td>
+            <td>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
+                {order.items.map((item, idx) => (
+                  <div key={idx} style={{ 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                    minHeight: '36px', fontSize: '0.9em', color: '#3730a3', fontWeight: 600,
+                    background: '#e0e7ff', borderRadius: '6px', padding: '2px 8px', width: 'fit-content', margin: '0 auto' 
+                  }}>
+                    {item.productCode || 'N/A'}
+                  </div>
+                ))}
+              </div>
             </td>
             <td style={{ fontWeight: 600, textAlign: 'center', fontSize: '1.1em' }}>
               {order.items.reduce((total, item) => total + item.quantity, 0)}
@@ -635,7 +644,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <select
                   className="input"
-                  style={{ padding: 6, fontSize: 13 }}
+                  style={{ padding: '6px 24px 6px 8px', fontSize: 13, minWidth: '130px', cursor: 'pointer' }}
                   value={order.status}
                   onChange={(e) => updateStatus(order._id, e.target.value)}
                 >
