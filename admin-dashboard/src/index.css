@@ -310,6 +310,10 @@ body {
   background: var(--status-success);
 }
 
+.status-cancelled {
+  background: var(--widget-red);
+}
+
 /* Forms */
 .form-group {
   margin-bottom: 20px;
