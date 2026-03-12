@@ -5,6 +5,7 @@ const ProductForm = ({ product, categories, onClose, onSave }) => {
     // Basic Info
     const [formData, setFormData] = useState({
         name: '',
+        productCode: '',
         brand: '',
         gender: '',
         category: '', // This will hold the "Parent" category ID (e.g. Clothing)
@@ -68,6 +69,7 @@ const ProductForm = ({ product, categories, onClose, onSave }) => {
         if (product) {
             setFormData({
                 name: product.name || '',
+                productCode: product.productCode || '',
                 brand: product.brand || '',
                 gender: product.gender || '',
                 category: product.category?._id || product.category || '',
@@ -275,10 +277,14 @@ const ProductForm = ({ product, categories, onClose, onSave }) => {
 
                         <div className="form-row">
                             <div className="form-group">
+                                <label>Product Code / SKU</label>
+                                <input name="productCode" value={formData.productCode} onChange={handleChange} className="input" placeholder="e.g. TSHIRT-001" />
+                            </div>
+                            <div className="form-group">
                                 <label>Brand Name</label>
                                 <input name="brand" value={formData.brand} onChange={handleChange} className="input" placeholder="e.g. Nike, ZARA" />
                             </div>
-                            <div className="form-group">
+                            <div className="form-group" style={{ maxWidth: '200px' }}>
                                 <label>Gender *</label>
                                 <select name="gender" value={formData.gender} onChange={handleChange} required className="input">
                                     <option value="">Select Gender</option>

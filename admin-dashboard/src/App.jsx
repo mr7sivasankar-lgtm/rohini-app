@@ -572,6 +572,11 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
                     )}
                     <div>
                       <div>{item.name} <strong>(x{item.quantity})</strong></div>
+                      {item.productCode && (
+                        <div style={{ fontSize: '0.85em', color: '#3730a3', marginTop: '2px', fontWeight: 500 }}>
+                          Code: {item.productCode}
+                        </div>
+                      )}
                       {(item.size || item.color) && (
                         <div style={{ fontSize: '0.9em', color: '#64748b' }}>
                           {item.size ? `Size: ${item.size}` : ''}

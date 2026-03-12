@@ -78,6 +78,9 @@ const OrderTracking = () => {
                             <img src={getImageUrl(item.image)} alt={item.name} />
                             <div className="item-details">
                                 <div className="item-name">{item.name}</div>
+                                {item.productCode && (
+                                    <div className="item-meta" style={{ color: '#4f46e5', fontWeight: 600 }}>Code: {item.productCode}</div>
+                                )}
                                 <div className="item-meta">Qty: {item.quantity} • ₹{item.price.toFixed(2)}</div>
                                 {order.status === 'Delivered' && (
                                     <button
