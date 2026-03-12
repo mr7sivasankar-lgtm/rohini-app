@@ -196,21 +196,36 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
 
         // Restore stock if the order represents a new 'Cancelled' state
         if (status === 'Cancelled' && order.status !== 'Cancelled') {
+            console.log(`[Order Cancel] Refunding stock for order ID ${order._id}`);
             for (const item of order.items) {
-                const product = await Product.findById(item.product);
+                const productId = item.product?._id || item.product;
+                console.log(`[Order Cancel] Checking item: ${item.name}, item.product: ${productId}`);
+                if (!productId) continue;
+                
+                const product = await Product.findById(productId);
                 if (product) {
+                    console.log(`[Order Cancel] Found product ${product.name}. Old stock: ${product.stock}. Refunding +${item.quantity}`);
                     product.stock += item.quantity;
                     await product.save();
+                    console.log(`[Order Cancel] New stock saved: ${product.stock}`);
+                } else {
+                    console.log(`[Order Cancel] Failed to find Product ID: ${productId} in database!`);
                 }
             }
         } else if (order.status === 'Cancelled' && status !== 'Cancelled') {
             // If they un-cancel it (e.g. back to Placed), reduce stock again
+            console.log(`[Order Un-Cancel] Removing stock for order ID ${order._id}`);
             for (const item of order.items) {
-                const product = await Product.findById(item.product);
+                const productId = item.product?._id || item.product;
+                if (!productId) continue;
+
+                const product = await Product.findById(productId);
                 if (product) {
+                    console.log(`[Order Un-Cancel] Found product ${product.name}. Old stock: ${product.stock}. Withdrawing -${item.quantity}`);
                     product.stock -= item.quantity;
                     if (product.stock < 0) product.stock = 0; // Prevent negative stock
                     await product.save();
+                    console.log(`[Order Un-Cancel] New stock saved: ${product.stock}`);
                 }
             }
         }
