@@ -54,6 +54,8 @@ router.post('/', protect, async (req, res) => {
 
             subtotal += itemPrice * item.quantity;
 
+            console.log(`[Order Creation Debug] Extracted productCode: "${product.productCode}" for product "${product.name}"`);
+
             orderItems.push({
                 product: product._id,
                 name: product.name,

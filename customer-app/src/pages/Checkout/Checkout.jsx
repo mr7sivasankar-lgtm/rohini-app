@@ -14,6 +14,7 @@ const Checkout = () => {
     const passedAddressId = location.state?.addressId || null;
 
     const [address, setAddress] = useState({
+        fullName: user?.name || '',
         fullAddress: '',
         city: '',
         district: '',
@@ -35,6 +36,7 @@ const Checkout = () => {
                     const found = res.data.data.find(a => a._id === passedAddressId);
                     if (found) {
                         setAddress({
+                            fullName: found.name || user?.name || '',
                             fullAddress: `${found.street}${found.landmark ? ', ' + found.landmark : ''}`,
                             city: found.city,
                             district: found.state,
@@ -56,8 +58,8 @@ const Checkout = () => {
         e.preventDefault();
         setError('');
 
-        if (!address.fullAddress || !phone) {
-            setError('Please fill in all required fields');
+        if (!address.fullName || !address.fullAddress || !phone) {
+            setError('Please fill in all required fields including Full Name');
             return;
         }
 
@@ -107,6 +109,17 @@ const Checkout = () => {
                 {/* Shipping Address */}
                 <div className="form-section">
                     <h2 className="section-title">Shipping Address</h2>
+
+                    <div className="form-group">
+                        <label>Full Name *</label>
+                        <input
+                            type="text"
+                            className="input"
+                            value={address.fullName}
+                            onChange={(e) => setAddress({ ...address, fullName: e.target.value })}
+                            required
+                        />
+                    </div>
 
                     <div className="form-group">
                         <label>Address *</label>
