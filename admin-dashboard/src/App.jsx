@@ -553,7 +553,9 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
                   👤
                 </div>
                 <div>
-                  <div style={{ fontWeight: 600 }}>{order.user?.name || 'N/A'}</div>
+                  <div style={{ fontWeight: 600 }}>
+                    {order.user?.name !== 'User' && order.user?.name ? order.user.name : (order.shippingAddress?.fullName || 'Customer')}
+                  </div>
                   <div style={{ fontSize: '0.85em', color: '#666' }}>{order.contactInfo?.phone}</div>
                 </div>
               </div>
