@@ -29,9 +29,11 @@ const orderSchema = new mongoose.Schema({
         color: String,
         status: {
             type: String,
-            enum: ['Active', 'Cancelled', 'Return Requested', 'Returned', 'Return Rejected', 'Exchange Requested', 'Exchanged', 'Exchange Rejected'],
+            enum: ['Active', 'Cancelled', 'Return Requested', 'Return Accepted', 'Out for Pickup', 'Return Picked Up', 'Returned', 'Return Rejected', 'Exchange Requested', 'Exchange Accepted', 'Out for Delivery (Exchange)', 'Exchanged', 'Exchange Rejected'],
             default: 'Active'
         },
+        exchangeSize: String,
+        exchangeColor: String,
         actionReason: {
             type: String,
             default: ''

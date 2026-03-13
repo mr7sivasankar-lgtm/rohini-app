@@ -12,6 +12,8 @@ const OrderTracking = () => {
     // Modal state
     const [actionModal, setActionModal] = useState({ isOpen: false, type: '', item: null });
     const [actionReason, setActionReason] = useState('');
+    const [actionExchangeSize, setActionExchangeSize] = useState('');
+    const [actionExchangeColor, setActionExchangeColor] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -37,11 +39,18 @@ const OrderTracking = () => {
         
         setIsSubmitting(true);
         try {
-            await api.put(`/orders/${order._id}/item-action`, {
+            const payload = {
                 itemId: actionModal.item._id,
                 action: actionModal.type,
                 reason: actionReason
-            });
+            };
+
+            if (actionModal.type === 'exchange') {
+                payload.exchangeSize = actionExchangeSize;
+                payload.exchangeColor = actionExchangeColor;
+            }
+
+            await api.put(`/orders/${order._id}/item-action`, payload);
             // Refresh order state
             await fetchOrder();
             closeModal();
@@ -55,11 +64,15 @@ const OrderTracking = () => {
     const openModal = (item, type) => {
         setActionModal({ isOpen: true, type, item });
         setActionReason('');
+        setActionExchangeSize('');
+        setActionExchangeColor('');
     };
 
     const closeModal = () => {
         setActionModal({ isOpen: false, type: '', item: null });
         setActionReason('');
+        setActionExchangeSize('');
+        setActionExchangeColor('');
     };
 
     if (loading) {
@@ -182,6 +195,39 @@ const OrderTracking = () => {
                                         </button>
                                     )}
                                 </div>
+
+                                {/* Mini Logistical Timeline for Returns & Exchanges */}
+                                {(item.status.includes('Return') || item.status.includes('Exchange')) && !item.status.includes('Rejected') && (
+                                    <div className="mini-timeline-container" style={{ marginTop: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+                                        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#64748b' }}>
+                                            {item.status.includes('Return') ? 'Return Status' : 'Exchange Status'}
+                                        </h5>
+                                        <div className="modern-timeline" style={{ padding: '0' }}>
+                                            {(() => {
+                                                const steps = item.status.includes('Return') 
+                                                    ? ['Return Requested', 'Return Accepted', 'Out for Pickup', 'Return Picked Up', 'Returned']
+                                                    : ['Exchange Requested', 'Exchange Accepted', 'Out for Delivery (Exchange)', 'Exchanged'];
+                                                
+                                                const currentIndex = steps.indexOf(item.status);
+                                                
+                                                return steps.map((step, idx) => {
+                                                    let dotClass = 'timeline-dot';
+                                                    if (idx === currentIndex) dotClass += ' current';
+                                                    else if (idx < currentIndex) dotClass += ' completed';
+                                                    
+                                                    return (
+                                                        <div key={step} className={`timeline-block ${idx <= currentIndex ? 'active' : ''}`} style={{ width: `${100 / steps.length}%` }}>
+                                                            <div className={dotClass} style={{ width: '24px', height: '24px', marginBottom: '6px' }}>
+                                                                {idx < currentIndex && <span className="check-mark" style={{ fontSize: '10px' }}>✓</span>}
+                                                            </div>
+                                                            <div className="timeline-title" style={{ fontSize: '10px' }}>{step.replace('Return', '').replace('Exchange', '').replace('(Exchange)', '').trim() || (item.status.includes('Return') ? 'Returned' : 'Exchanged')}</div>
+                                                        </div>
+                                                    )
+                                                });
+                                            })()}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}
@@ -243,6 +289,37 @@ const OrderTracking = () => {
                         </div>
                         
                         <div className="modal-form">
+                            {actionModal.type === 'exchange' && (
+                                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <label>New Size (Optional)</label>
+                                        <select 
+                                            value={actionExchangeSize} 
+                                            onChange={(e) => setActionExchangeSize(e.target.value)}
+                                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                                        >
+                                            <option value="">Same Size</option>
+                                            <option value="XS">XS</option>
+                                            <option value="S">S</option>
+                                            <option value="M">M</option>
+                                            <option value="L">L</option>
+                                            <option value="XL">XL</option>
+                                            <option value="XXL">XXL</option>
+                                        </select>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <label>New Color (Optional)</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="e.g. Red"
+                                            value={actionExchangeColor} 
+                                            onChange={(e) => setActionExchangeColor(e.target.value)}
+                                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
                             <label>Reason / Comments (Optional)</label>
                             <textarea 
                                 placeholder={`Why are you requesting a ${actionModal.type}?`}

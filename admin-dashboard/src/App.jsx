@@ -28,6 +28,8 @@ function App() {
   // Notification state
   const [newOrderCount, setNewOrderCount] = useState(0);
   const lastOrderCountRef = useRef(0);
+  const lastReturnCountRef = useRef(0);
+  const lastExchangeCountRef = useRef(0);
   const notificationAudioRef = useRef(null);
   const [notifDismissed, setNotifDismissed] = useState(false);
 
@@ -70,16 +72,31 @@ function App() {
         const response = await api.get('/orders/admin/all');
         if (response.data.success) {
           const placedCount = response.data.stats?.placed || 0;
+          const returnCount = response.data.stats?.returnRequests || 0;
+          const exchangeCount = response.data.stats?.exchangeRequests || 0;
 
-          // If new orders arrived, play notification sound and show Push Notification
+          let shouldAlert = false;
+          let notifBody = [];
+
           if (placedCount > lastOrderCountRef.current && lastOrderCountRef.current > 0) {
+            shouldAlert = true;
+            notifBody.push(`${placedCount - lastOrderCountRef.current} new order(s)`);
+          }
+          if (returnCount > lastReturnCountRef.current && lastReturnCountRef.current > 0) {
+            shouldAlert = true;
+            notifBody.push(`${returnCount - lastReturnCountRef.current} new return request(s)`);
+          }
+          if (exchangeCount > lastExchangeCountRef.current && lastExchangeCountRef.current > 0) {
+            shouldAlert = true;
+            notifBody.push(`${exchangeCount - lastExchangeCountRef.current} new exchange request(s)`);
+          }
+
+          if (shouldAlert) {
             playNotificationSound();
 
-            // Show Native Browser Push Notification
             if ('Notification' in window && Notification.permission === 'granted') {
-              const diff = placedCount - lastOrderCountRef.current;
-              const notif = new Notification('🛍️ New Order Received!', {
-                body: `You have ${diff} new order(s) waiting for acceptance.`,
+              const notif = new Notification('🔔 New Activity Detected!', {
+                body: `You have ${notifBody.join(', ')} waiting for review.`,
                 icon: '/favicon.ico',
                 vibrate: [200, 100, 200]
               });
@@ -91,7 +108,10 @@ function App() {
               };
             }
           }
+
           lastOrderCountRef.current = placedCount;
+          lastReturnCountRef.current = returnCount;
+          lastExchangeCountRef.current = exchangeCount;
           setNewOrderCount(placedCount);
         }
       } catch (error) {
@@ -563,6 +583,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
           <th>Order ID</th>
           <th>Customer</th>
           <th>Items Received</th>
+          <th>Item Logistics</th>
           <th>Product Code</th>
           <th>Quantity</th>
           <th>Delivery Address</th>
@@ -621,48 +642,13 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                           borderRadius: '4px',
                           fontSize: '0.8em',
                           fontWeight: 700,
-                          backgroundColor: item.status.includes('Requested') ? '#ffedd5' : '#fee2e2',
-                          color: item.status.includes('Requested') ? '#c2410c' : '#dc2626',
-                          border: `1px solid ${item.status.includes('Requested') ? '#fdba74' : '#fca5a5'}`
+                          backgroundColor: item.status.includes('Requested') ? '#ffedd5' : item.status.includes('Rejected') ? '#fef2f2' : item.status === 'Returned' || item.status === 'Exchanged' ? '#dcfce7' : '#e0f2fe',
+                          color: item.status.includes('Requested') ? '#c2410c' : item.status.includes('Rejected') ? '#991b1b' : item.status === 'Returned' || item.status === 'Exchanged' ? '#15803d' : '#0369a1',
+                          border: `1px solid ${item.status.includes('Requested') ? '#fdba74' : item.status.includes('Rejected') ? '#fecaca' : item.status === 'Returned' || item.status === 'Exchanged' ? '#86efac' : '#bae6fd'}`
                         }}>
                           {item.status}
-                          
-                          {/* Admin Action Hooks */}
-                          {item.status === 'Return Requested' && (
-                            <div style={{ display: 'flex', gap: '4px', marginLeft: '6px' }}>
-                              <button 
-                                onClick={() => handleUpdateItemStatus(order._id, item._id, 'Returned')}
-                                style={{ cursor: 'pointer', background: '#22c55e', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}
-                              >
-                                Approve
-                              </button>
-                              <button 
-                                onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Rejected')}
-                                style={{ cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          )}
-                          {item.status === 'Exchange Requested' && (
-                            <div style={{ display: 'flex', gap: '4px', marginLeft: '6px' }}>
-                              <button 
-                                onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchanged')}
-                                style={{ cursor: 'pointer', background: '#3b82f6', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}
-                              >
-                                Approve
-                              </button>
-                              <button 
-                                onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchange Rejected')}
-                                style={{ cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          )}
                         </div>
                       )}
-                      
                       {/* Customer Reason Note */}
                       {item.actionReason && (
                         <div style={{ fontSize: '0.85em', color: '#64748b', fontStyle: 'italic', marginTop: '4px', maxWidth: '200px' }}>
@@ -670,6 +656,49 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                         </div>
                       )}
                     </div>
+                  </li>
+                ))}
+              </ul>
+            </td>
+            <td>
+              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px' }}>
+                {order.items.map((item, idx) => (
+                  <li key={idx} style={{ display: 'flex', flexDirection: 'column', minHeight: '36px', alignItems: 'flex-start', justifyContent: 'center' }}>
+                    {item.exchangeSize || item.exchangeColor ? (
+                      <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 600, marginBottom: '4px' }}>
+                        Prefers: {item.exchangeSize && `Size ${item.exchangeSize}`} {item.exchangeColor && `Color ${item.exchangeColor}`}
+                      </div>
+                    ) : null}
+
+                    {/* Timeline Progression Actions */}
+                    {item.status === 'Return Requested' && (
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Accepted')} style={{ cursor: 'pointer', background: '#22c55e', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Approve</button>
+                        <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Rejected')} style={{ cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Reject</button>
+                      </div>
+                    )}
+                    {item.status === 'Return Accepted' && (
+                      <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Out for Pickup')} style={{ cursor: 'pointer', background: '#f59e0b', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Mark Out for Pickup</button>
+                    )}
+                    {item.status === 'Out for Pickup' && (
+                      <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Picked Up')} style={{ cursor: 'pointer', background: '#3b82f6', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Mark Picked Up</button>
+                    )}
+                    {item.status === 'Return Picked Up' && (
+                      <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Returned')} style={{ cursor: 'pointer', background: '#10b981', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>Complete Return</button>
+                    )}
+
+                    {item.status === 'Exchange Requested' && (
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchange Accepted')} style={{ cursor: 'pointer', background: '#22c55e', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Approve</button>
+                        <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchange Rejected')} style={{ cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Reject</button>
+                      </div>
+                    )}
+                    {item.status === 'Exchange Accepted' && (
+                      <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Out for Delivery (Exchange)')} style={{ cursor: 'pointer', background: '#f59e0b', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Mark Out for Delivery</button>
+                    )}
+                    {item.status === 'Out for Delivery (Exchange)' && (
+                      <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchanged')} style={{ cursor: 'pointer', background: '#10b981', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>Complete Exchange</button>
+                    )}
                   </li>
                 ))}
               </ul>

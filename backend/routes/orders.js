@@ -334,7 +334,7 @@ router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
 // @access  Private
 router.put('/:id/item-action', protect, async (req, res) => {
     try {
-        const { itemId, action, reason } = req.body;
+        const { itemId, action, reason, exchangeSize, exchangeColor } = req.body;
         const validActions = ['cancel', 'return', 'exchange'];
         
         if (!validActions.includes(action)) {
@@ -388,6 +388,8 @@ router.put('/:id/item-action', protect, async (req, res) => {
                 return res.status(400).json({ success: false, message: 'Item can only be exchanged after delivery.' });
             }
             item.status = 'Exchange Requested';
+            item.exchangeSize = exchangeSize || '';
+            item.exchangeColor = exchangeColor || '';
         }
 
         await order.save();
