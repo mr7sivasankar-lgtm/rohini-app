@@ -26,7 +26,16 @@ const orderSchema = new mongoose.Schema({
             min: 1
         },
         size: String,
-        color: String
+        color: String,
+        status: {
+            type: String,
+            enum: ['Active', 'Cancelled', 'Return Requested', 'Returned', 'Exchange Requested', 'Exchanged'],
+            default: 'Active'
+        },
+        actionReason: {
+            type: String,
+            default: ''
+        }
     }],
     shippingAddress: {
         fullName: { type: String },

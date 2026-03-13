@@ -9,6 +9,11 @@ const OrderTracking = () => {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // Modal state
+    const [actionModal, setActionModal] = useState({ isOpen: false, type: '', item: null });
+    const [actionReason, setActionReason] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     useEffect(() => {
         fetchOrder();
     }, [orderId]);
@@ -27,15 +32,46 @@ const OrderTracking = () => {
         }
     };
 
+    const handleActionItem = async () => {
+        if (!actionModal.item || !actionModal.type) return;
+        
+        setIsSubmitting(true);
+        try {
+            await api.put(`/orders/${order._id}/item-action`, {
+                itemId: actionModal.item._id,
+                action: actionModal.type,
+                reason: actionReason
+            });
+            // Refresh order state
+            await fetchOrder();
+            closeModal();
+        } catch (error) {
+            alert(error.response?.data?.message || 'Error processing request');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const openModal = (item, type) => {
+        setActionModal({ isOpen: true, type, item });
+        setActionReason('');
+    };
+
+    const closeModal = () => {
+        setActionModal({ isOpen: false, type: '', item: null });
+        setActionReason('');
+    };
+
     if (loading) {
-        return <div className="loading-container"><div className="spinner"></div></div>;
+        return <div className="tracking-loading"><div className="spinner"></div></div>;
     }
 
     if (!order) {
         return (
-            <div className="empty-state">
+            <div className="tracking-empty-state">
+                <div className="empty-icon">📦</div>
                 <h2>Order not found</h2>
-                <button className="btn btn-primary" onClick={() => navigate('/orders')}>
+                <button className="btn-modern primary" onClick={() => navigate('/orders')}>
                     View All Orders
                 </button>
             </div>
@@ -46,80 +82,196 @@ const OrderTracking = () => {
     const currentStepIndex = statusSteps.indexOf(order.status);
 
     return (
-        <div className="order-tracking-page">
-            <h1 className="page-title">Order Tracking</h1>
+        <div className="order-tracking-modern-page">
+            <div className="tracking-header">
+                <button className="back-button" onClick={() => navigate('/orders')}>
+                    <span className="back-icon">←</span> Back
+                </button>
+                <h1 className="page-title">Order Details</h1>
+            </div>
 
-            <div className="order-card">
-                <div className="order-header">
-                    <div>
+            <div className="tracking-card">
+                <div className="order-meta-header">
+                    <div className="order-meta-left">
                         <h2>Order #{order.orderId}</h2>
-                        <p className="order-date">{new Date(order.createdAt).toLocaleDateString()}</p>
+                        <span className="order-date">{new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                     </div>
-                    <div className={`status-badge status-${order.status.toLowerCase().replace(' ', '-')}`}>
+                    <span className={`status-pill status-${order.status.toLowerCase().replace(/ /g, '-')}`}>
                         {order.status}
-                    </div>
+                    </span>
                 </div>
 
                 {/* Status Timeline */}
-                <div className="status-timeline">
-                    {statusSteps.map((step, index) => (
-                        <div key={step} className={`timeline-step ${index <= currentStepIndex ? 'completed' : ''}`}>
-                            <div className="timeline-dot"></div>
-                            <div className="timeline-label">{step}</div>
-                        </div>
-                    ))}
+                <div className="modern-timeline">
+                    {statusSteps.map((step, index) => {
+                        let dotClass = 'timeline-dot';
+                        if (index === currentStepIndex) dotClass += ' current';
+                        else if (index < currentStepIndex) dotClass += ' completed';
+                        
+                        return (
+                            <div key={step} className={`timeline-block ${index <= currentStepIndex ? 'active' : ''}`}>
+                                <div className={dotClass}>
+                                    {index < currentStepIndex && <span className="check-mark">✓</span>}
+                                </div>
+                                <div className="timeline-title">{step}</div>
+                            </div>
+                        )
+                    })}
                 </div>
+            </div>
 
-                {/* Order Items */}
-                <div className="order-items-section">
-                    <h3>Items ({order.items.length})</h3>
+            {/* Order Items List */}
+            <div className="tracking-card">
+                <h3 className="section-title">Items ({order.items.length})</h3>
+                <div className="items-grid">
                     {order.items.map((item, index) => (
-                        <div key={index} className="order-item">
-                            <img src={getImageUrl(item.image)} alt={item.name} />
-                            <div className="item-details">
-                                <div className="item-name">{item.name}</div>
-                                {item.productCode && (
-                                    <div className="item-meta" style={{ color: '#4f46e5', fontWeight: 600 }}>Code: {item.productCode}</div>
+                        <div key={index} className="modern-order-item">
+                            <img src={getImageUrl(item.image)} alt={item.name} className="item-img" />
+                            <div className="item-info">
+                                <div className="item-name-row">
+                                    <h4 className="item-name">{item.name}</h4>
+                                    <span className="item-price">₹{item.price.toFixed(2)}</span>
+                                </div>
+                                
+                                <div className="item-specs">
+                                    <span>Qty: <strong>{item.quantity}</strong></span>
+                                    {item.productCode && (
+                                        <span className="item-code">Code: {item.productCode}</span>
+                                    )}
+                                </div>
+
+                                {(item.size || item.color) && (
+                                    <div className="item-variants">
+                                        {item.size && <span>Size: {item.size}</span>}
+                                        {item.color && <span>Color: {item.color}</span>}
+                                    </div>
                                 )}
-                                <div className="item-meta">Qty: {item.quantity} • ₹{item.price.toFixed(2)}</div>
-                                {order.status === 'Delivered' && (
-                                    <button
-                                        className="review-item-btn"
-                                        onClick={() => navigate(`/product/${item.product}`)}
-                                    >
-                                        ⭐ Rate & Review
-                                    </button>
-                                )}
+
+                                {/* Action Buttons Logic based on Item Status and Order Status */}
+                                <div className="item-actions-row">
+                                    {item.status !== 'Active' ? (
+                                        <div className={`item-status-flag flag-${item.status.replace(/ /g, '-').toLowerCase()}`}>
+                                            {item.status}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* CANCEL ITEM if Order is early stage */}
+                                            {(order.status === 'Placed' || order.status === 'Accepted') && (
+                                                <button className="btn-action action-cancel" onClick={() => openModal(item, 'cancel')}>
+                                                    Cancel Item
+                                                </button>
+                                            )}
+
+                                            {/* RETURN/EXCHANGE ITEM if Order is Delivered */}
+                                            {order.status === 'Delivered' && (
+                                                <div className="delivered-actions">
+                                                    <button className="btn-action action-return" onClick={() => openModal(item, 'return')}>
+                                                        Return
+                                                    </button>
+                                                    <button className="btn-action action-exchange" onClick={() => openModal(item, 'exchange')}>
+                                                        Exchange
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {order.status === 'Delivered' && item.status === 'Active' && (
+                                        <button className="btn-action action-review" onClick={() => navigate(`/product/${item.product._id || item.product}`)}>
+                                            ⭐ Review
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
                 </div>
+            </div>
 
+            <div className="split-cards">
                 {/* Delivery Address */}
-                <div className="address-section">
-                    <h3>Delivery Address</h3>
-                    <p>{order.shippingAddress.fullAddress}</p>
-                    {order.shippingAddress.city && <p>{order.shippingAddress.city}, {order.shippingAddress.district}</p>}
-                    {order.shippingAddress.pincode && <p>Pincode: {order.shippingAddress.pincode}</p>}
+                <div className="tracking-card flex-half">
+                    <h3 className="section-title">Delivery Address</h3>
+                    <div className="address-box">
+                        <div className="address-icon">📍</div>
+                        <div className="address-details">
+                            <p className="address-name">{order.shippingAddress.fullName}</p>
+                            <p>{order.shippingAddress.fullAddress}</p>
+                            {(order.shippingAddress.city || order.shippingAddress.district) && (
+                                <p>{order.shippingAddress.city}{order.shippingAddress.city && ','} {order.shippingAddress.district}</p>
+                            )}
+                            {order.shippingAddress.pincode && <p>PIN: {order.shippingAddress.pincode}</p>}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Order Summary */}
-                <div className="order-summary">
-                    <div className="summary-row">
-                        <span>Subtotal</span>
-                        <span>₹{order.subtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="summary-row">
-                        <span>Delivery Fee</span>
-                        <span>₹{order.deliveryFee.toFixed(2)}</span>
-                    </div>
-                    <div className="summary-divider"></div>
-                    <div className="summary-row summary-total">
-                        <span>Total</span>
-                        <span>₹{order.total.toFixed(2)}</span>
+                <div className="tracking-card flex-half">
+                    <h3 className="section-title">Payment Summary</h3>
+                    <div className="payment-summary">
+                        <div className="summary-line">
+                            <span>Subtotal</span>
+                            <span>₹{order.subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="summary-line">
+                            <span>Delivery Fee</span>
+                            <span>{order.deliveryFee > 0 ? `₹${order.deliveryFee.toFixed(2)}` : 'FREE'}</span>
+                        </div>
+                        <div className="summary-divider"></div>
+                        <div className="summary-line total-line">
+                            <span>Total</span>
+                            <span>₹{order.total.toFixed(2)}</span>
+                        </div>
+                        <div className="payment-method-badge">
+                            Payment: {order.paymentMethod}
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* Action Modal (Cancel/Return/Exchange) */}
+            {actionModal.isOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content modern-modal">
+                        <h3>{actionModal.type.charAt(0).toUpperCase() + actionModal.type.slice(1)} Item</h3>
+                        <div className="modal-item-preview">
+                            <img src={getImageUrl(actionModal.item.image)} alt={actionModal.item.name} />
+                            <div>
+                                <h4>{actionModal.item.name}</h4>
+                                <span>Qty: {actionModal.item.quantity}</span>
+                            </div>
+                        </div>
+                        
+                        <div className="modal-form">
+                            <label>Reason / Comments (Optional)</label>
+                            <textarea 
+                                placeholder={`Why are you requesting a ${actionModal.type}?`}
+                                value={actionReason}
+                                onChange={(e) => setActionReason(e.target.value)}
+                                rows={3}
+                            ></textarea>
+                            <p className="modal-warning">
+                                {actionModal.type === 'cancel' 
+                                    ? 'This item will be permanently cancelled'
+                                    : `Your ${actionModal.type} request will be reviewed by our team.`}
+                            </p>
+                        </div>
+
+                        <div className="modal-actions">
+                            <button className="btn-modern secondary" onClick={closeModal} disabled={isSubmitting}>
+                                No, Keep It
+                            </button>
+                            <button 
+                                className={`btn-modern ${actionModal.type === 'cancel' ? 'danger' : 'warning'}`} 
+                                onClick={handleActionItem}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? 'Processing...' : `Confirm ${actionModal.type}`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

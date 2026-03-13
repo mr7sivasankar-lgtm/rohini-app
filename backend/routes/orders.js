@@ -280,7 +280,124 @@ router.delete('/admin/:id', protect, adminOnly, async (req, res) => {
     }
 });
 
+// @route   PUT /api/orders/admin/:id/item-status
+// @desc    Update specific item status (admin)
+// @access  Private/Admin
+router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
+    try {
+        const { itemId, status } = req.body;
+        
+        const order = await Order.findById(req.params.id);
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        const item = order.items.id(itemId);
+        if (!item) {
+            return res.status(404).json({ success: false, message: 'Item not found in order' });
+        }
+
+        // Handle stock refunds for admin approvals
+        if (status === 'Returned' && item.status !== 'Returned') {
+            const productId = item.product?._id || item.product;
+            if (productId) {
+                const product = await Product.findById(productId);
+                if (product) {
+                    product.stock += item.quantity;
+                    await product.save();
+                }
+            }
+        } // Exchanges usually mean they send the old one back and we send a new one, net 0 stock impact.
+
+        item.status = status;
+        await order.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Item status updated to ${status}`,
+            data: order
+        });
+    } catch (error) {
+        console.error('Update item status error:', error);
+        res.status(500).json({ success: false, message: 'Error updating item status' });
+    }
+});
+
 // ========== DYNAMIC ROUTE (must be LAST) ==========
+
+// @route   PUT /api/orders/:id/item-action
+// @desc    Customer request to Cancel/Return/Exchange an item
+// @access  Private
+router.put('/:id/item-action', protect, async (req, res) => {
+    try {
+        const { itemId, action, reason } = req.body;
+        const validActions = ['cancel', 'return', 'exchange'];
+        
+        if (!validActions.includes(action)) {
+            return res.status(400).json({ success: false, message: 'Invalid action request' });
+        }
+
+        const order = await Order.findById(req.params.id);
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        // Security check
+        if (order.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
+
+        const item = order.items.id(itemId);
+        if (!item) {
+            return res.status(404).json({ success: false, message: 'Item not found in order' });
+        }
+
+        if (item.status !== 'Active') {
+            return res.status(400).json({ success: false, message: `Item is already marked as ${item.status}` });
+        }
+
+        item.actionReason = reason || '';
+
+        // Process based on action
+        if (action === 'cancel') {
+            if (order.status !== 'Placed' && order.status !== 'Accepted') {
+                return res.status(400).json({ success: false, message: 'Order has already progressed beyond cancellation. Please return it instead.'});
+            }
+            item.status = 'Cancelled';
+            
+            // Refund stock immediately for cancellations
+            const productId = item.product?._id || item.product;
+            if (productId) {
+                const product = await Product.findById(productId);
+                if (product) {
+                    product.stock += item.quantity;
+                    await product.save();
+                }
+            }
+        } else if (action === 'return') {
+            if (order.status !== 'Delivered') {
+                return res.status(400).json({ success: false, message: 'Item can only be returned after delivery.' });
+            }
+            item.status = 'Return Requested';
+        } else if (action === 'exchange') {
+            if (order.status !== 'Delivered') {
+                return res.status(400).json({ success: false, message: 'Item can only be exchanged after delivery.' });
+            }
+            item.status = 'Exchange Requested';
+        }
+
+        await order.save();
+        res.status(200).json({
+            success: true,
+            message: `Item ${action} processed successfully!`,
+            data: order
+        });
+
+    } catch (error) {
+        console.error('Item action error:', error);
+        res.status(500).json({ success: false, message: 'Error processing item request' });
+    }
+});
 
 // @route   GET /api/orders/:id
 // @desc    Get order by ID

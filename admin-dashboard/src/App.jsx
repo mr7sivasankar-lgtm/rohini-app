@@ -186,6 +186,18 @@ function App() {
     }
   };
 
+  const handleUpdateItemStatus = async (orderId, itemId, status) => {
+    const action = status === 'Returned' ? 'return' : 'exchange';
+    if (!window.confirm(`Approve this ${action}? Stock will be refunded if applicable.`)) return;
+
+    try {
+      await api.put(`/orders/admin/${orderId}/item-status`, { itemId, status });
+      fetchOrders();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to update item status');
+    }
+  };
+
   const deleteOrder = async (id) => {
     if (!window.confirm('Delete this order permanently?')) return;
     try {
@@ -401,7 +413,7 @@ function App() {
             <div className="card">
               <h2 style={{ marginBottom: 20 }}>Recent Orders</h2>
               <div className="table-responsive">
-                <OrdersTable orders={orders.slice(0, 10)} updateStatus={updateOrderStatus} />
+                <OrdersTable orders={orders.slice(0, 10)} updateStatus={updateOrderStatus} handleUpdateItemStatus={handleUpdateItemStatus} />
               </div>
             </div>
           </div>
@@ -416,7 +428,7 @@ function App() {
 
             <div className="card">
               <div className="table-responsive">
-                <OrdersTable orders={orders} updateStatus={updateOrderStatus} deleteOrder={deleteOrder} />
+                <OrdersTable orders={orders} updateStatus={updateOrderStatus} deleteOrder={deleteOrder} handleUpdateItemStatus={handleUpdateItemStatus} />
               </div>
             </div>
           </div>
@@ -525,7 +537,7 @@ function App() {
   );
 }
 
-const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
+const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus }) => {
   const statusOptions = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
   return (
@@ -580,6 +592,49 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder }) => {
                           {item.size ? `Size: ${item.size}` : ''}
                           {item.size && item.color ? ' | ' : ''}
                           {item.color ? `Color: ${item.color}` : ''}
+                        </div>
+                      )}
+                      {/* Item Level Status Flag */}
+                      {item.status && item.status !== 'Active' && (
+                        <div style={{
+                          marginTop: '4px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.8em',
+                          fontWeight: 700,
+                          backgroundColor: item.status.includes('Requested') ? '#ffedd5' : '#fee2e2',
+                          color: item.status.includes('Requested') ? '#c2410c' : '#dc2626',
+                          border: `1px solid ${item.status.includes('Requested') ? '#fdba74' : '#fca5a5'}`
+                        }}>
+                          {item.status}
+                          
+                          {/* Admin Action Hooks */}
+                          {item.status === 'Return Requested' && (
+                            <button 
+                              onClick={() => handleUpdateItemStatus(order._id, item._id, 'Returned')}
+                              style={{ marginLeft: '6px', cursor: 'pointer', background: '#22c55e', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}
+                            >
+                              Approve Return
+                            </button>
+                          )}
+                          {item.status === 'Exchange Requested' && (
+                            <button 
+                              onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchanged')}
+                              style={{ marginLeft: '6px', cursor: 'pointer', background: '#3b82f6', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}
+                            >
+                              Approve Exchange
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Customer Reason Note */}
+                      {item.actionReason && (
+                        <div style={{ fontSize: '0.85em', color: '#64748b', fontStyle: 'italic', marginTop: '4px', maxWidth: '200px' }}>
+                          " {item.actionReason} "
                         </div>
                       )}
                     </div>
