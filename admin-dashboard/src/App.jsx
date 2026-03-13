@@ -187,8 +187,12 @@ function App() {
   };
 
   const handleUpdateItemStatus = async (orderId, itemId, status) => {
-    const action = status === 'Returned' ? 'return' : 'exchange';
-    if (!window.confirm(`Approve this ${action}? Stock will be refunded if applicable.`)) return;
+    let actionStr = 'Confirm this action?';
+    if (status === 'Returned') actionStr = 'Approve this return? Stock will be refunded.';
+    else if (status === 'Exchanged') actionStr = 'Approve this exchange?';
+    else if (status.includes('Rejected')) actionStr = 'Reject this request? The customer will be denied.';
+
+    if (!window.confirm(actionStr)) return;
 
     try {
       await api.put(`/orders/admin/${orderId}/item-status`, { itemId, status });
@@ -400,12 +404,16 @@ function App() {
                   <div className="value" style={{ color: 'var(--warning)' }}>{stats.placed}</div>
                 </div>
                 <div className="stat-card">
-                  <h3>Out for Delivery</h3>
-                  <div className="value" style={{ color: 'var(--primary)' }}>{stats.outForDelivery}</div>
-                </div>
-                <div className="stat-card">
                   <h3>Delivered</h3>
                   <div className="value" style={{ color: 'var(--success)' }}>{stats.delivered}</div>
+                </div>
+                <div className="stat-card" style={{ borderTop: '4px solid #f97316' }}>
+                  <h3>Return Requests</h3>
+                  <div className="value" style={{ color: '#c2410c' }}>{stats.returnRequests || 0}</div>
+                </div>
+                <div className="stat-card" style={{ borderTop: '4px solid #8b5cf6' }}>
+                  <h3>Exchange Requests</h3>
+                  <div className="value" style={{ color: '#6d28d9' }}>{stats.exchangeRequests || 0}</div>
                 </div>
               </div>
             )}
@@ -613,20 +621,36 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                           
                           {/* Admin Action Hooks */}
                           {item.status === 'Return Requested' && (
-                            <button 
-                              onClick={() => handleUpdateItemStatus(order._id, item._id, 'Returned')}
-                              style={{ marginLeft: '6px', cursor: 'pointer', background: '#22c55e', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}
-                            >
-                              Approve Return
-                            </button>
+                            <div style={{ display: 'flex', gap: '4px', marginLeft: '6px' }}>
+                              <button 
+                                onClick={() => handleUpdateItemStatus(order._id, item._id, 'Returned')}
+                                style={{ cursor: 'pointer', background: '#22c55e', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}
+                              >
+                                Approve
+                              </button>
+                              <button 
+                                onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Rejected')}
+                                style={{ cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}
+                              >
+                                Reject
+                              </button>
+                            </div>
                           )}
                           {item.status === 'Exchange Requested' && (
-                            <button 
-                              onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchanged')}
-                              style={{ marginLeft: '6px', cursor: 'pointer', background: '#3b82f6', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}
-                            >
-                              Approve Exchange
-                            </button>
+                            <div style={{ display: 'flex', gap: '4px', marginLeft: '6px' }}>
+                              <button 
+                                onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchanged')}
+                                style={{ cursor: 'pointer', background: '#3b82f6', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}
+                              >
+                                Approve
+                              </button>
+                              <button 
+                                onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchange Rejected')}
+                                style={{ cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}
+                              >
+                                Reject
+                              </button>
+                            </div>
                           )}
                         </div>
                       )}

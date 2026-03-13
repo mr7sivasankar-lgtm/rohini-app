@@ -29,7 +29,7 @@ const orderSchema = new mongoose.Schema({
         color: String,
         status: {
             type: String,
-            enum: ['Active', 'Cancelled', 'Return Requested', 'Returned', 'Exchange Requested', 'Exchanged'],
+            enum: ['Active', 'Cancelled', 'Return Requested', 'Returned', 'Return Rejected', 'Exchange Requested', 'Exchanged', 'Exchange Rejected'],
             default: 'Active'
         },
         actionReason: {

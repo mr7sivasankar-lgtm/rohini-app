@@ -152,7 +152,9 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
             packed: await Order.countDocuments({ status: 'Packed' }),
             outForDelivery: await Order.countDocuments({ status: 'Out for Delivery' }),
             delivered: await Order.countDocuments({ status: 'Delivered' }),
-            cancelled: await Order.countDocuments({ status: 'Cancelled' })
+            cancelled: await Order.countDocuments({ status: 'Cancelled' }),
+            returnRequests: await Order.countDocuments({ 'items.status': 'Return Requested' }),
+            exchangeRequests: await Order.countDocuments({ 'items.status': 'Exchange Requested' })
         };
 
         res.status(200).json({

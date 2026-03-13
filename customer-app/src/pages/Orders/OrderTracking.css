@@ -305,8 +305,10 @@
 .flag-cancelled { background: #fee2e2; color: #dc2626; border: 1px dashed #fca5a5; }
 .flag-return-requested { background: #ffedd5; color: #c2410c; border: 1px dashed #fdba74; }
 .flag-returned { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.flag-return-rejected { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 .flag-exchange-requested { background: #e0e7ff; color: #4338ca; border: 1px dashed #a5b4fc; }
 .flag-exchanged { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+.flag-exchange-rejected { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
 /* Desktop Split Cards */
 .split-cards {
