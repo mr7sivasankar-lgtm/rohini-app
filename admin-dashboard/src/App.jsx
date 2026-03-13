@@ -415,6 +415,14 @@ function App() {
                   <h3>Exchange Requests</h3>
                   <div className="value" style={{ color: '#6d28d9' }}>{stats.exchangeRequests || 0}</div>
                 </div>
+                <div className="stat-card" style={{ borderTop: '4px solid #10b981' }}>
+                  <h3>Returned</h3>
+                  <div className="value" style={{ color: '#047857' }}>{stats.returned || 0}</div>
+                </div>
+                <div className="stat-card" style={{ borderTop: '4px solid #3b82f6' }}>
+                  <h3>Exchanged</h3>
+                  <div className="value" style={{ color: '#1d4ed8' }}>{stats.exchanged || 0}</div>
+                </div>
               </div>
             )}
 
