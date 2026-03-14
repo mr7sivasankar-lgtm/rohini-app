@@ -963,6 +963,33 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                     {item.status === 'Out for Delivery (Exchange)' && (
                       <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchanged')} style={{ cursor: 'pointer', background: '#10b981', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>Complete Exchange</button>
                     )}
+
+                    {/* Terminal Status Display Chips */}
+                    {item.status === 'Returned' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
+                        ✅ Return Completed
+                      </div>
+                    )}
+                    {item.status === 'Exchanged' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#ede9fe', color: '#6d28d9', border: '1px solid #c4b5fd', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
+                        ✅ Exchange Completed
+                      </div>
+                    )}
+                    {item.status === 'Return Rejected' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
+                        ❌ Return Rejected
+                      </div>
+                    )}
+                    {item.status === 'Exchange Rejected' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
+                        ❌ Exchange Rejected
+                      </div>
+                    )}
+                    {item.status === 'Cancelled' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
+                        ❌ Cancelled
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
