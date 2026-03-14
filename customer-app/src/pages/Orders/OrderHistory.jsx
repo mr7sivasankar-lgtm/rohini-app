@@ -60,9 +60,28 @@ const OrderHistory = () => {
                                     })}
                                 </p>
                             </div>
-                            <div className={`status-badge status-${order.status.toLowerCase().replace(' ', '-')}`}>
-                                {order.status}
-                            </div>
+                            {(() => {
+                                // Find if any items have an active return/exchange state
+                                const activeItem = order.items.find(item => 
+                                    item.status !== 'Active' && 
+                                    !item.status.includes('Completed') && 
+                                    !item.status.includes('Rejected') && 
+                                    item.status !== 'Cancelled'
+                                );
+                                
+                                // Alternatively, if any item is completed/rejected and no others are active
+                                const resolvedItem = order.items.find(item => 
+                                    item.status.includes('Completed') || item.status.includes('Rejected')
+                                );
+
+                                const effectiveStatus = activeItem ? activeItem.status : (resolvedItem ? resolvedItem.status : order.status);
+
+                                return (
+                                    <div className={`status-badge status-${effectiveStatus.toLowerCase().replace(/ /g, '-')}`}>
+                                        {effectiveStatus}
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         <div className="order-items-preview">

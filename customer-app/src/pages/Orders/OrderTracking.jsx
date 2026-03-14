@@ -118,13 +118,16 @@ const OrderTracking = () => {
                 <div className="modern-timeline">
                     {statusSteps.map((step, index) => {
                         let dotClass = 'timeline-dot';
-                        if (index === currentStepIndex) dotClass += ' current';
-                        else if (index < currentStepIndex) dotClass += ' completed';
+                        // If we are at the very last step (Delivered/Cancelled), it should be a checkmark too because it's completely finished
+                        const isFinished = index === currentStepIndex && index === statusSteps.length - 1;
+
+                        if (isFinished || index < currentStepIndex) dotClass += ' completed';
+                        else if (index === currentStepIndex) dotClass += ' current';
                         
                         return (
                             <div key={step} className={`timeline-block ${index <= currentStepIndex ? 'active' : ''}`}>
                                 <div className={dotClass}>
-                                    {index < currentStepIndex && <span className="check-mark">✓</span>}
+                                    {(isFinished || index < currentStepIndex) && <span className="check-mark">✓</span>}
                                 </div>
                                 <div className="timeline-title">{step}</div>
                             </div>
@@ -212,13 +215,15 @@ const OrderTracking = () => {
                                                 
                                                 return steps.map((step, idx) => {
                                                     let dotClass = 'timeline-dot';
-                                                    if (idx === currentIndex) dotClass += ' current';
-                                                    else if (idx < currentIndex) dotClass += ' completed';
+                                                    const isFinished = idx === currentIndex && idx === steps.length - 1;
+
+                                                    if (isFinished || idx < currentIndex) dotClass += ' completed';
+                                                    else if (idx === currentIndex) dotClass += ' current';
                                                     
                                                     return (
                                                         <div key={step} className={`timeline-block ${idx <= currentIndex ? 'active' : ''}`} style={{ width: `${100 / steps.length}%` }}>
                                                             <div className={dotClass} style={{ width: '24px', height: '24px', marginBottom: '6px' }}>
-                                                                {idx < currentIndex && <span className="check-mark" style={{ fontSize: '10px' }}>✓</span>}
+                                                                {(isFinished || idx < currentIndex) && <span className="check-mark" style={{ fontSize: '10px' }}>✓</span>}
                                                             </div>
                                                             <div className="timeline-title" style={{ fontSize: '10px' }}>{step.replace('Return', '').replace('Exchange', '').replace('(Exchange)', '').trim() || (item.status.includes('Return') ? 'Completed' : 'Completed')}</div>
                                                         </div>
