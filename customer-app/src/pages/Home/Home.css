@@ -535,12 +535,12 @@
 }
 
 .header-location-label {
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100px;
+    max-width: 130px;
 }
 
 /* Location Picker Modal */
