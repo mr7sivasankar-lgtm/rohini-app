@@ -145,24 +145,89 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(parseInt(limit));
 
+        // Define 'Today' timeframe
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // 7 Days Ago timeframe for charts
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+        // Calculate "Today" stats
+        const ordersTodayCount = await Order.countDocuments({ createdAt: { $gte: today } });
+        
+        // Revenue Today (Count only delivered or placed/accepted orders that aren't cancelled/returned)
+        const revenueTodayRecords = await Order.aggregate([
+            { $match: { 
+                createdAt: { $gte: today },
+                status: { $nin: ['Cancelled', 'Returned', 'Return Picked Up', 'Return Accepted'] }
+            }},
+            { $group: { _id: null, totalRevenue: { $sum: "$total" } } }
+        ]);
+        const revenueToday = revenueTodayRecords.length > 0 ? revenueTodayRecords[0].totalRevenue : 0;
+
+        const deliveredToday = await Order.countDocuments({ 
+            status: 'Delivered', 
+            updatedAt: { $gte: today } 
+        });
+
+        const cancelledTodayCount = await Order.countDocuments({ 
+            status: 'Cancelled', 
+            updatedAt: { $gte: today } 
+        });
+
+        const pendingCount = await Order.countDocuments({ status: { $in: ['Placed', 'Accepted'] } });
+
+        // Calculate Chart Data (Last 7 Days)
+        const dailyStats = await Order.aggregate([
+            { $match: { 
+                createdAt: { $gte: sevenDaysAgo },
+                status: { $nin: ['Cancelled', 'Returned'] }
+            }},
+            { $group: {
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                revenue: { $sum: "$total" },
+                orders: { $sum: 1 }
+            }},
+            { $sort: { _id: 1 } }
+        ]);
+
+        // Top Selling Products (Lifetime or Recent)
+        const topProducts = await Order.aggregate([
+            { $match: { status: { $nin: ['Cancelled', 'Returned'] } } },
+            { $unwind: "$items" },
+            { $group: {
+                _id: "$items.productCode",
+                name: { $first: "$items.name" },
+                totalSold: { $sum: "$items.quantity" },
+                revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
+            }},
+            { $sort: { totalSold: -1 } },
+            { $limit: 5 }
+        ]);
+
         const stats = {
             total: await Order.countDocuments(),
-            placed: await Order.countDocuments({ status: 'Placed' }),
-            accepted: await Order.countDocuments({ status: 'Accepted' }),
-            packed: await Order.countDocuments({ status: 'Packed' }),
+            ordersToday: ordersTodayCount,
+            revenueToday: revenueToday,
+            pending: pendingCount,
             outForDelivery: await Order.countDocuments({ status: 'Out for Delivery' }),
-            delivered: await Order.countDocuments({ status: 'Delivered' }),
-            cancelled: await Order.countDocuments({ status: 'Cancelled' }),
+            deliveredToday: deliveredToday,
+            cancelledToday: cancelledTodayCount,
             returnRequests: await Order.countDocuments({ 'items.status': 'Return Requested' }),
-            exchangeRequests: await Order.countDocuments({ 'items.status': 'Exchange Requested' }),
-            returned: await Order.countDocuments({ 'items.status': 'Returned' }),
-            exchanged: await Order.countDocuments({ 'items.status': 'Exchanged' })
+            exchangeRequests: await Order.countDocuments({ 'items.status': 'Exchange Requested' })
+        };
+
+        const charts = {
+            daily: dailyStats,
+            topProducts: topProducts.filter(p => p._id) // Remove null product codes
         };
 
         res.status(200).json({
             success: true,
             data: orders,
-            stats
+            stats,
+            charts
         });
     } catch (error) {
         console.error('Get all orders error:', error);

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import api, { getImageUrl } from './utils/api';
 import ProductForm from './components/ProductForm';
 import ServiceAreas from './components/ServiceAreas';
+import { DashboardCharts } from './components/DashboardCharts';
 import Users from './components/Users';
 import './index.css';
 
@@ -20,6 +21,7 @@ function App() {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [chartsData, setChartsData] = useState(null);
 
   // Product Form State
   const [showProductForm, setShowProductForm] = useState(false);
@@ -180,6 +182,9 @@ function App() {
       if (response.data.success) {
         setOrders(response.data.data);
         setStats(response.data.stats);
+        if (response.data.charts) {
+          setChartsData(response.data.charts);
+        }
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -480,21 +485,29 @@ function App() {
 
             {stats && (
               <div className="stats-grid">
-                <div className="stat-card">
-                  <h3>Total Orders</h3>
-                  <div className="value">{stats.total}</div>
+                <div className="stat-card" style={{ borderTop: '4px solid #3b82f6' }}>
+                  <h3>Orders Today</h3>
+                  <div className="value">{stats.ordersToday || 0}</div>
                 </div>
-                <div className="stat-card">
-                  <h3>Pending</h3>
-                  <div className="value" style={{ color: 'var(--warning)' }}>{stats.placed}</div>
+                <div className="stat-card" style={{ borderTop: '4px solid #10b981' }}>
+                  <h3>Revenue Today</h3>
+                  <div className="value" style={{ color: '#047857' }}>₹{stats.revenueToday?.toFixed(0) || 0}</div>
                 </div>
-                <div className="stat-card">
-                  <h3>Delivered</h3>
-                  <div className="value" style={{ color: 'var(--success)' }}>{stats.delivered}</div>
+                <div className="stat-card" style={{ borderTop: '4px solid #f59e0b' }}>
+                  <h3>Pending Orders</h3>
+                  <div className="value" style={{ color: '#b45309' }}>{stats.pending || 0}</div>
+                </div>
+                <div className="stat-card" style={{ borderTop: '4px solid #06b6d4' }}>
+                  <h3>Out for Delivery</h3>
+                  <div className="value" style={{ color: '#0e7490' }}>{stats.outForDelivery || 0}</div>
+                </div>
+                <div className="stat-card" style={{ borderTop: '4px solid #22c55e' }}>
+                  <h3>Delivered Today</h3>
+                  <div className="value" style={{ color: '#16a34a' }}>{stats.deliveredToday || 0}</div>
                 </div>
                 <div className="stat-card" style={{ borderTop: '4px solid #ef4444' }}>
-                  <h3>Cancelled</h3>
-                  <div className="value" style={{ color: '#dc2626' }}>{stats.cancelled || 0}</div>
+                  <h3>Cancelled Today</h3>
+                  <div className="value" style={{ color: '#dc2626' }}>{stats.cancelledToday || 0}</div>
                 </div>
                 <div className="stat-card" style={{ borderTop: '4px solid #f97316' }}>
                   <h3>Return Requests</h3>
@@ -504,16 +517,10 @@ function App() {
                   <h3>Exchange Requests</h3>
                   <div className="value" style={{ color: '#6d28d9' }}>{stats.exchangeRequests || 0}</div>
                 </div>
-                <div className="stat-card" style={{ borderTop: '4px solid #10b981' }}>
-                  <h3>Returned</h3>
-                  <div className="value" style={{ color: '#047857' }}>{stats.returned || 0}</div>
-                </div>
-                <div className="stat-card" style={{ borderTop: '4px solid #3b82f6' }}>
-                  <h3>Exchanged</h3>
-                  <div className="value" style={{ color: '#1d4ed8' }}>{stats.exchanged || 0}</div>
-                </div>
               </div>
             )}
+
+            <DashboardCharts chartsData={chartsData} />
 
             <div className="card">
               <h2 style={{ marginBottom: 20 }}>Recent Orders</h2>
@@ -525,18 +532,12 @@ function App() {
         )}
 
         {activeTab === 'orders' && (
-          <div>
-            <div className="page-header">
-              <h1>Order Management</h1>
-              <p>Manage all customer orders</p>
-            </div>
-
-            <div className="card">
-              <div className="table-responsive">
-                <OrdersTable orders={orders} updateStatus={updateOrderStatus} deleteOrder={deleteOrder} handleUpdateItemStatus={handleUpdateItemStatus} />
-              </div>
-            </div>
-          </div>
+          <OrderManagementTab
+            orders={orders}
+            updateOrderStatus={updateOrderStatus}
+            deleteOrder={deleteOrder}
+            handleUpdateItemStatus={handleUpdateItemStatus}
+          />
         )}
 
         {activeTab === 'products' && (
@@ -642,7 +643,128 @@ function App() {
   );
 }
 
+const ORDER_FILTER_TABS = [
+  { label: 'All Orders', value: 'all' },
+  { label: 'New', value: 'Placed' },
+  { label: 'Accepted', value: 'Accepted' },
+  { label: 'Packed', value: 'Packed' },
+  { label: 'Out for Delivery', value: 'Out for Delivery' },
+  { label: 'Delivered', value: 'Delivered' },
+  { label: 'Cancelled', value: 'Cancelled' },
+  { label: 'Returns', value: 'return' },
+  { label: 'Exchanges', value: 'exchange' },
+];
+
+const OrderManagementTab = ({ orders, updateOrderStatus, deleteOrder, handleUpdateItemStatus }) => {
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredOrders = orders.filter(order => {
+    // Check filter tab
+    let tabMatch = true;
+    if (activeFilter === 'return') {
+      tabMatch = order.items.some(i => i.status?.toLowerCase().includes('return'));
+    } else if (activeFilter === 'exchange') {
+      tabMatch = order.status === 'Exchange Requested' || order.items.some(i => i.status?.toLowerCase().includes('exchange'));
+    } else if (activeFilter !== 'all') {
+      tabMatch = order.status === activeFilter;
+    }
+
+    if (!tabMatch) return false;
+
+    // Check search query
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.trim().toLowerCase();
+    const matchId = order.orderId?.toLowerCase().includes(q);
+    const matchPhone = order.contactInfo?.phone?.includes(q) || order.user?.phone?.includes(q);
+    const matchCode = order.items.some(i => i.productCode?.toLowerCase().includes(q));
+    return matchId || matchPhone || matchCode;
+  });
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>Order Management</h1>
+        <p>Manage all customer orders</p>
+      </div>
+
+      {/* Search Bar */}
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ position: 'relative', maxWidth: '480px' }}>
+          <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', color: '#94a3b8' }}>🔍</span>
+          <input
+            type="text"
+            placeholder="Search by Order ID, Phone, or Product Code…"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px 16px 10px 42px',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '10px',
+              fontSize: '14px',
+              outline: 'none',
+              background: '#fff',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+              boxSizing: 'border-box'
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '16px' }}
+            >✕</button>
+          )}
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px', borderBottom: '2px solid #f1f5f9', paddingBottom: '8px' }}>
+        {ORDER_FILTER_TABS.map(tab => (
+          <button
+            key={tab.value}
+            onClick={() => setActiveFilter(tab.value)}
+            style={{
+              padding: '6px 14px',
+              border: 'none',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 600,
+              transition: 'all 0.15s ease',
+              background: activeFilter === tab.value ? '#f97316' : '#f1f5f9',
+              color: activeFilter === tab.value ? '#fff' : '#475569',
+              boxShadow: activeFilter === tab.value ? '0 2px 6px rgba(249,115,22,0.3)' : 'none'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+        <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
+          Showing {filteredOrders.length} of {orders.length} orders
+        </span>
+      </div>
+
+      {/* Orders Table */}
+      <div className="card" style={{ marginBottom: 0 }}>
+        {filteredOrders.length === 0 ? (
+          <div style={{ padding: '60px', textAlign: 'center', color: '#94a3b8' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>📋</div>
+            <div style={{ fontWeight: 600, fontSize: '16px' }}>No orders found</div>
+            <div style={{ fontSize: '14px', marginTop: '4px' }}>Try adjusting your search or filter</div>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <OrdersTable orders={filteredOrders} updateStatus={updateOrderStatus} deleteOrder={deleteOrder} handleUpdateItemStatus={handleUpdateItemStatus} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus }) => {
+
   const statusOptions = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled', 'Exchange Requested', 'Exchange Approved', 'Exchange Completed', 'Exchange Rejected'];
 
   return (
