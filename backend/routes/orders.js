@@ -385,6 +385,17 @@ router.put('/:id/item-action', protect, async (req, res) => {
                     await product.save();
                 }
             }
+
+            // Auto-cancel the entire order if all items are now cancelled
+            const allCancelled = order.items.every(i => i.status === 'Cancelled' || (i._id.toString() === itemId && action === 'cancel'));
+            if (allCancelled && order.status !== 'Cancelled') {
+                order.status = 'Cancelled';
+                order.statusHistory.push({
+                    status: 'Cancelled',
+                    timestamp: new Date(),
+                    note: 'Auto-cancelled because all items were cancelled.'
+                });
+            }
         } else if (action === 'return') {
             if (order.status !== 'Delivered') {
                 return res.status(400).json({ success: false, message: 'Item can only be returned after delivery.' });

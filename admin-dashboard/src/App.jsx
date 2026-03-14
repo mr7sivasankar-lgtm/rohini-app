@@ -492,6 +492,10 @@ function App() {
                   <h3>Delivered</h3>
                   <div className="value" style={{ color: 'var(--success)' }}>{stats.delivered}</div>
                 </div>
+                <div className="stat-card" style={{ borderTop: '4px solid #ef4444' }}>
+                  <h3>Cancelled</h3>
+                  <div className="value" style={{ color: '#dc2626' }}>{stats.cancelled || 0}</div>
+                </div>
                 <div className="stat-card" style={{ borderTop: '4px solid #f97316' }}>
                   <h3>Return Requests</h3>
                   <div className="value" style={{ color: '#c2410c' }}>{stats.returnRequests || 0}</div>
