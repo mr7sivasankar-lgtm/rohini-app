@@ -202,6 +202,11 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
         if (status === 'Cancelled' && order.status !== 'Cancelled') {
             console.log(`[Order Cancel] Refunding stock for order ID ${order._id}`);
             for (const item of order.items) {
+                if (item.status !== 'Cancelled') {
+                    item.status = 'Cancelled';
+                    item.cancelledBy = 'Admin';
+                    item.cancelledAt = new Date();
+                }
                 const productId = item.product?._id || item.product;
                 console.log(`[Order Cancel] Checking item: ${item.name}, item.product: ${productId}`);
                 if (!productId) continue;
@@ -368,6 +373,8 @@ router.put('/:id/item-action', protect, async (req, res) => {
                 return res.status(400).json({ success: false, message: 'Order has already progressed beyond cancellation. Please return it instead.'});
             }
             item.status = 'Cancelled';
+            item.cancelledBy = 'Customer';
+            item.cancelledAt = new Date();
             
             // Refund stock immediately for cancellations
             const productId = item.product?._id || item.product;

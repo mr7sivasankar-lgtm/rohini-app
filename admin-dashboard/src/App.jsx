@@ -27,11 +27,14 @@ function App() {
 
   // Notification state
   const [newOrderCount, setNewOrderCount] = useState(0);
+  const [newCancelledCount, setNewCancelledCount] = useState(0); // Added for cancelled alerts
   const lastOrderCountRef = useRef(0);
   const lastReturnCountRef = useRef(0);
   const lastExchangeCountRef = useRef(0);
+  const lastCancelledCountRef = useRef(0);
   const notificationAudioRef = useRef(null);
   const [notifDismissed, setNotifDismissed] = useState(false);
+  const [cancelNotifDismissed, setCancelNotifDismissed] = useState(false);
 
   // Mobile Menu State
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -90,6 +93,13 @@ function App() {
             shouldAlert = true;
             notifBody.push(`${exchangeCount - lastExchangeCountRef.current} new exchange request(s)`);
           }
+          
+          const cancelledCount = response.data.stats?.cancelled || 0;
+          if (cancelledCount > lastCancelledCountRef.current && lastCancelledCountRef.current > 0) {
+            shouldAlert = true;
+            notifBody.push(`${cancelledCount - lastCancelledCountRef.current} order(s) cancelled`);
+            setCancelNotifDismissed(false); // reset banner dismiss
+          }
 
           if (shouldAlert) {
             playNotificationSound();
@@ -112,7 +122,9 @@ function App() {
           lastOrderCountRef.current = placedCount;
           lastReturnCountRef.current = returnCount;
           lastExchangeCountRef.current = exchangeCount;
+          lastCancelledCountRef.current = cancelledCount;
           setNewOrderCount(placedCount);
+          setNewCancelledCount(cancelledCount);
         }
       } catch (error) {
         // Silently fail for polling
@@ -406,6 +418,59 @@ function App() {
           </div>
         )}
 
+        {/* Cancelled Order Notification Bar */}
+        {newCancelledCount > 0 && !cancelNotifDismissed && (
+          <div style={{
+            background: '#fee2e2',
+            color: '#b91c1c',
+            border: '1px solid #fca5a5',
+            padding: '12px 20px',
+            borderRadius: '10px',
+            margin: '0 0 16px 0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxShadow: '0 2px 10px rgba(185, 28, 28, 0.1)',
+            animation: 'slideDown 0.3s ease'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '20px' }}>⚠️</span>
+              <span style={{ fontWeight: '600' }}>
+                {newCancelledCount} Order{newCancelledCount > 1 ? 's' : ''} Cancelled
+              </span>
+            </div>
+            <button
+              onClick={() => setActiveTab('orders')}
+              style={{
+                background: '#b91c1c',
+                color: 'white',
+                border: 'none',
+                padding: '6px 16px',
+                borderRadius: '6px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                fontSize: '13px'
+              }}
+            >
+              View Orders →
+            </button>
+            <button
+              onClick={() => setCancelNotifDismissed(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#b91c1c',
+                fontSize: '18px',
+                cursor: 'pointer',
+                padding: '0 4px',
+                marginLeft: '8px'
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {activeTab === 'dashboard' && (
           <div>
             <div className="page-header">
@@ -594,8 +659,10 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
         </tr>
       </thead>
       <tbody>
-        {orders.map(order => (
-          <tr key={order._id}>
+        {orders.map(order => {
+          const isCancelled = order.status === 'Cancelled' || order.items.every(i => i.status === 'Cancelled');
+          return (
+          <tr key={order._id} className={isCancelled ? 'cancelled-row' : ''}>
             <td>#{order.orderId}</td>
             <td>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -649,10 +716,21 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                           {item.status}
                         </div>
                       )}
-                      {/* Customer Reason Note */}
-                      {item.actionReason && (
-                        <div style={{ fontSize: '0.85em', color: '#64748b', fontStyle: 'italic', marginTop: '4px', maxWidth: '200px' }}>
-                          " {item.actionReason} "
+                      {/* Customer Reason Note & Cancellation Info */}
+                      {(item.actionReason || item.status === 'Cancelled') && (
+                        <div className="item-note-container" style={{ marginTop: '6px', padding: '8px', background: item.status === 'Cancelled' ? '#fef2f2' : '#f8fafc', borderLeft: item.status === 'Cancelled' ? '3px solid #ef4444' : '3px solid #cbd5e1', borderRadius: '4px' }}>
+                          {item.status === 'Cancelled' && (
+                            <div style={{ fontSize: '0.85em', fontWeight: 600, color: '#dc2626', marginBottom: '4px' }}>
+                              <span>Cancelled by: {item.cancelledBy || 'System/Admin'}</span>
+                              <span style={{ margin: '0 6px', color: '#fca5a5' }}>|</span>
+                              <span>Time: {item.cancelledAt ? new Date(item.cancelledAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          )}
+                          {item.actionReason && (
+                            <div style={{ fontSize: '0.85em', color: '#475569', fontStyle: 'italic' }}>
+                              <span style={{ fontWeight: 600 }}>Reason:</span> {item.actionReason}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -749,7 +827,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
             <td style={{ fontWeight: 600 }}>₹{order.total.toFixed(2)}</td>
             <td>
               <span className={`status-badge status-${order.status.toLowerCase().replace(' ', '-')}`}>
-                {order.status}
+                {order.status === 'Cancelled' ? '❌ Cancelled' : order.status}
               </span>
             </td>
             <td>
@@ -788,7 +866,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
               </div>
             </td>
           </tr>
-        ))}
+        )})}
       </tbody>
     </table>
   );

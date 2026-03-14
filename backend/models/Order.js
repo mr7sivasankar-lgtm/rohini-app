@@ -37,6 +37,15 @@ const orderSchema = new mongoose.Schema({
         actionReason: {
             type: String,
             default: ''
+        },
+        cancelledBy: {
+            type: String,
+            enum: ['Customer', 'Admin', ''],
+            default: ''
+        },
+        cancelledAt: {
+            type: Date,
+            default: null
         }
     }],
     shippingAddress: {
