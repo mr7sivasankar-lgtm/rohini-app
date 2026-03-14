@@ -484,52 +484,93 @@ function App() {
             </div>
 
             {stats && (
-              <div className="stats-grid">
-                <div className="stat-card" style={{ borderTop: '4px solid #3b82f6' }}>
-                  <h3>Orders Today</h3>
-                  <div className="value">{stats.ordersToday || 0}</div>
-                </div>
-                <div className="stat-card" style={{ borderTop: '4px solid #10b981' }}>
-                  <h3>Revenue Today</h3>
-                  <div className="value" style={{ color: '#047857' }}>₹{stats.revenueToday?.toFixed(0) || 0}</div>
-                </div>
-                <div className="stat-card" style={{ borderTop: '4px solid #f59e0b' }}>
-                  <h3>Pending Orders</h3>
-                  <div className="value" style={{ color: '#b45309' }}>{stats.pending || 0}</div>
-                </div>
-                <div className="stat-card" style={{ borderTop: '4px solid #06b6d4' }}>
-                  <h3>Out for Delivery</h3>
-                  <div className="value" style={{ color: '#0e7490' }}>{stats.outForDelivery || 0}</div>
-                </div>
-                <div className="stat-card" style={{ borderTop: '4px solid #22c55e' }}>
-                  <h3>Delivered Today</h3>
-                  <div className="value" style={{ color: '#16a34a' }}>{stats.deliveredToday || 0}</div>
-                </div>
-                <div className="stat-card" style={{ borderTop: '4px solid #ef4444' }}>
-                  <h3>Cancelled Today</h3>
-                  <div className="value" style={{ color: '#dc2626' }}>{stats.cancelledToday || 0}</div>
-                </div>
-                <div className="stat-card" style={{ borderTop: '4px solid #f97316' }}>
-                  <h3>Return Requests</h3>
-                  <div className="value" style={{ color: '#c2410c' }}>{stats.returnRequests || 0}</div>
-                </div>
-                <div className="stat-card" style={{ borderTop: '4px solid #8b5cf6' }}>
-                  <h3>Exchange Requests</h3>
-                  <div className="value" style={{ color: '#6d28d9' }}>{stats.exchangeRequests || 0}</div>
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                {/* Section Helper */}
+                {(() => {
+                  const SectionLabel = ({ icon, label }) => (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '18px' }}>{icon}</span>
+                      <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</h2>
+                    </div>
+                  );
+
+                  const Card = ({ label, value, color, borderColor, prefix = '' }) => (
+                    <div className="stat-card" style={{ borderTop: `4px solid ${borderColor}` }}>
+                      <h3>{label}</h3>
+                      <div className="value" style={{ color }}>{prefix}{value}</div>
+                    </div>
+                  );
+
+                  return (
+                    <>
+                      {/* Today's Snapshot */}
+                      <div>
+                        <SectionLabel icon="📅" label="Today's Snapshot" />
+                        <div className="stats-grid">
+                          <Card label="Orders Today" value={stats.ordersToday || 0} color="#1d4ed8" borderColor="#3b82f6" />
+                          <Card label="Revenue Today" value={`₹${(stats.revenueToday || 0).toFixed(0)}`} color="#047857" borderColor="#10b981" />
+                          <Card label="Pending Orders" value={stats.pending || 0} color="#b45309" borderColor="#f59e0b" />
+                          <Card label="Out for Delivery" value={stats.outForDelivery || 0} color="#0e7490" borderColor="#06b6d4" />
+                          <Card label="Delivered Today" value={stats.deliveredToday || 0} color="#16a34a" borderColor="#22c55e" />
+                          <Card label="Cancelled Today" value={stats.cancelledToday || 0} color="#dc2626" borderColor="#ef4444" />
+                          <Card label="Return Requests" value={stats.returnRequests || 0} color="#c2410c" borderColor="#f97316" />
+                          <Card label="Exchange Requests" value={stats.exchangeRequests || 0} color="#6d28d9" borderColor="#8b5cf6" />
+                        </div>
+                      </div>
+
+                      {/* Totals Overview */}
+                      <div>
+                        <SectionLabel icon="📦" label="Order Totals" />
+                        <div className="stats-grid">
+                          <Card label="Total Orders" value={stats.total || 0} color="#1e293b" borderColor="#64748b" />
+                          <Card label="Total Cancelled" value={stats.totalCancelled || 0} color="#dc2626" borderColor="#ef4444" />
+                          <Card label="Total Returned" value={stats.totalReturned || 0} color="#92400e" borderColor="#f97316" />
+                          <Card label="Total Exchanged" value={stats.totalExchanged || 0} color="#4c1d95" borderColor="#8b5cf6" />
+                        </div>
+                      </div>
+
+                      {/* Business Performance */}
+                      <div>
+                        <SectionLabel icon="💰" label="Business Performance" />
+                        <div className="stats-grid">
+                          <Card label="Today's Revenue" value={`₹${(stats.revenueToday || 0).toFixed(0)}`} color="#047857" borderColor="#10b981" />
+                          <Card label="This Week's Revenue" value={`₹${(stats.revenueThisWeek || 0).toFixed(0)}`} color="#1d4ed8" borderColor="#3b82f6" />
+                          <Card label="Total Revenue" value={`₹${(stats.totalRevenue || 0).toFixed(0)}`} color="#7c3aed" borderColor="#a78bfa" />
+                          <Card label="Avg Order Value" value={`₹${(stats.avgOrderValue || 0).toFixed(0)}`} color="#0e7490" borderColor="#06b6d4" />
+                        </div>
+                      </div>
+
+                      {/* Product Insights */}
+                      <div>
+                        <SectionLabel icon="🏷️" label="Product Insights" />
+                        <div className="stats-grid">
+                          <Card label="Total Products" value={stats.totalProducts || 0} color="#1e293b" borderColor="#64748b" />
+                          <Card label="Active Products" value={stats.activeProducts || 0} color="#16a34a" borderColor="#22c55e" />
+                          <Card label="Low Stock (≤5)" value={stats.lowStock || 0} color="#b45309" borderColor="#f59e0b" />
+                          <Card label="Out of Stock" value={stats.outOfStock || 0} color="#dc2626" borderColor="#ef4444" />
+                        </div>
+                      </div>
+
+                      {/* Customer Insights */}
+                      <div>
+                        <SectionLabel icon="👥" label="Customer Insights" />
+                        <div className="stats-grid">
+                          <Card label="Total Users" value={stats.totalUsers || 0} color="#1e293b" borderColor="#64748b" />
+                          <Card label="New Users Today" value={stats.newUsersToday || 0} color="#047857" borderColor="#10b981" />
+                          <Card label="Repeat Customers" value={stats.repeatCustomers || 0} color="#1d4ed8" borderColor="#3b82f6" />
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
             <DashboardCharts chartsData={chartsData} />
-
-            <div className="card">
-              <h2 style={{ marginBottom: 20 }}>Recent Orders</h2>
-              <div className="table-responsive">
-                <OrdersTable orders={orders.slice(0, 10)} updateStatus={updateOrderStatus} handleUpdateItemStatus={handleUpdateItemStatus} />
-              </div>
-            </div>
           </div>
         )}
+
 
         {activeTab === 'orders' && (
           <OrderManagementTab

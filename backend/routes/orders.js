@@ -206,7 +206,47 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
             { $limit: 5 }
         ]);
 
+        // This Week timeframe
+        const weekStart = new Date(today);
+        weekStart.setDate(weekStart.getDate() - 6);
+
+        // --- Business Performance: Revenue Stats ---
+        const revenueExcluded = ['Cancelled', 'Returned', 'Return Picked Up', 'Return Accepted'];
+
+        const revenueThisWeekRecords = await Order.aggregate([
+            { $match: { createdAt: { $gte: weekStart }, status: { $nin: revenueExcluded } } },
+            { $group: { _id: null, totalRevenue: { $sum: "$total" } } }
+        ]);
+        const revenueThisWeek = revenueThisWeekRecords[0]?.totalRevenue || 0;
+
+        const totalRevenueRecords = await Order.aggregate([
+            { $match: { status: { $nin: revenueExcluded } } },
+            { $group: { _id: null, totalRevenue: { $sum: "$total" }, orderCount: { $sum: 1 } } }
+        ]);
+        const totalRevenue = totalRevenueRecords[0]?.totalRevenue || 0;
+        const totalRevenueOrders = totalRevenueRecords[0]?.orderCount || 1;
+        const avgOrderValue = totalRevenue / totalRevenueOrders;
+
+        // --- Product Insights ---
+        const totalProducts = await Product.countDocuments();
+        const outOfStock = await Product.countDocuments({ stock: 0 });
+        const lowStock = await Product.countDocuments({ stock: { $gt: 0, $lte: 5 } });
+        const activeProducts = totalProducts - outOfStock;
+
+        // --- Customer Insights ---
+        const totalUsers = await User.countDocuments({ role: { $ne: 'admin' } });
+        const newUsersToday = await User.countDocuments({ createdAt: { $gte: today }, role: { $ne: 'admin' } });
+
+        // Repeat customers = users with more than 1 order
+        const repeatCustomersPipeline = await Order.aggregate([
+            { $group: { _id: "$user", count: { $sum: 1 } } },
+            { $match: { count: { $gt: 1 } } },
+            { $count: "repeatCustomers" }
+        ]);
+        const repeatCustomers = repeatCustomersPipeline[0]?.repeatCustomers || 0;
+
         const stats = {
+            // Today snapshot
             total: await Order.countDocuments(),
             ordersToday: ordersTodayCount,
             revenueToday: revenueToday,
@@ -215,12 +255,29 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
             deliveredToday: deliveredToday,
             cancelledToday: cancelledTodayCount,
             returnRequests: await Order.countDocuments({ 'items.status': 'Return Requested' }),
-            exchangeRequests: await Order.countDocuments({ 'items.status': 'Exchange Requested' })
+            exchangeRequests: await Order.countDocuments({ 'items.status': 'Exchange Requested' }),
+            // Totals
+            totalCancelled: await Order.countDocuments({ status: 'Cancelled' }),
+            totalReturned: await Order.countDocuments({ 'items.status': 'Returned' }),
+            totalExchanged: await Order.countDocuments({ 'items.status': 'Exchanged' }),
+            // Business Performance
+            revenueThisWeek,
+            totalRevenue,
+            avgOrderValue,
+            // Product Insights
+            totalProducts,
+            activeProducts,
+            lowStock,
+            outOfStock,
+            // Customer Insights
+            totalUsers,
+            newUsersToday,
+            repeatCustomers
         };
 
         const charts = {
             daily: dailyStats,
-            topProducts: topProducts.filter(p => p._id) // Remove null product codes
+            topProducts: topProducts.filter(p => p._id)
         };
 
         res.status(200).json({
