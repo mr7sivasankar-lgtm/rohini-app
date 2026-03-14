@@ -824,9 +824,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
   const [expandedOrders, setExpandedOrders] = useState({});
   const toggleHistory = (id) => setExpandedOrders(p => ({ ...p, [id]: !p[id] }));
 
-  const statusOptions = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled',
-    'Return Requested', 'Returned',
-    'Exchange Requested', 'Exchange Approved', 'Exchange Completed', 'Exchange Rejected'];
+  const statusOptions = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
   return (
     <table className="table">
@@ -835,7 +833,6 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
           <th>Order ID</th>
           <th>Customer</th>
           <th>Items Received</th>
-          <th>Item Logistics</th>
           <th>Product Code</th>
           <th>Quantity</th>
           <th>Delivery Address</th>
@@ -843,6 +840,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
           <th>Status</th>
           <th>Date</th>
           <th>Action</th>
+          <th>Item Logistics</th>
         </tr>
       </thead>
       <tbody>
@@ -955,74 +953,6 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
               </ul>
             </td>
             <td>
-              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '190px' }}>
-                {order.items.map((item, idx) => {
-                  const nextStates = ITEM_NEXT_STATES[item.status] || [];
-                  const fmt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : null;
-
-                  // Terminal status chip configs
-                  const terminalChips = {
-                    'Returned':         { bg: '#dcfce7', color: '#15803d', border: '#86efac', icon: '✅', label: 'Return Completed', ts: item.returnCompletedAt },
-                    'Exchanged':        { bg: '#ede9fe', color: '#6d28d9', border: '#c4b5fd', icon: '✅', label: 'Exchange Completed', ts: item.exchangeCompletedAt },
-                    'Return Rejected':  { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Return Rejected', ts: item.returnRejectedAt },
-                    'Exchange Rejected':{ bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Exchange Rejected', ts: item.exchangeRejectedAt },
-                    'Cancelled':        { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Cancelled', ts: item.cancelledAt },
-                  };
-                  const chip = terminalChips[item.status];
-
-                  // Current step timestamp for in-progress states
-                  const inProgressTs = {
-                    'Return Requested':           item.returnRequestedAt,
-                    'Return Accepted':            item.returnAcceptedAt,
-                    'Out for Pickup':             item.outForPickupAt,
-                    'Return Picked Up':           item.returnPickedUpAt,
-                    'Exchange Requested':         item.exchangeRequestedAt,
-                    'Exchange Accepted':          item.exchangeAcceptedAt,
-                    'Out for Delivery (Exchange)':item.exchangeAcceptedAt,
-                  }[item.status];
-
-                  // Show exchange preference
-                  const pref = item.exchangeSize || item.exchangeColor ? (
-                    <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 600, marginBottom: '4px' }}>
-                      Prefers: {item.exchangeSize && `Size ${item.exchangeSize}`} {item.exchangeColor && `Color ${item.exchangeColor}`}
-                    </div>
-                  ) : null;
-
-                  return (
-                    <li key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                      {pref}
-                      {chip ? (
-                        <>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: chip.bg, color: chip.color, border: `1px solid ${chip.border}`, borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
-                            {chip.icon} {chip.label}
-                          </div>
-                          {chip.ts && <div style={{ fontSize: '10px', color: '#94a3b8' }}>🕐 {fmt(chip.ts)}</div>}
-                        </>
-                      ) : nextStates.length > 0 ? (
-                        <>
-                          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>
-                            Current: <span style={{ color: '#f97316' }}>{item.status}</span>
-                          </div>
-                          {inProgressTs && <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '4px' }}>🕐 {fmt(inProgressTs)}</div>}
-                          <select
-                            defaultValue=""
-                            onChange={(e) => { if (e.target.value) handleUpdateItemStatus(order._id, item._id, e.target.value); }}
-                            style={{ padding: '5px 8px', fontSize: '12px', borderRadius: '6px', border: '1.5px solid #e2e8f0', cursor: 'pointer', background: '#f8fafc', fontWeight: 600, color: '#1e293b', width: '100%' }}
-                          >
-                            <option value="">— Move to… —</option>
-                            {nextStates.map(s => <option key={s} value={s}>{s}</option>)}
-                          </select>
-                        </>
-                      ) : item.status === 'Active' ? (
-                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>— No action —</span>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            </td>
-
-            <td>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
                 {order.items.map((item, idx) => (
                   <div key={idx} style={{ 
@@ -1105,6 +1035,70 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                   </button>
                 )}
               </div>
+            </td>
+            <td>
+              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '200px' }}>
+                {order.items.map((item, idx) => {
+                  const nextStates = ITEM_NEXT_STATES[item.status] || [];
+                  const fmt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : null;
+
+                  const terminalChips = {
+                    'Returned':         { bg: '#dcfce7', color: '#15803d', border: '#86efac', icon: '✅', label: 'Return Completed', ts: item.returnCompletedAt },
+                    'Exchanged':        { bg: '#ede9fe', color: '#6d28d9', border: '#c4b5fd', icon: '✅', label: 'Exchange Completed', ts: item.exchangeCompletedAt },
+                    'Return Rejected':  { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Return Rejected', ts: item.returnRejectedAt },
+                    'Exchange Rejected':{ bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Exchange Rejected', ts: item.exchangeRejectedAt },
+                    'Cancelled':        { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Cancelled', ts: item.cancelledAt },
+                  };
+                  const chip = terminalChips[item.status];
+
+                  const inProgressTs = {
+                    'Return Requested':           item.returnRequestedAt,
+                    'Return Accepted':            item.returnAcceptedAt,
+                    'Out for Pickup':             item.outForPickupAt,
+                    'Return Picked Up':           item.returnPickedUpAt,
+                    'Exchange Requested':         item.exchangeRequestedAt,
+                    'Exchange Accepted':          item.exchangeAcceptedAt,
+                    'Out for Delivery (Exchange)':item.exchangeAcceptedAt,
+                  }[item.status];
+
+                  const pref = item.exchangeSize || item.exchangeColor ? (
+                    <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 600, marginBottom: '4px' }}>
+                      Prefers: {item.exchangeSize && `Size ${item.exchangeSize}`} {item.exchangeColor && `Color ${item.exchangeColor}`}
+                    </div>
+                  ) : null;
+
+                  return (
+                    <li key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                      {pref}
+                      {chip ? (
+                        <>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: chip.bg, color: chip.color, border: `1px solid ${chip.border}`, borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
+                            {chip.icon} {chip.label}
+                          </div>
+                          {chip.ts && <div style={{ fontSize: '10px', color: '#94a3b8' }}>🕐 {fmt(chip.ts)}</div>}
+                        </>
+                      ) : nextStates.length > 0 ? (
+                        <>
+                          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>
+                            Current: <span style={{ color: '#f97316' }}>{item.status}</span>
+                          </div>
+                          {inProgressTs && <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '4px' }}>🕐 {fmt(inProgressTs)}</div>}
+                          <select
+                            defaultValue=""
+                            onChange={(e) => { if (e.target.value) handleUpdateItemStatus(order._id, item._id, e.target.value); }}
+                            style={{ padding: '5px 8px', fontSize: '12px', borderRadius: '6px', border: '1.5px solid #e2e8f0', cursor: 'pointer', background: '#f8fafc', fontWeight: 600, color: '#1e293b', width: '100%' }}
+                          >
+                            <option value="">— Move to… —</option>
+                            {nextStates.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </>
+                      ) : item.status === 'Active' ? (
+                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>— No action —</span>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
             </td>
           </tr>
           {/* Expandable History Row */}
