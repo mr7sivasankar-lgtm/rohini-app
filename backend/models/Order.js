@@ -29,7 +29,7 @@ const orderSchema = new mongoose.Schema({
         color: String,
         status: {
             type: String,
-            enum: ['Active', 'Cancelled', 'Return Requested', 'Return Accepted', 'Out for Pickup', 'Return Picked Up', 'Returned', 'Return Rejected', 'Exchange Requested', 'Exchange Accepted', 'Out for Delivery (Exchange)', 'Exchanged', 'Exchange Rejected'],
+            enum: ['Active', 'Cancelled', 'Return Requested', 'Return Approved', 'Return Completed', 'Return Rejected', 'Exchange Requested', 'Exchange Approved', 'Exchange Completed', 'Exchange Rejected'],
             default: 'Active'
         },
         exchangeSize: String,
@@ -48,13 +48,11 @@ const orderSchema = new mongoose.Schema({
             default: null
         },
         returnRequestedAt: { type: Date, default: null },
-        returnAcceptedAt: { type: Date, default: null },
-        outForPickupAt: { type: Date, default: null },
-        returnPickedUpAt: { type: Date, default: null },
+        returnApprovedAt: { type: Date, default: null },
         returnCompletedAt: { type: Date, default: null },
         returnRejectedAt: { type: Date, default: null },
         exchangeRequestedAt: { type: Date, default: null },
-        exchangeAcceptedAt: { type: Date, default: null },
+        exchangeApprovedAt: { type: Date, default: null },
         exchangeCompletedAt: { type: Date, default: null },
         exchangeRejectedAt: { type: Date, default: null }
     }],

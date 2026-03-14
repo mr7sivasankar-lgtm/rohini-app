@@ -806,16 +806,13 @@ const OrderManagementTab = ({ orders, updateOrderStatus, deleteOrder, handleUpda
 
 const ITEM_NEXT_STATES = {
   'Active':                     [],
-  'Return Requested':           ['Return Accepted', 'Return Rejected'],
-  'Return Accepted':            ['Out for Pickup'],
-  'Out for Pickup':             ['Return Picked Up'],
-  'Return Picked Up':           ['Returned'],
-  'Returned':                   [],
+  'Return Requested':           ['Return Approved', 'Return Rejected'],
+  'Return Approved':            ['Return Completed'],
+  'Return Completed':           [],
   'Return Rejected':            [],
-  'Exchange Requested':         ['Exchange Accepted', 'Exchange Rejected'],
-  'Exchange Accepted':          ['Out for Delivery (Exchange)'],
-  'Out for Delivery (Exchange)':['Exchanged'],
-  'Exchanged':                  [],
+  'Exchange Requested':         ['Exchange Approved', 'Exchange Rejected'],
+  'Exchange Approved':          ['Exchange Completed'],
+  'Exchange Completed':         [],
   'Exchange Rejected':          [],
   'Cancelled':                  [],
 };
@@ -1001,8 +998,6 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
               <span className={`status-badge status-${order.status.toLowerCase().replace(/ /g, '-')}`}>
                 {order.status === 'Delivered' ? '✔ Delivered' : 
                  order.status === 'Cancelled' ? '❌ Cancelled' : 
-                 order.status === 'Returned' ? '↩ Returned' :
-                 order.status === 'Exchanged' ? '🔄 Exchanged' :
                  order.status}
               </span>
             </td>
@@ -1048,8 +1043,8 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                   const fmt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : null;
 
                   const terminalChips = {
-                    'Returned':         { bg: '#dcfce7', color: '#15803d', border: '#86efac', icon: '✅', label: 'Return Completed', ts: item.returnCompletedAt },
-                    'Exchanged':        { bg: '#ede9fe', color: '#6d28d9', border: '#c4b5fd', icon: '✅', label: 'Exchange Completed', ts: item.exchangeCompletedAt },
+                    'Return Completed': { bg: '#dcfce7', color: '#15803d', border: '#86efac', icon: '✅', label: 'Return Completed', ts: item.returnCompletedAt },
+                    'Exchange Completed':{ bg: '#ede9fe', color: '#6d28d9', border: '#c4b5fd', icon: '✅', label: 'Exchange Completed', ts: item.exchangeCompletedAt },
                     'Return Rejected':  { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Return Rejected', ts: item.returnRejectedAt },
                     'Exchange Rejected':{ bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Exchange Rejected', ts: item.exchangeRejectedAt },
                     'Cancelled':        { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Cancelled', ts: item.cancelledAt },
@@ -1057,13 +1052,10 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                   const chip = terminalChips[item.status];
 
                   const inProgressTs = {
-                    'Return Requested':           item.returnRequestedAt,
-                    'Return Accepted':            item.returnAcceptedAt,
-                    'Out for Pickup':             item.outForPickupAt,
-                    'Return Picked Up':           item.returnPickedUpAt,
-                    'Exchange Requested':         item.exchangeRequestedAt,
-                    'Exchange Accepted':          item.exchangeAcceptedAt,
-                    'Out for Delivery (Exchange)':item.exchangeAcceptedAt,
+                    'Return Requested':   item.returnRequestedAt,
+                    'Return Approved':    item.returnApprovedAt,
+                    'Exchange Requested': item.exchangeRequestedAt,
+                    'Exchange Approved':  item.exchangeApprovedAt,
                   }[item.status];
 
                   const pref = item.exchangeSize || item.exchangeColor ? (
@@ -1154,13 +1146,11 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                     const fmtDt = (d) => d ? new Date(d).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:true }) : null;
                     const steps = [
                       { label: 'Return Requested',  ts: item.returnRequestedAt },
-                      { label: 'Return Accepted',   ts: item.returnAcceptedAt },
-                      { label: 'Out for Pickup',    ts: item.outForPickupAt },
-                      { label: 'Return Picked Up',  ts: item.returnPickedUpAt },
+                      { label: 'Return Approved',   ts: item.returnApprovedAt },
                       { label: 'Return Completed',  ts: item.returnCompletedAt },
                       { label: 'Return Rejected',   ts: item.returnRejectedAt },
                       { label: 'Exchange Requested',ts: item.exchangeRequestedAt },
-                      { label: 'Exchange Accepted', ts: item.exchangeAcceptedAt },
+                      { label: 'Exchange Approved', ts: item.exchangeApprovedAt },
                       { label: 'Exchange Completed',ts: item.exchangeCompletedAt },
                       { label: 'Exchange Rejected', ts: item.exchangeRejectedAt },
                       { label: 'Cancelled',         ts: item.cancelledAt },

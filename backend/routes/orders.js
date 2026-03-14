@@ -476,23 +476,20 @@ router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
 
         // Stamp the right timestamp for each status transition
         const timestampMap = {
-            'Return Accepted':           () => { item.returnAcceptedAt = now; },
-            'Out for Pickup':            () => { item.outForPickupAt = now; },
-            'Return Picked Up':          () => { item.returnPickedUpAt = now; },
-            'Returned':                  () => { item.returnCompletedAt = now; },
+            'Return Approved':           () => { item.returnApprovedAt = now; },
+            'Return Completed':          () => { item.returnCompletedAt = now; },
             'Return Rejected':           () => { item.returnRejectedAt = now; },
-            'Exchange Accepted':         () => { item.exchangeAcceptedAt = now; },
-            'Out for Delivery (Exchange)': () => { /* no specific field needed */ },
-            'Exchanged':                 () => { item.exchangeCompletedAt = now; },
+            'Exchange Approved':         () => { item.exchangeApprovedAt = now; },
+            'Exchange Completed':        () => { item.exchangeCompletedAt = now; },
             'Exchange Rejected':         () => { item.exchangeRejectedAt = now; },
         };
         if (timestampMap[status]) timestampMap[status]();
 
-        // Set the item status early so allResolved check sees the new state
         item.status = status;
 
-        // Handle stock refunds and order-level status update when return completes
-        if (status === 'Returned') {
+        // Handle stock refunds when a return is formally completed.
+        // Exchange completion does not change total stock since the identical item variant count (+1 old, -1 new) nets out to zero.
+        if (status === 'Return Completed') {
             const productId = item.product?._id || item.product;
             if (productId) {
                 const product = await Product.findById(productId);
@@ -500,18 +497,6 @@ router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
                     product.stock += item.quantity;
                     await product.save();
                 }
-            }
-
-            // Auto-set order status to Cancelled when ALL items are resolved
-            const resolvedStatuses = ['Returned', 'Cancelled', 'Exchanged', 'Exchange Rejected', 'Return Rejected'];
-            const allResolved = order.items.every(i => resolvedStatuses.includes(i.status));
-            if (allResolved && order.status !== 'Cancelled') {
-                order.status = 'Cancelled';
-                order.statusHistory.push({
-                    status: 'Cancelled',
-                    timestamp: now,
-                    note: 'Auto-cancelled: all items returned/resolved by customer.'
-                });
             }
         }
 

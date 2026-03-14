@@ -205,8 +205,8 @@ const OrderTracking = () => {
                                         <div className="modern-timeline" style={{ padding: '0' }}>
                                             {(() => {
                                                 const steps = item.status.includes('Return') 
-                                                    ? ['Return Requested', 'Return Accepted', 'Out for Pickup', 'Return Picked Up', 'Returned']
-                                                    : ['Exchange Requested', 'Exchange Accepted', 'Out for Delivery (Exchange)', 'Exchanged'];
+                                                    ? ['Return Requested', 'Return Approved', 'Return Completed']
+                                                    : ['Exchange Requested', 'Exchange Approved', 'Exchange Completed'];
                                                 
                                                 const currentIndex = steps.indexOf(item.status);
                                                 
@@ -220,7 +220,7 @@ const OrderTracking = () => {
                                                             <div className={dotClass} style={{ width: '24px', height: '24px', marginBottom: '6px' }}>
                                                                 {idx < currentIndex && <span className="check-mark" style={{ fontSize: '10px' }}>✓</span>}
                                                             </div>
-                                                            <div className="timeline-title" style={{ fontSize: '10px' }}>{step.replace('Return', '').replace('Exchange', '').replace('(Exchange)', '').trim() || (item.status.includes('Return') ? 'Returned' : 'Exchanged')}</div>
+                                                            <div className="timeline-title" style={{ fontSize: '10px' }}>{step.replace('Return', '').replace('Exchange', '').replace('(Exchange)', '').trim() || (item.status.includes('Return') ? 'Completed' : 'Completed')}</div>
                                                         </div>
                                                     )
                                                 });
