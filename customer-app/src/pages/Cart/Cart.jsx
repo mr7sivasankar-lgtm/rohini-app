@@ -15,6 +15,7 @@ const Cart = () => {
     const [addrLoading, setAddrLoading] = useState(true);
     const [showInlineForm, setShowInlineForm] = useState(false);
     const [savingAddr, setSavingAddr] = useState(false);
+    const [editingAddrId, setEditingAddrId] = useState(null);
     const [newAddr, setNewAddr] = useState({
         name: '', phone: '', street: '', landmark: '', city: '', state: '', pincode: '', addressType: 'Home'
     });
@@ -103,24 +104,34 @@ const Cart = () => {
         );
     };
 
-    const handleSaveNewAddr = async () => {
+    const handleSaveAddr = async () => {
         if (!newAddr.name || !newAddr.phone || !newAddr.street || !newAddr.city || !newAddr.state || !newAddr.pincode) {
             alert('Please fill all required fields');
             return;
         }
         try {
             setSavingAddr(true);
-            const res = await api.post('/addresses', newAddr);
+            let res;
+            if (editingAddrId) {
+                res = await api.put(`/addresses/${editingAddrId}`, newAddr);
+            } else {
+                res = await api.post('/addresses', newAddr);
+            }
             if (res.data.success) {
                 await fetchAddresses();
                 setShowInlineForm(false);
+                setEditingAddrId(null);
                 setNewAddr({ name: '', phone: '', street: '', landmark: '', city: '', state: '', pincode: '', addressType: 'Home' });
-                // auto-select the newly added address
+                // auto-select the newly added/edited address
                 const refreshed = await api.get('/addresses');
                 if (refreshed.data.success) {
                     const list = refreshed.data.data || [];
                     setAddresses(list);
-                    setSelectedAddress(list[list.length - 1] || null);
+                    if (!editingAddrId) {
+                        setSelectedAddress(list[list.length - 1] || null);
+                    } else {
+                        setSelectedAddress(list.find(a => a._id === editingAddrId) || list[0] || null);
+                    }
                 }
             }
         } catch (err) {
@@ -128,6 +139,19 @@ const Cart = () => {
         } finally {
             setSavingAddr(false);
         }
+    };
+
+    const handleEditClick = (e, addr) => {
+        e.stopPropagation();
+        setNewAddr(addr);
+        setEditingAddrId(addr._id);
+        setShowInlineForm(true);
+    };
+
+    const handleAddNewClick = () => {
+        setNewAddr({ name: '', phone: '', street: '', landmark: '', city: '', state: '', pincode: '', addressType: 'Home' });
+        setEditingAddrId(null);
+        setShowInlineForm(true);
     };
 
     const inlineInputStyle = {
@@ -170,7 +194,10 @@ const Cart = () => {
                                 <p className="addr-line">{selectedAddress.city}, {selectedAddress.state} – {selectedAddress.pincode}</p>
                                 <p className="addr-line">📞 {selectedAddress.phone}</p>
                             </div>
-                            <div className="addr-edit">✏️</div>
+                            <div className="addr-edit" onClick={(e) => {
+                                setShowAddressPicker(true);
+                                handleEditClick(e, selectedAddress);
+                            }}>✏️</div>
                         </div>
                     ) : (
                         <div className="addr-add">
@@ -276,7 +303,7 @@ const Cart = () => {
                                         <div className="addr-radio">
                                             <div className={`radio-dot ${selectedAddress?._id === addr._id ? 'active' : ''}`} />
                                         </div>
-                                        <div className="addr-option-text">
+                                        <div className="addr-option-text" style={{ flex: 1 }}>
                                             <p className="addr-option-name">
                                                 {addr.name}
                                                 <span className="addr-type-badge">{addr.addressType}</span>
@@ -285,6 +312,13 @@ const Cart = () => {
                                             <p className="addr-option-line">{addr.street}{addr.landmark ? `, ${addr.landmark}` : ''}</p>
                                             <p className="addr-option-line">{addr.city}, {addr.state} – {addr.pincode}</p>
                                         </div>
+                                        <div 
+                                            className="addr-edit" 
+                                            onClick={(e) => handleEditClick(e, addr)}
+                                            style={{ padding: '8px', cursor: 'pointer', fontSize: '14px', color: '#64748b', display: 'flex', alignItems: 'center' }}
+                                        >
+                                            ✏️
+                                        </div>
                                     </div>
                                 ))
                             )}
@@ -292,7 +326,7 @@ const Cart = () => {
                             {/* Add Address Button - inside scrollable area */}
                             <button
                                 className="add-addr-btn"
-                                onClick={() => setShowInlineForm(true)}
+                                onClick={handleAddNewClick}
                                 style={{ margin: '8px 0 0', width: '100%' }}
                             >
                                 ➕ Add New Address
@@ -301,7 +335,7 @@ const Cart = () => {
                             {/* Inline Address Form */}
                             {showInlineForm && (
                                 <div className="inline-addr-form">
-                                    <h4 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 700 }}>New Address</h4>
+                                    <h4 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 700 }}>{editingAddrId ? 'Edit Address' : 'New Address'}</h4>
                                     <button
                                         type="button"
                                         className="auto-detect-btn"
@@ -313,7 +347,7 @@ const Cart = () => {
                                     <input name="name" value={newAddr.name} onChange={handleNewAddrChange} placeholder="Full Name *" style={inlineInputStyle} />
                                     <input name="phone" value={newAddr.phone} onChange={handleNewAddrChange} placeholder="Phone (10 digits) *" maxLength={10} style={inlineInputStyle} />
                                     <input name="street" value={newAddr.street} onChange={handleNewAddrChange} placeholder="Street Address *" style={inlineInputStyle} />
-                                    <input name="landmark" value={newAddr.landmark} onChange={handleNewAddrChange} placeholder="Landmark (optional)" style={inlineInputStyle} />
+                                    <input name="landmark" value={newAddr.landmark || ''} onChange={handleNewAddrChange} placeholder="Landmark (optional)" style={inlineInputStyle} />
                                     <div style={{ display: 'flex', gap: 8 }}>
                                         <input name="city" value={newAddr.city} onChange={handleNewAddrChange} placeholder="City *" style={{ ...inlineInputStyle, flex: 1 }} />
                                         <input name="state" value={newAddr.state} onChange={handleNewAddrChange} placeholder="State *" style={{ ...inlineInputStyle, flex: 1 }} />
@@ -332,12 +366,12 @@ const Cart = () => {
                                     <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                                         <button
                                             type="button"
-                                            onClick={() => setShowInlineForm(false)}
+                                            onClick={() => { setShowInlineForm(false); setEditingAddrId(null); }}
                                             style={{ flex: 1, padding: 10, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}
                                         >Cancel</button>
                                         <button
                                             type="button"
-                                            onClick={handleSaveNewAddr}
+                                            onClick={handleSaveAddr}
                                             disabled={savingAddr}
                                             style={{ flex: 1, padding: 10, border: 'none', borderRadius: 8, background: 'linear-gradient(135deg, #667eea, #764ba2)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13, opacity: savingAddr ? 0.6 : 1 }}
                                         >{savingAddr ? 'Saving...' : 'Save Address'}</button>
