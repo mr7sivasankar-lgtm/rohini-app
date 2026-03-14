@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useWishlist } from '../../contexts/WishlistContext';
 import api, { getImageUrl } from '../../utils/api';
@@ -6,21 +6,42 @@ import './Search.css';
 
 const Search = () => {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const query = searchParams.get('q') || '';
 
     const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [searchInput, setSearchInput] = useState(query);
+    const inputRef = useRef(null);
+    const debounceRef = useRef(null);
 
+    // Auto-focus the input when the page opens
     useEffect(() => {
-        if (query) {
-            searchProducts(query);
-            setSearchInput(query);
-        } else {
-            setLoading(false);
+        if (inputRef.current) {
+            inputRef.current.focus();
         }
-    }, [query]);
+    }, []);
+
+    // Debounced live search as user types
+    useEffect(() => {
+        const q = searchInput.trim();
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+
+        if (q.length === 0) {
+            setProducts([]);
+            setLoading(false);
+            return;
+        }
+
+        debounceRef.current = setTimeout(() => {
+            searchProducts(q);
+            setSearchParams({ q }, { replace: true });
+        }, 350);
+
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+        };
+    }, [searchInput]);
 
     const searchProducts = async (searchQuery) => {
         try {
@@ -36,43 +57,61 @@ const Search = () => {
         }
     };
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        if (searchInput.trim()) {
-            navigate(`/search?q=${searchInput.trim()}`);
-        }
+    const handleClear = () => {
+        setSearchInput('');
+        setProducts([]);
+        setSearchParams({}, { replace: true });
+        if (inputRef.current) inputRef.current.focus();
     };
 
     return (
         <div className="search-page">
-            {/* Header with Back Button */}
+            {/* Full-width sticky search header */}
             <div className="search-header">
                 <button className="back-btn" onClick={() => navigate(-1)}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </button>
-                <form className="search-bar-full" onSubmit={handleSearch}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div className="search-input-wrap">
+                    <svg className="search-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <circle cx="11" cy="11" r="8" />
                         <path d="m21 21-4.35-4.35" />
                     </svg>
                     <input
-                        type="text"
-                        placeholder="Search products..."
+                        ref={inputRef}
+                        type="search"
+                        placeholder="Search for products..."
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
-                        autoFocus
+                        className="search-input-field"
+                        enterKeyHint="search"
+                        autoComplete="off"
+                        autoCorrect="off"
                     />
-                </form>
+                    {searchInput && (
+                        <button className="search-clear-btn" onClick={handleClear}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Search Results */}
             <div className="search-content">
-                {query && (
+                {searchInput.trim() && (
                     <div className="search-query-info">
-                        <p>Search results for "<strong>{query}</strong>"</p>
-                        {!loading && <span>{products.length} products found</span>}
+                        <p>
+                            {loading 
+                                ? `Searching for "${searchInput}"...`
+                                : products.length > 0 
+                                    ? <><strong>{products.length}</strong> results for &quot;{searchInput}&quot;</>
+                                    : `No results for "${searchInput}"`
+                            }
+                        </p>
                     </div>
                 )}
 
@@ -91,23 +130,31 @@ const Search = () => {
                             />
                         ))}
                     </div>
-                ) : query ? (
+                ) : searchInput.trim() ? (
                     <div className="empty-state">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#c0c0c0" strokeWidth="1.5">
                             <circle cx="11" cy="11" r="8" />
                             <path d="m21 21-4.35-4.35" />
                         </svg>
                         <h3>No products found</h3>
-                        <p>Try searching with different keywords</p>
+                        <p>Try a different keyword</p>
                     </div>
                 ) : (
-                    <div className="empty-state">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="m21 21-4.35-4.35" />
-                        </svg>
-                        <h3>Start searching</h3>
-                        <p>Enter a keyword to find products</p>
+                    <div className="search-placeholder">
+                        <div className="search-placeholder-icon">
+                            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="url(#searchGrad)" strokeWidth="1.2">
+                                <defs>
+                                    <linearGradient id="searchGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stopColor="#667eea" />
+                                        <stop offset="100%" stopColor="#764ba2" />
+                                    </linearGradient>
+                                </defs>
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="m21 21-4.35-4.35" />
+                            </svg>
+                        </div>
+                        <h3>What are you looking for?</h3>
+                        <p>Type a product name, category or keyword to get started</p>
                     </div>
                 )}
             </div>
