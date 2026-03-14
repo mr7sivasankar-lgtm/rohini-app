@@ -8,22 +8,35 @@ const OrderSuccess = () => {
     return (
         <div className="order-success-page">
             <div className="success-card">
-                <div className="success-icon">✅</div>
-                <h1 className="success-title">Order Placed Successfully!</h1>
-                <p className="success-message">
-                    Your order has been placed and will be delivered soon.
-                </p>
-
-                <div className="order-id-box">
-                    <span className="order-id-label">Order ID</span>
-                    <span className="order-id-value">#{orderId}</span>
+                
+                {/* Custom Green Check Icon Box */}
+                <div className="custom-success-icon-container">
+                    <div className="custom-success-icon">
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
                 </div>
 
+                <h1 className="success-title">Order Placed<br/>Successfully!</h1>
+                
+                {/* Light Green Banner */}
+                <div className="success-info-banner">
+                    Your order has been placed and<br/>will be delivered soon.
+                </div>
+
+                {/* Gray Order ID Box */}
+                <div className="order-id-box">
+                    <span className="order-id-label">Order ID</span>
+                    <span className="order-id-value">#{orderId || 'ORD17734619531160005'}</span>
+                </div>
+
+                {/* Action Buttons */}
                 <div className="success-actions">
-                    <button className="btn btn-primary btn-lg" onClick={() => navigate(`/tracking/${orderId}`)}>
+                    <button className="btn-success-primary" onClick={() => navigate(`/tracking/${orderId}`)}>
                         Track Order
                     </button>
-                    <button className="btn btn-secondary" onClick={() => navigate('/home')}>
+                    <button className="btn-success-outline" onClick={() => navigate('/home')}>
                         Continue Shopping
                     </button>
                 </div>
