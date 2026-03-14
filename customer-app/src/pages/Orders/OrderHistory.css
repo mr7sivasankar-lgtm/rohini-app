@@ -1,79 +1,177 @@
 .order-history-page {
-    padding: var(--spacing-lg) var(--spacing-md);
-    min-height: calc(100vh - var(--bottom-nav-height));
+    padding: 16px;
+    background: #f8fafc;
+    min-height: calc(100vh - 70px);
+    padding-bottom: 90px;
+}
+
+.page-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 16px;
+    letter-spacing: -0.3px;
 }
 
 .orders-list {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: 12px;
 }
 
 .order-card-item {
-    background: var(--white);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-md);
-    box-shadow: var(--shadow-sm);
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+    border: 1px solid #f1f5f9;
 }
 
-.order-card-item:hover {
+.order-card-item:hover,
+.order-card-item:active {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
 .order-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: start;
-    margin-bottom: var(--spacing-md);
-    padding-bottom: var(--spacing-sm);
-    border-bottom: 1px solid var(--bg-gray);
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+.order-card-header > div:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .order-card-header h3 {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
-    margin-bottom: 4px;
+    color: #1e293b;
+    margin: 0;
+    letter-spacing: -0.2px;
+}
+
+.order-date {
+    font-size: 12px;
+    color: #94a3b8;
+    margin: 0;
 }
 
 .order-items-preview {
     display: flex;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: center;
 }
 
 .order-items-preview img {
-    width: 60px;
-    height: 60px;
+    width: 48px;
+    height: 48px;
     object-fit: cover;
-    border-radius: var(--radius-md);
-    border: 2px solid var(--bg-gray);
+    border-radius: 10px;
+    background: #f1f5f9;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .more-items {
-    width: 60px;
-    height: 60px;
-    background: var(--bg-gray);
-    border-radius: var(--radius-md);
+    width: 48px;
+    height: 48px;
+    background: #f8fafc;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 13px;
     font-weight: 700;
-    color: var(--gray);
+    color: #64748b;
+    border: 1px solid #e2e8f0;
 }
 
 .order-total {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 14px;
-    color: var(--dark-gray);
+    background: #f8fafc;
+    padding: 10px 12px;
+    border-radius: 10px;
+}
+
+.order-total > span:first-child {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
 }
 
 .total-amount {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+/* Base styles for all statuses */
+.status-placed { background: #eff6ff; color: #3b82f6; }
+.status-accepted { background: #f0fdf4; color: #22c55e; }
+.status-packed { background: #fefce8; color: #eab308; }
+.status-out-for-delivery { background: #fff7ed; color: #f97316; }
+.status-delivered { background: #f0fdf4; color: #16a34a; }
+.status-cancelled { background: #fef2f2; color: #ef4444; }
+
+/* Return statuses */
+.status-return-requested { background: #fff1f2; color: #e11d48; }
+.status-return-approved { background: #fdf4ff; color: #c026d3; }
+.status-return-completed { background: #f0fdfa; color: #0d9488; }
+.status-return-rejected { background: #fef2f2; color: #dc2626; }
+
+/* Exchange statuses */
+.status-exchange-requested { background: #f0f9ff; color: #0284c7; }
+.status-exchange-approved { background: #eef2ff; color: #4f46e5; }
+.status-exchange-completed { background: #f5f3ff; color: #7c3aed; }
+.status-exchange-rejected { background: #fef2f2; color: #dc2626; }
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    height: 60vh;
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.8;
+}
+
+.empty-state-title {
     font-size: 18px;
     font-weight: 700;
-    color: var(--black);
+    color: #1e293b;
+    margin: 0 0 8px;
+}
+
+.empty-state-text {
+    font-size: 14px;
+    color: #64748b;
+    margin: 0 0 24px;
 }

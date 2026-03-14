@@ -75,9 +75,10 @@ const OrderHistory = () => {
                                 );
 
                                 const effectiveStatus = activeItem ? activeItem.status : (resolvedItem ? resolvedItem.status : order.status);
+                                const statusClass = effectiveStatus.toLowerCase().replace(/ /g, '-');
 
                                 return (
-                                    <div className={`status-badge status-${effectiveStatus.toLowerCase().replace(/ /g, '-')}`}>
+                                    <div className={`status-badge status-${statusClass}`}>
                                         {effectiveStatus}
                                     </div>
                                 );
@@ -85,7 +86,7 @@ const OrderHistory = () => {
                         </div>
 
                         <div className="order-items-preview">
-                            {order.items.slice(0, 3).map((item, index) => (
+                            {order.items.slice(0, 4).map((item, index) => (
                                 <img
                                     key={index}
                                     src={getImageUrl(item.image)}
@@ -93,14 +94,19 @@ const OrderHistory = () => {
                                     onError={(e) => e.target.style.display = 'none'}
                                 />
                             ))}
-                            {order.items.length > 3 && (
-                                <div className="more-items">+{order.items.length - 3}</div>
+                            {order.items.length > 4 && (
+                                <div className="more-items">+{order.items.length - 4}</div>
                             )}
                         </div>
 
                         <div className="order-total">
-                            <span>{order.items.length} item(s)</span>
-                            <span className="total-amount">₹{order.total.toFixed(2)}</span>
+                            <span>{order.items.length} item{order.items.length > 1 ? 's' : ''}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span className="total-amount">₹{order.total.toFixed(2)}</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="m9 18 6-6-6-6"/>
+                                </svg>
+                            </div>
                         </div>
                     </div>
                 ))}
