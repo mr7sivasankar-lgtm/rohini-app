@@ -186,22 +186,6 @@ const Home = () => {
                 </div>
             )}
 
-            {/* Search Bar */}
-            <div className="search-container">
-                <form className="search-bar" onSubmit={handleSearch}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="11" cy="11" r="8" />
-                        <path d="m21 21-4.35-4.35" />
-                    </svg>
-                    <input
-                        type="text"
-                        placeholder="Search"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                </form>
-            </div>
-
             {/* Banner Section */}
             {banners.length > 0 ? (
                 <div className="banner-section">
