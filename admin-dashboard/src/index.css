@@ -314,6 +314,23 @@ body {
   background: var(--widget-red);
 }
 
+/* Exchange Status Badges */
+.status-exchange-requested {
+  background: var(--status-warning);
+}
+
+.status-exchange-approved {
+  background: var(--widget-indigo);
+}
+
+.status-exchange-completed {
+  background: var(--status-success);
+}
+
+.status-exchange-rejected {
+  background: var(--status-danger);
+}
+
 /* Forms */
 .form-group {
   margin-bottom: 20px;
@@ -587,6 +604,15 @@ body {
 
 .cancelled-row td:first-child {
   border-left: 5px solid #ef4444; /* Solid red border on the left */
+}
+
+/* Product Exchange Highlighting */
+.exchange-row {
+  background-color: #fff7ed !important;
+}
+
+.exchange-row td:first-child {
+  border-left: 5px solid #f97316; /* Solid orange border on the left */
 }
 
 .item-note-container {

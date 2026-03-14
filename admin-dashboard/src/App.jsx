@@ -643,7 +643,7 @@ function App() {
 }
 
 const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus }) => {
-  const statusOptions = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
+  const statusOptions = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled', 'Exchange Requested', 'Exchange Approved', 'Exchange Completed', 'Exchange Rejected'];
 
   return (
     <table className="table">
@@ -665,8 +665,14 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
       <tbody>
         {orders.map(order => {
           const isCancelled = order.status === 'Cancelled' || order.items.every(i => i.status === 'Cancelled');
+          const isExchangeRequested = order.status === 'Exchange Requested';
+          
+          let rowClass = '';
+          if (isCancelled) rowClass = 'cancelled-row';
+          if (isExchangeRequested) rowClass = 'exchange-row';
+
           return (
-          <tr key={order._id} className={isCancelled ? 'cancelled-row' : ''}>
+          <tr key={order._id} className={rowClass}>
             <td>#{order.orderId}</td>
             <td>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -721,13 +727,26 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                         </div>
                       )}
                       {/* Customer Reason Note & Cancellation Info */}
-                      {(item.actionReason || item.status === 'Cancelled') && (
-                        <div className="item-note-container" style={{ marginTop: '6px', padding: '8px', background: item.status === 'Cancelled' ? '#fef2f2' : '#f8fafc', borderLeft: item.status === 'Cancelled' ? '3px solid #ef4444' : '3px solid #cbd5e1', borderRadius: '4px' }}>
+                      {(item.actionReason || item.status === 'Cancelled' || item.status === 'Exchange Requested') && (
+                        <div className="item-note-container" style={{ marginTop: '6px', padding: '8px', background: item.status === 'Cancelled' ? '#fef2f2' : (item.status === 'Exchange Requested' ? '#fff7ed' : '#f8fafc'), borderLeft: item.status === 'Cancelled' ? '3px solid #ef4444' : (item.status === 'Exchange Requested' ? '3px solid #f97316' : '3px solid #cbd5e1'), borderRadius: '4px' }}>
                           {item.status === 'Cancelled' && (
                             <div style={{ fontSize: '0.85em', fontWeight: 600, color: '#dc2626', marginBottom: '4px' }}>
                               <span>Cancelled by: {item.cancelledBy || 'System/Admin'}</span>
                               <span style={{ margin: '0 6px', color: '#fca5a5' }}>|</span>
                               <span>Time: {item.cancelledAt ? new Date(item.cancelledAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          )}
+                          {item.status === 'Exchange Requested' && (
+                            <div style={{ fontSize: '0.85em', fontWeight: 600, color: '#ea580c', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                               <span>🔄 Exchange Requested</span>
+                            </div>
+                          )}
+                          {(item.status === 'Exchange Requested') && (item.exchangeSize || item.exchangeColor) && (
+                            <div style={{ fontSize: '0.85em', fontWeight: 600, color: '#ea580c', marginBottom: '4px' }}>
+                              Requested:{' '}
+                              {item.exchangeSize && `Size ${item.size} → ${item.exchangeSize}`}
+                              {item.exchangeSize && item.exchangeColor && ', '}
+                              {item.exchangeColor && `Color ${item.color} → ${item.exchangeColor}`}
                             </div>
                           )}
                           {item.actionReason && (
@@ -830,8 +849,8 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
             </td>
             <td style={{ fontWeight: 600 }}>₹{order.total.toFixed(2)}</td>
             <td>
-              <span className={`status-badge status-${order.status.toLowerCase().replace(' ', '-')}`}>
-                {order.status === 'Cancelled' ? '❌ Cancelled' : order.status}
+              <span className={`status-badge status-${order.status.toLowerCase().replace(/ /g, '-')}`}>
+                {order.status === 'Cancelled' ? '❌ Cancelled' : (order.status === 'Exchange Requested' ? '🔄 Exchange Requested' : order.status)}
               </span>
             </td>
             <td>

@@ -180,7 +180,7 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
     try {
         const { status, note } = req.body;
 
-        const validStatuses = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
+        const validStatuses = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled', 'Exchange Requested', 'Exchange Approved', 'Exchange Completed', 'Exchange Rejected'];
 
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
@@ -236,6 +236,50 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
                     await product.save();
                     console.log(`[Order Un-Cancel] New stock saved: ${product.stock}`);
                 }
+            }
+        }
+
+        if (status === 'Exchange Approved' && order.status === 'Exchange Requested') {
+            const exchangedItems = order.items.filter(i => i.status === 'Exchange Requested');
+            if (exchangedItems.length > 0) {
+                const exCount = await Order.countDocuments({ orderId: { $regex: new RegExp(`^${order.orderId}-EX`) } });
+                const newOrderId = `${order.orderId}-EX${exCount + 1}`;
+                
+                const replacementItems = exchangedItems.map(item => ({
+                    product: item.product,
+                    name: item.name,
+                    productCode: item.productCode,
+                    image: item.image,
+                    price: 0,
+                    quantity: item.quantity,
+                    size: item.exchangeSize || item.size,
+                    color: item.exchangeColor || item.color,
+                    status: 'Active'
+                }));
+                
+                const replacementOrder = new Order({
+                    orderId: newOrderId,
+                    user: order.user,
+                    items: replacementItems,
+                    shippingAddress: order.shippingAddress,
+                    contactInfo: order.contactInfo,
+                    subtotal: 0,
+                    deliveryFee: 0,
+                    total: 0,
+                    paymentMethod: order.paymentMethod,
+                    status: 'Placed'
+                });
+                
+                await replacementOrder.save();
+                
+                for (const item of exchangedItems) {
+                    item.status = 'Exchanged';
+                }
+            }
+        } else if (status === 'Exchange Rejected' && order.status === 'Exchange Requested') {
+            const exchangedItems = order.items.filter(i => i.status === 'Exchange Requested');
+            for (const item of exchangedItems) {
+                item.status = 'Exchange Rejected';
             }
         }
 
@@ -408,6 +452,15 @@ router.put('/:id/item-action', protect, async (req, res) => {
             item.status = 'Exchange Requested';
             item.exchangeSize = exchangeSize || '';
             item.exchangeColor = exchangeColor || '';
+
+            if (order.status !== 'Exchange Requested') {
+                order.status = 'Exchange Requested';
+                order.statusHistory.push({
+                    status: 'Exchange Requested',
+                    timestamp: new Date(),
+                    note: 'Customer requested an exchange for one or more items.'
+                });
+            }
         }
 
         await order.save();
