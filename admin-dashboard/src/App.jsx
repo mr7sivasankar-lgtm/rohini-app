@@ -888,63 +888,13 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                         onError={(e) => { e.target.style.display = 'none'; }}
                       />
                     )}
-                    <div>
-                      <div>{item.name} <strong>(x{item.quantity})</strong></div>
-                      {(item.size || item.color) && (
-                        <div style={{ fontSize: '0.9em', color: '#64748b' }}>
-                          {item.size ? `Size: ${item.size}` : ''}
-                          {item.size && item.color ? ' | ' : ''}
-                          {item.color ? `Color: ${item.color}` : ''}
-                        </div>
-                      )}
-                      {/* Item Level Status Flag */}
-                      {item.status && item.status !== 'Active' && (
-                        <div style={{
-                          marginTop: '4px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontSize: '0.8em',
-                          fontWeight: 700,
-                          backgroundColor: item.status.includes('Requested') ? '#ffedd5' : item.status.includes('Rejected') ? '#fef2f2' : item.status === 'Returned' || item.status === 'Exchanged' ? '#dcfce7' : '#e0f2fe',
-                          color: item.status.includes('Requested') ? '#c2410c' : item.status.includes('Rejected') ? '#991b1b' : item.status === 'Returned' || item.status === 'Exchanged' ? '#15803d' : '#0369a1',
-                          border: `1px solid ${item.status.includes('Requested') ? '#fdba74' : item.status.includes('Rejected') ? '#fecaca' : item.status === 'Returned' || item.status === 'Exchanged' ? '#86efac' : '#bae6fd'}`
-                        }}>
-                          {item.status}
-                        </div>
-                      )}
-                      {/* Customer Reason Note & Cancellation Info */}
-                      {(item.actionReason || item.status === 'Cancelled' || item.status === 'Exchange Requested') && (
-                        <div className="item-note-container" style={{ marginTop: '6px', padding: '8px', background: item.status === 'Cancelled' ? '#fef2f2' : (item.status === 'Exchange Requested' ? '#fff7ed' : '#f8fafc'), borderLeft: item.status === 'Cancelled' ? '3px solid #ef4444' : (item.status === 'Exchange Requested' ? '3px solid #f97316' : '3px solid #cbd5e1'), borderRadius: '4px' }}>
-                          {item.status === 'Cancelled' && (
-                            <div style={{ fontSize: '0.85em', fontWeight: 600, color: '#dc2626', marginBottom: '4px' }}>
-                              <span>Cancelled by: {item.cancelledBy || 'System/Admin'}</span>
-                              <span style={{ margin: '0 6px', color: '#fca5a5' }}>|</span>
-                              <span>Time: {item.cancelledAt ? new Date(item.cancelledAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
-                          )}
-                          {item.status === 'Exchange Requested' && (
-                            <div style={{ fontSize: '0.85em', fontWeight: 600, color: '#ea580c', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                               <span>🔄 Exchange Requested</span>
-                            </div>
-                          )}
-                          {(item.status === 'Exchange Requested') && (item.exchangeSize || item.exchangeColor) && (
-                            <div style={{ fontSize: '0.85em', fontWeight: 600, color: '#ea580c', marginBottom: '4px' }}>
-                              Requested:{' '}
-                              {item.exchangeSize && `Size ${item.size} → ${item.exchangeSize}`}
-                              {item.exchangeSize && item.exchangeColor && ', '}
-                              {item.exchangeColor && `Color ${item.color} → ${item.exchangeColor}`}
-                            </div>
-                          )}
-                          {item.actionReason && (
-                            <div style={{ fontSize: '0.85em', color: '#475569', fontStyle: 'italic' }}>
-                              <span style={{ fontWeight: 600 }}>Reason:</span> {item.actionReason}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '13px', color: '#1e293b' }}>{item.name} <span style={{ fontWeight: 600, color: '#334155' }}>(x{item.quantity})</span></span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {item.size && `Size: ${item.size}`}
+                        {item.size && item.color && ' | '}
+                        {item.color && `Color: ${item.color}`}
+                      </span>
                     </div>
                   </li>
                 ))}
