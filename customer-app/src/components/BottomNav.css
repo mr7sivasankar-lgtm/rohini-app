@@ -70,37 +70,41 @@
     transform: scale(0.95);
 }
 
-/* Pill Search Button */
+/* Pill Search Button - half above nav bar */
 .nav-search-wrap {
     flex: 1.6;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 4px 0;
+    position: relative;
 }
 
 .floating-search-btn {
-    width: 70px;
-    height: 44px;
-    border-radius: 22px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-70%);
+    width: 72px;
+    height: 46px;
+    border-radius: 23px;
     background: linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #60a5fa 100%);
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 3px 14px rgba(129, 140, 248, 0.45);
+    box-shadow: 0 -2px 18px rgba(129, 140, 248, 0.45), 0 4px 10px rgba(0,0,0,0.1);
     transition: all 0.2s ease;
+    z-index: 10;
 }
 
 .floating-search-btn:active {
-    transform: scale(0.93);
+    transform: translateY(-70%) scale(0.93);
     box-shadow: 0 2px 8px rgba(129, 140, 248, 0.3);
 }
 
 .floating-search-btn.active {
     background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-    box-shadow: 0 4px 18px rgba(109, 40, 217, 0.5);
+    box-shadow: 0 -2px 20px rgba(109, 40, 217, 0.5);
 }
 
 /* Animations */
