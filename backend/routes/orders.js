@@ -553,13 +553,13 @@ router.put('/:id/item-action', protect, async (req, res) => {
             }
 
             // Auto-cancel the entire order if all items are now cancelled
-            const allCancelled = order.items.every(i => i.status === 'Cancelled' || (i._id.toString() === itemId && action === 'cancel'));
+            const allCancelled = order.items.every(i => i.status === 'Cancelled');
             if (allCancelled && order.status !== 'Cancelled') {
                 order.status = 'Cancelled';
                 order.statusHistory.push({
                     status: 'Cancelled',
                     timestamp: new Date(),
-                    note: 'Auto-cancelled because all items were cancelled.'
+                    note: 'Auto-cancelled: all items were cancelled by customer.'
                 });
             }
         } else if (action === 'return') {
