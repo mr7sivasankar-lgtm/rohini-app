@@ -804,9 +804,29 @@ const OrderManagementTab = ({ orders, updateOrderStatus, deleteOrder, handleUpda
   );
 };
 
-const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus }) => {
+const ITEM_NEXT_STATES = {
+  'Active':                     [],
+  'Return Requested':           ['Return Accepted', 'Return Rejected'],
+  'Return Accepted':            ['Out for Pickup'],
+  'Out for Pickup':             ['Return Picked Up'],
+  'Return Picked Up':           ['Returned'],
+  'Returned':                   [],
+  'Return Rejected':            [],
+  'Exchange Requested':         ['Exchange Accepted', 'Exchange Rejected'],
+  'Exchange Accepted':          ['Out for Delivery (Exchange)'],
+  'Out for Delivery (Exchange)':['Exchanged'],
+  'Exchanged':                  [],
+  'Exchange Rejected':          [],
+  'Cancelled':                  [],
+};
 
-  const statusOptions = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled', 'Exchange Requested', 'Exchange Approved', 'Exchange Completed', 'Exchange Rejected'];
+const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus }) => {
+  const [expandedOrders, setExpandedOrders] = useState({});
+  const toggleHistory = (id) => setExpandedOrders(p => ({ ...p, [id]: !p[id] }));
+
+  const statusOptions = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled',
+    'Return Requested', 'Returned',
+    'Exchange Requested', 'Exchange Approved', 'Exchange Completed', 'Exchange Rejected'];
 
   return (
     <table className="table">
@@ -835,8 +855,18 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
           if (isExchangeRequested) rowClass = 'exchange-row';
 
           return (
+          <>
           <tr key={order._id} className={rowClass}>
-            <td>#{order.orderId}</td>
+            <td style={{ minWidth: '30px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>#{order.orderId?.slice(-6)}</span>
+                <button
+                  onClick={() => toggleHistory(order._id)}
+                  title="Show order history"
+                  style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', padding: '1px 4px', color: '#64748b' }}
+                >{expandedOrders[order._id] ? '▲' : '▼'}</button>
+              </div>
+            </td>
             <td>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ background: '#e2e8f0', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
@@ -925,105 +955,73 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
               </ul>
             </td>
             <td>
-              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '180px' }}>
+              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '190px' }}>
                 {order.items.map((item, idx) => {
+                  const nextStates = ITEM_NEXT_STATES[item.status] || [];
                   const fmt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : null;
-                  const Ts = ({ date }) => date ? <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>🕐 {fmt(date)}</div> : null;
+
+                  // Terminal status chip configs
+                  const terminalChips = {
+                    'Returned':         { bg: '#dcfce7', color: '#15803d', border: '#86efac', icon: '✅', label: 'Return Completed', ts: item.returnCompletedAt },
+                    'Exchanged':        { bg: '#ede9fe', color: '#6d28d9', border: '#c4b5fd', icon: '✅', label: 'Exchange Completed', ts: item.exchangeCompletedAt },
+                    'Return Rejected':  { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Return Rejected', ts: item.returnRejectedAt },
+                    'Exchange Rejected':{ bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Exchange Rejected', ts: item.exchangeRejectedAt },
+                    'Cancelled':        { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Cancelled', ts: item.cancelledAt },
+                  };
+                  const chip = terminalChips[item.status];
+
+                  // Current step timestamp for in-progress states
+                  const inProgressTs = {
+                    'Return Requested':           item.returnRequestedAt,
+                    'Return Accepted':            item.returnAcceptedAt,
+                    'Out for Pickup':             item.outForPickupAt,
+                    'Return Picked Up':           item.returnPickedUpAt,
+                    'Exchange Requested':         item.exchangeRequestedAt,
+                    'Exchange Accepted':          item.exchangeAcceptedAt,
+                    'Out for Delivery (Exchange)':item.exchangeAcceptedAt,
+                  }[item.status];
+
+                  // Show exchange preference
+                  const pref = item.exchangeSize || item.exchangeColor ? (
+                    <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 600, marginBottom: '4px' }}>
+                      Prefers: {item.exchangeSize && `Size ${item.exchangeSize}`} {item.exchangeColor && `Color ${item.exchangeColor}`}
+                    </div>
+                  ) : null;
 
                   return (
-                    <li key={idx} style={{ display: 'flex', flexDirection: 'column', minHeight: '36px', alignItems: 'flex-start', justifyContent: 'center', gap: '2px' }}>
-                      {item.exchangeSize || item.exchangeColor ? (
-                        <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 600, marginBottom: '4px' }}>
-                          Prefers: {item.exchangeSize && `Size ${item.exchangeSize}`} {item.exchangeColor && `Color ${item.exchangeColor}`}
-                        </div>
+                    <li key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                      {pref}
+                      {chip ? (
+                        <>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: chip.bg, color: chip.color, border: `1px solid ${chip.border}`, borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
+                            {chip.icon} {chip.label}
+                          </div>
+                          {chip.ts && <div style={{ fontSize: '10px', color: '#94a3b8' }}>🕐 {fmt(chip.ts)}</div>}
+                        </>
+                      ) : nextStates.length > 0 ? (
+                        <>
+                          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>
+                            Current: <span style={{ color: '#f97316' }}>{item.status}</span>
+                          </div>
+                          {inProgressTs && <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '4px' }}>🕐 {fmt(inProgressTs)}</div>}
+                          <select
+                            defaultValue=""
+                            onChange={(e) => { if (e.target.value) handleUpdateItemStatus(order._id, item._id, e.target.value); }}
+                            style={{ padding: '5px 8px', fontSize: '12px', borderRadius: '6px', border: '1.5px solid #e2e8f0', cursor: 'pointer', background: '#f8fafc', fontWeight: 600, color: '#1e293b', width: '100%' }}
+                          >
+                            <option value="">— Move to… —</option>
+                            {nextStates.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </>
+                      ) : item.status === 'Active' ? (
+                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>— No action —</span>
                       ) : null}
-
-                      {/* ── Return Flow ── */}
-                      {item.status === 'Return Requested' && (
-                        <>
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Accepted')} style={{ cursor: 'pointer', background: '#22c55e', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Approve</button>
-                            <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Rejected')} style={{ cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Reject</button>
-                          </div>
-                          <Ts date={item.returnRequestedAt} />
-                        </>
-                      )}
-                      {item.status === 'Return Accepted' && (
-                        <>
-                          <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Out for Pickup')} style={{ cursor: 'pointer', background: '#f59e0b', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Mark Out for Pickup</button>
-                          <Ts date={item.returnAcceptedAt} />
-                        </>
-                      )}
-                      {item.status === 'Out for Pickup' && (
-                        <>
-                          <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Picked Up')} style={{ cursor: 'pointer', background: '#3b82f6', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Mark Picked Up</button>
-                          <Ts date={item.outForPickupAt} />
-                        </>
-                      )}
-                      {item.status === 'Return Picked Up' && (
-                        <>
-                          <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Returned')} style={{ cursor: 'pointer', background: '#10b981', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>Complete Return</button>
-                          <Ts date={item.returnPickedUpAt} />
-                        </>
-                      )}
-
-                      {/* ── Exchange Flow ── */}
-                      {item.status === 'Exchange Requested' && (
-                        <>
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchange Accepted')} style={{ cursor: 'pointer', background: '#22c55e', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Approve</button>
-                            <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchange Rejected')} style={{ cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Reject</button>
-                          </div>
-                          <Ts date={item.exchangeRequestedAt} />
-                        </>
-                      )}
-                      {item.status === 'Exchange Accepted' && (
-                        <>
-                          <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Out for Delivery (Exchange)')} style={{ cursor: 'pointer', background: '#f59e0b', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Mark Out for Delivery</button>
-                          <Ts date={item.exchangeAcceptedAt} />
-                        </>
-                      )}
-                      {item.status === 'Out for Delivery (Exchange)' && (
-                        <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchanged')} style={{ cursor: 'pointer', background: '#10b981', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>Complete Exchange</button>
-                      )}
-
-                      {/* ── Terminal Status Chips with timestamps ── */}
-                      {item.status === 'Returned' && (
-                        <>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>✅ Return Completed</div>
-                          <Ts date={item.returnCompletedAt} />
-                        </>
-                      )}
-                      {item.status === 'Exchanged' && (
-                        <>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#ede9fe', color: '#6d28d9', border: '1px solid #c4b5fd', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>✅ Exchange Completed</div>
-                          <Ts date={item.exchangeCompletedAt} />
-                        </>
-                      )}
-                      {item.status === 'Return Rejected' && (
-                        <>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>❌ Return Rejected</div>
-                          <Ts date={item.returnRejectedAt} />
-                        </>
-                      )}
-                      {item.status === 'Exchange Rejected' && (
-                        <>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>❌ Exchange Rejected</div>
-                          <Ts date={item.exchangeRejectedAt} />
-                        </>
-                      )}
-                      {item.status === 'Cancelled' && (
-                        <>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>❌ Cancelled</div>
-                          <Ts date={item.cancelledAt} />
-                        </>
-                      )}
                     </li>
                   );
                 })}
               </ul>
-
             </td>
+
             <td>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
                 {order.items.map((item, idx) => (
@@ -1109,7 +1107,69 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
               </div>
             </td>
           </tr>
-        )})}
+          {/* Expandable History Row */}
+          {expandedOrders[order._id] && (
+            <tr key={`hist-${order._id}`}>
+              <td colSpan={11} style={{ background: '#f8fafc', padding: '0 12px 12px 40px', borderBottom: '2px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', paddingTop: '12px' }}>
+                  {/* Order Status Timeline */}
+                  <div style={{ minWidth: '220px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '13px', color: '#334155', marginBottom: '8px' }}>📦 Order Status History</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {(order.statusHistory || []).map((h, i) => (
+                        <div key={i} style={{ display: 'flex', gap: '8px', fontSize: '12px', alignItems: 'flex-start' }}>
+                          <span style={{ color: '#f97316', fontSize: '16px', lineHeight: 1.2 }}>●</span>
+                          <div>
+                            <span style={{ fontWeight: 600, color: '#1e293b' }}>{h.status}</span>
+                            <div style={{ color: '#94a3b8', fontSize: '11px' }}>
+                              {h.timestamp ? new Date(h.timestamp).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true }) : ''}
+                            </div>
+                            {h.note && <div style={{ color: '#64748b', fontStyle: 'italic', fontSize: '11px' }}>{h.note}</div>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Per-item timeline */}
+                  {order.items.map((item, idx) => {
+                    const fmtDt = (d) => d ? new Date(d).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:true }) : null;
+                    const steps = [
+                      { label: 'Return Requested',  ts: item.returnRequestedAt },
+                      { label: 'Return Accepted',   ts: item.returnAcceptedAt },
+                      { label: 'Out for Pickup',    ts: item.outForPickupAt },
+                      { label: 'Return Picked Up',  ts: item.returnPickedUpAt },
+                      { label: 'Return Completed',  ts: item.returnCompletedAt },
+                      { label: 'Return Rejected',   ts: item.returnRejectedAt },
+                      { label: 'Exchange Requested',ts: item.exchangeRequestedAt },
+                      { label: 'Exchange Accepted', ts: item.exchangeAcceptedAt },
+                      { label: 'Exchange Completed',ts: item.exchangeCompletedAt },
+                      { label: 'Exchange Rejected', ts: item.exchangeRejectedAt },
+                      { label: 'Cancelled',         ts: item.cancelledAt },
+                    ].filter(s => s.ts);
+                    if (steps.length === 0) return null;
+                    return (
+                      <div key={idx} style={{ minWidth: '180px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '13px', color: '#334155', marginBottom: '8px' }}>🏷 {item.name} History</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {steps.map((s, si) => (
+                            <div key={si} style={{ display: 'flex', gap: '8px', fontSize: '12px', alignItems: 'flex-start' }}>
+                              <span style={{ color: '#3b82f6', fontSize: '16px', lineHeight: 1.2 }}>●</span>
+                              <div>
+                                <span style={{ fontWeight: 600, color: '#1e293b' }}>{s.label}</span>
+                                <div style={{ color: '#94a3b8', fontSize: '11px' }}>🕐 {fmtDt(s.ts)}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </td>
+            </tr>
+          )}
+        </>);
+        })}
       </tbody>
     </table>
   );

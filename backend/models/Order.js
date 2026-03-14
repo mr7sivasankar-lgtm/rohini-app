@@ -90,7 +90,9 @@ const orderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled', 'Exchange Requested', 'Exchange Approved', 'Exchange Completed', 'Exchange Rejected'],
+        enum: ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled',
+               'Return Requested', 'Returned',
+               'Exchange Requested', 'Exchange Approved', 'Exchange Completed', 'Exchange Rejected'],
         default: 'Placed'
     },
     statusHistory: [{
