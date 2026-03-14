@@ -16,58 +16,53 @@
     margin-bottom: var(--spacing-lg);
 }
 
-.section-title {
-    font-size: 20px; /* Slightly larger heading */
-    color: #001C30; /* Darker blue color from theme based on screenshots */
-    font-weight: 700;
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: var(--spacing-md);
     padding-bottom: var(--spacing-sm);
     border-bottom: 1px solid #f0f0f0; /* Subtle separator line */
 }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px; /* Spacing between label and input */
-    margin-bottom: var(--spacing-lg);
-}
-
-.form-group label {
-    font-size: 13px;
+.section-title {
+    font-size: 20px; /* Slightly larger heading */
+    color: #001C30; /* Darker blue color from theme based on screenshots */
     font-weight: 700;
-    color: #001C30; /* Matching title color */
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
-/* Modern Inputs Style */
-.input {
-    width: 100%;
-    padding: 14px 16px;
-    border: 1px solid #dcdfe4;
+/* Display styles replacing form inputs */
+.display-card {
+    background: #f8fafc;
     border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+}
+
+.display-name {
     font-size: 16px;
+    font-weight: 700;
+    color: #001C30;
+    margin-bottom: 8px;
+}
+
+.display-text {
+    font-size: 15px;
     color: var(--text-color);
-    background-color: var(--white);
-    transition: all 0.2s ease;
-    font-family: inherit;
+    line-height: 1.5;
+    margin-bottom: 4px;
 }
 
-.input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(34, 102, 238, 0.15); /* Soft primary color glow */
+.display-text:last-child {
+    margin-bottom: 0;
 }
 
-textarea.input {
-    resize: vertical;
-    min-height: 100px;
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-md);
+.display-label {
+    font-weight: 600;
+    color: #475569;
 }
 
 /* Order Summary */
@@ -160,7 +155,5 @@ textarea.input {
         padding-bottom: 90px;
     }
     
-    .form-row {
-        grid-template-columns: 1fr; /* Stack city & district on small screens */
-    }
+    /* Stack rules removed as inputs are removed */
 }

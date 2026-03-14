@@ -108,87 +108,29 @@ const Checkout = () => {
 
                 {/* Shipping Address */}
                 <div className="form-section">
-                    <h2 className="section-title">Shipping Address</h2>
-
-                    <div className="form-group">
-                        <label>FULL NAME *</label>
-                        <input
-                            type="text"
-                            className="input"
-                            value={address.fullName}
-                            onChange={(e) => setAddress({ ...address, fullName: e.target.value })}
-                            required
-                        />
+                    <div className="section-header">
+                        <h2 className="section-title">Shipping Address</h2>
                     </div>
-
-                    <div className="form-group">
-                        <label>ADDRESS *</label>
-                        <textarea
-                            className="input"
-                            rows="3"
-                            value={address.fullAddress}
-                            onChange={(e) => setAddress({ ...address, fullAddress: e.target.value })}
-                            required
-                        />
-                    </div>
-
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label>CITY</label>
-                            <input
-                                type="text"
-                                className="input"
-                                value={address.city}
-                                onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label>DISTRICT</label>
-                            <input
-                                type="text"
-                                className="input"
-                                value={address.district}
-                                onChange={(e) => setAddress({ ...address, district: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label>PINCODE</label>
-                        <input
-                            type="text"
-                            className="input"
-                            value={address.pincode}
-                            onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
-                            maxLength="6"
-                        />
+                    
+                    <div className="display-card">
+                        <p className="display-name">{address.fullName || 'No Name Provided'}</p>
+                        <p className="display-text">{address.fullAddress || 'No Address Provided'}</p>
+                        <p className="display-text">
+                            {[address.city, address.district].filter(Boolean).join(', ')}
+                            {address.pincode ? ` - ${address.pincode}` : ''}
+                        </p>
                     </div>
                 </div>
 
                 {/* Contact Information */}
                 <div className="form-section">
-                    <h2 className="section-title">Contact Information</h2>
-
-                    <div className="form-group">
-                        <label>PHONE *</label>
-                        <input
-                            type="tel"
-                            className="input"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            required
-                        />
+                    <div className="section-header">
+                        <h2 className="section-title">Contact Information</h2>
                     </div>
 
-                    <div className="form-group">
-                        <label>EMAIL</label>
-                        <input
-                            type="email"
-                            className="input"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
+                    <div className="display-card">
+                        <p className="display-text"><span className="display-label">Phone:</span> {phone || 'Not provided'}</p>
+                        {email && <p className="display-text"><span className="display-label">Email:</span> {email}</p>}
                     </div>
                 </div>
 
