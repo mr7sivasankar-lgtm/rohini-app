@@ -841,6 +841,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
           <th>Date</th>
           <th>Action</th>
           <th>Item Logistics</th>
+          <th>User Comments</th>
         </tr>
       </thead>
       <tbody>
@@ -998,7 +999,11 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
             <td style={{ fontWeight: 600 }}>₹{order.total.toFixed(2)}</td>
             <td>
               <span className={`status-badge status-${order.status.toLowerCase().replace(/ /g, '-')}`}>
-                {order.status === 'Cancelled' ? '❌ Cancelled' : (order.status === 'Exchange Requested' ? '🔄 Exchange Requested' : order.status)}
+                {order.status === 'Delivered' ? '✔ Delivered' : 
+                 order.status === 'Cancelled' ? '❌ Cancelled' : 
+                 order.status === 'Returned' ? '↩ Returned' :
+                 order.status === 'Exchanged' ? '🔄 Exchanged' :
+                 order.status}
               </span>
             </td>
             <td>
@@ -1100,11 +1105,31 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                 })}
               </ul>
             </td>
+            <td>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px' }}>
+                {order.items.map((item, idx) => {
+                  let reason = null;
+                  let user = null;
+                  if (item.actionReason) reason = item.actionReason;
+                  if (item.status === 'Cancelled') user = item.cancelledBy || 'Customer';
+                  
+                  if (!reason && !user) return <div key={idx} style={{ minHeight: '36px', fontSize: '12px', color: '#94a3b8' }}>—</div>;
+
+                  return (
+                    <div key={idx} style={{ minHeight: '36px', fontSize: '12px', padding: '6px', background: '#f8fafc', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontWeight: 600, color: '#334155', marginBottom: '2px', fontSize: '11px' }}>{item.name}</div>
+                      {reason && <div style={{ color: '#475569', fontStyle: 'italic' }}>"{reason}"</div>}
+                      {user && <div style={{ color: '#ef4444', fontWeight: 600, marginTop: '2px' }}>By: {user}</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </td>
           </tr>
           {/* Expandable History Row */}
           {expandedOrders[order._id] && (
             <tr key={`hist-${order._id}`}>
-              <td colSpan={11} style={{ background: '#f8fafc', padding: '0 12px 12px 40px', borderBottom: '2px solid #e2e8f0' }}>
+              <td colSpan={12} style={{ background: '#f8fafc', padding: '0 12px 12px 40px', borderBottom: '2px solid #e2e8f0' }}>
                 <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', paddingTop: '12px' }}>
                   {/* Order Status Timeline */}
                   <div style={{ minWidth: '220px' }}>
