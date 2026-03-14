@@ -111,7 +111,7 @@ const Checkout = () => {
                     <h2 className="section-title">Shipping Address</h2>
 
                     <div className="form-group">
-                        <label>Full Name *</label>
+                        <label>FULL NAME *</label>
                         <input
                             type="text"
                             className="input"
@@ -122,7 +122,7 @@ const Checkout = () => {
                     </div>
 
                     <div className="form-group">
-                        <label>Address *</label>
+                        <label>ADDRESS *</label>
                         <textarea
                             className="input"
                             rows="3"
@@ -134,7 +134,7 @@ const Checkout = () => {
 
                     <div className="form-row">
                         <div className="form-group">
-                            <label>City</label>
+                            <label>CITY</label>
                             <input
                                 type="text"
                                 className="input"
@@ -144,7 +144,7 @@ const Checkout = () => {
                         </div>
 
                         <div className="form-group">
-                            <label>District</label>
+                            <label>DISTRICT</label>
                             <input
                                 type="text"
                                 className="input"
@@ -155,7 +155,7 @@ const Checkout = () => {
                     </div>
 
                     <div className="form-group">
-                        <label>Pincode</label>
+                        <label>PINCODE</label>
                         <input
                             type="text"
                             className="input"
@@ -171,7 +171,7 @@ const Checkout = () => {
                     <h2 className="section-title">Contact Information</h2>
 
                     <div className="form-group">
-                        <label>Phone *</label>
+                        <label>PHONE *</label>
                         <input
                             type="tel"
                             className="input"
@@ -182,7 +182,7 @@ const Checkout = () => {
                     </div>
 
                     <div className="form-group">
-                        <label>Email</label>
+                        <label>EMAIL</label>
                         <input
                             type="email"
                             className="input"
@@ -215,11 +215,13 @@ const Checkout = () => {
 
                     <div className="payment-method">
                         <label>Payment Method</label>
-                        <div className="payment-option">💵 Cash on Delivery</div>
+                        <div className="payment-option">
+                            <span className="payment-option-icon">💵</span> Cash on Delivery
+                        </div>
                     </div>
                 </div>
 
-                <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
+                <button type="submit" className="btn-submit-order" disabled={loading}>
                     {loading ? 'Placing Order...' : 'Place Order'}
                 </button>
             </form>
