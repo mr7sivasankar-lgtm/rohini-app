@@ -7,6 +7,36 @@
     padding-bottom: 100px; /* Extra space for bottom button */
 }
 
+.checkout-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    color: var(--primary);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    width: fit-content;
+    transition: opacity 0.2s;
+}
+
+.back-btn:hover {
+    opacity: 0.8;
+}
+
+.page-title {
+    margin: 0;
+}
+
 /* Base Form Section Card */
 .form-section {
     background: var(--white);
