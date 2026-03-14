@@ -15,24 +15,21 @@ router.get('/reverse', async (req, res) => {
             });
         }
 
-        // OpenStreetMap Nominatim API (Free, but requires unique User-Agent)
-        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+        // Use BigDataCloud free client-side reverse geocoding API
+        // It's more forgiving with server IPs than Nominatim which heavily blocks cloud providers
+        const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
 
-        const response = await axios.get(url, {
-            headers: {
-                'User-Agent': 'RohiniCustomerApp/1.0 (contact@rohini-app.com)'
-            }
-        });
+        const response = await axios.get(url, { timeout: 10000 });
 
-        if (response.data && response.data.address) {
-            const addr = response.data.address;
-
-            // Map Nominatim address properties to our app's structure
+        if (response.data) {
+            const data = response.data;
+            
+            // Map BigDataCloud properties to our app's structure
             const mappedAddress = {
-                city: addr.city || addr.town || addr.village || addr.county || '',
-                state: addr.state || '',
-                pincode: addr.postcode || '',
-                address: [addr.road, addr.suburb, addr.neighbourhood].filter(Boolean).join(', ')
+                city: data.city || data.locality || data.principalSubdivision || '',
+                state: data.principalSubdivision || '',
+                pincode: data.postcode || '',
+                address: [data.locality, data.city, data.principalSubdivision].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ')
             };
 
             res.status(200).json({
