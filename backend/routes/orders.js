@@ -472,7 +472,23 @@ router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Item not found in order' });
         }
 
-        // Handle stock refunds for admin approvals
+        const now = new Date();
+
+        // Stamp the right timestamp for each status transition
+        const timestampMap = {
+            'Return Accepted':           () => { item.returnAcceptedAt = now; },
+            'Out for Pickup':            () => { item.outForPickupAt = now; },
+            'Return Picked Up':          () => { item.returnPickedUpAt = now; },
+            'Returned':                  () => { item.returnCompletedAt = now; },
+            'Return Rejected':           () => { item.returnRejectedAt = now; },
+            'Exchange Accepted':         () => { item.exchangeAcceptedAt = now; },
+            'Out for Delivery (Exchange)': () => { /* no specific field needed */ },
+            'Exchanged':                 () => { item.exchangeCompletedAt = now; },
+            'Exchange Rejected':         () => { item.exchangeRejectedAt = now; },
+        };
+        if (timestampMap[status]) timestampMap[status]();
+
+        // Handle stock refunds
         if (status === 'Returned' && item.status !== 'Returned') {
             const productId = item.product?._id || item.product;
             if (productId) {
@@ -482,7 +498,20 @@ router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
                     await product.save();
                 }
             }
-        } // Exchanges usually mean they send the old one back and we send a new one, net 0 stock impact.
+
+            // Auto-update order status to 'Returned' when all items are returned/cancelled
+            const allResolved = order.items.every(i => 
+                i._id.toString() === itemId ? true : ['Returned', 'Cancelled', 'Exchanged', 'Exchange Rejected', 'Return Rejected'].includes(i.status)
+            );
+            if (allResolved && order.status !== 'Returned') {
+                order.status = 'Returned';
+                order.statusHistory.push({
+                    status: 'Returned',
+                    timestamp: now,
+                    note: 'Auto-updated: all items returned/resolved.'
+                });
+            }
+        }
 
         item.status = status;
         await order.save();
@@ -567,6 +596,7 @@ router.put('/:id/item-action', protect, async (req, res) => {
                 return res.status(400).json({ success: false, message: 'Item can only be returned after delivery.' });
             }
             item.status = 'Return Requested';
+            item.returnRequestedAt = new Date();
         } else if (action === 'exchange') {
             if (order.status !== 'Delivered') {
                 return res.status(400).json({ success: false, message: 'Item can only be exchanged after delivery.' });

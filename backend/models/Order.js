@@ -46,7 +46,17 @@ const orderSchema = new mongoose.Schema({
         cancelledAt: {
             type: Date,
             default: null
-        }
+        },
+        returnRequestedAt: { type: Date, default: null },
+        returnAcceptedAt: { type: Date, default: null },
+        outForPickupAt: { type: Date, default: null },
+        returnPickedUpAt: { type: Date, default: null },
+        returnCompletedAt: { type: Date, default: null },
+        returnRejectedAt: { type: Date, default: null },
+        exchangeRequestedAt: { type: Date, default: null },
+        exchangeAcceptedAt: { type: Date, default: null },
+        exchangeCompletedAt: { type: Date, default: null },
+        exchangeRejectedAt: { type: Date, default: null }
     }],
     shippingAddress: {
         fullName: { type: String },

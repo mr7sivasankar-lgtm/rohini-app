@@ -925,74 +925,104 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
               </ul>
             </td>
             <td>
-              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px' }}>
-                {order.items.map((item, idx) => (
-                  <li key={idx} style={{ display: 'flex', flexDirection: 'column', minHeight: '36px', alignItems: 'flex-start', justifyContent: 'center' }}>
-                    {item.exchangeSize || item.exchangeColor ? (
-                      <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 600, marginBottom: '4px' }}>
-                        Prefers: {item.exchangeSize && `Size ${item.exchangeSize}`} {item.exchangeColor && `Color ${item.exchangeColor}`}
-                      </div>
-                    ) : null}
+              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '180px' }}>
+                {order.items.map((item, idx) => {
+                  const fmt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : null;
+                  const Ts = ({ date }) => date ? <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>🕐 {fmt(date)}</div> : null;
 
-                    {/* Timeline Progression Actions */}
-                    {item.status === 'Return Requested' && (
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Accepted')} style={{ cursor: 'pointer', background: '#22c55e', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Approve</button>
-                        <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Rejected')} style={{ cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Reject</button>
-                      </div>
-                    )}
-                    {item.status === 'Return Accepted' && (
-                      <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Out for Pickup')} style={{ cursor: 'pointer', background: '#f59e0b', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Mark Out for Pickup</button>
-                    )}
-                    {item.status === 'Out for Pickup' && (
-                      <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Picked Up')} style={{ cursor: 'pointer', background: '#3b82f6', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Mark Picked Up</button>
-                    )}
-                    {item.status === 'Return Picked Up' && (
-                      <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Returned')} style={{ cursor: 'pointer', background: '#10b981', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>Complete Return</button>
-                    )}
+                  return (
+                    <li key={idx} style={{ display: 'flex', flexDirection: 'column', minHeight: '36px', alignItems: 'flex-start', justifyContent: 'center', gap: '2px' }}>
+                      {item.exchangeSize || item.exchangeColor ? (
+                        <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 600, marginBottom: '4px' }}>
+                          Prefers: {item.exchangeSize && `Size ${item.exchangeSize}`} {item.exchangeColor && `Color ${item.exchangeColor}`}
+                        </div>
+                      ) : null}
 
-                    {item.status === 'Exchange Requested' && (
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchange Accepted')} style={{ cursor: 'pointer', background: '#22c55e', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Approve</button>
-                        <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchange Rejected')} style={{ cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Reject</button>
-                      </div>
-                    )}
-                    {item.status === 'Exchange Accepted' && (
-                      <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Out for Delivery (Exchange)')} style={{ cursor: 'pointer', background: '#f59e0b', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Mark Out for Delivery</button>
-                    )}
-                    {item.status === 'Out for Delivery (Exchange)' && (
-                      <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchanged')} style={{ cursor: 'pointer', background: '#10b981', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>Complete Exchange</button>
-                    )}
+                      {/* ── Return Flow ── */}
+                      {item.status === 'Return Requested' && (
+                        <>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Accepted')} style={{ cursor: 'pointer', background: '#22c55e', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Approve</button>
+                            <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Rejected')} style={{ cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Reject</button>
+                          </div>
+                          <Ts date={item.returnRequestedAt} />
+                        </>
+                      )}
+                      {item.status === 'Return Accepted' && (
+                        <>
+                          <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Out for Pickup')} style={{ cursor: 'pointer', background: '#f59e0b', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Mark Out for Pickup</button>
+                          <Ts date={item.returnAcceptedAt} />
+                        </>
+                      )}
+                      {item.status === 'Out for Pickup' && (
+                        <>
+                          <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Return Picked Up')} style={{ cursor: 'pointer', background: '#3b82f6', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Mark Picked Up</button>
+                          <Ts date={item.outForPickupAt} />
+                        </>
+                      )}
+                      {item.status === 'Return Picked Up' && (
+                        <>
+                          <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Returned')} style={{ cursor: 'pointer', background: '#10b981', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>Complete Return</button>
+                          <Ts date={item.returnPickedUpAt} />
+                        </>
+                      )}
 
-                    {/* Terminal Status Display Chips */}
-                    {item.status === 'Returned' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
-                        ✅ Return Completed
-                      </div>
-                    )}
-                    {item.status === 'Exchanged' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#ede9fe', color: '#6d28d9', border: '1px solid #c4b5fd', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
-                        ✅ Exchange Completed
-                      </div>
-                    )}
-                    {item.status === 'Return Rejected' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
-                        ❌ Return Rejected
-                      </div>
-                    )}
-                    {item.status === 'Exchange Rejected' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
-                        ❌ Exchange Rejected
-                      </div>
-                    )}
-                    {item.status === 'Cancelled' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
-                        ❌ Cancelled
-                      </div>
-                    )}
-                  </li>
-                ))}
+                      {/* ── Exchange Flow ── */}
+                      {item.status === 'Exchange Requested' && (
+                        <>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchange Accepted')} style={{ cursor: 'pointer', background: '#22c55e', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Approve</button>
+                            <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchange Rejected')} style={{ cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Reject</button>
+                          </div>
+                          <Ts date={item.exchangeRequestedAt} />
+                        </>
+                      )}
+                      {item.status === 'Exchange Accepted' && (
+                        <>
+                          <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Out for Delivery (Exchange)')} style={{ cursor: 'pointer', background: '#f59e0b', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>Mark Out for Delivery</button>
+                          <Ts date={item.exchangeAcceptedAt} />
+                        </>
+                      )}
+                      {item.status === 'Out for Delivery (Exchange)' && (
+                        <button onClick={() => handleUpdateItemStatus(order._id, item._id, 'Exchanged')} style={{ cursor: 'pointer', background: '#10b981', color: 'white', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>Complete Exchange</button>
+                      )}
+
+                      {/* ── Terminal Status Chips with timestamps ── */}
+                      {item.status === 'Returned' && (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>✅ Return Completed</div>
+                          <Ts date={item.returnCompletedAt} />
+                        </>
+                      )}
+                      {item.status === 'Exchanged' && (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#ede9fe', color: '#6d28d9', border: '1px solid #c4b5fd', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>✅ Exchange Completed</div>
+                          <Ts date={item.exchangeCompletedAt} />
+                        </>
+                      )}
+                      {item.status === 'Return Rejected' && (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>❌ Return Rejected</div>
+                          <Ts date={item.returnRejectedAt} />
+                        </>
+                      )}
+                      {item.status === 'Exchange Rejected' && (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>❌ Exchange Rejected</div>
+                          <Ts date={item.exchangeRejectedAt} />
+                        </>
+                      )}
+                      {item.status === 'Cancelled' && (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>❌ Cancelled</div>
+                          <Ts date={item.cancelledAt} />
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
+
             </td>
             <td>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
