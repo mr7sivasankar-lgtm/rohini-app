@@ -103,40 +103,7 @@ const OrderTracking = () => {
                 <h1 className="page-title">Order Details</h1>
             </div>
 
-            <div className="tracking-card">
-                <div className="order-meta-header">
-                    <div className="order-meta-left">
-                        <h2>Order #{order.orderId}</h2>
-                        <span className="order-date">{new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                    </div>
-                    <span className={`status-pill status-${order.status.toLowerCase().replace(/ /g, '-')}`}>
-                        {order.status}
-                    </span>
-                </div>
-
-                {/* Status Timeline */}
-                <div className="modern-timeline">
-                    {statusSteps.map((step, index) => {
-                        let dotClass = 'timeline-dot';
-                        // If we are at the very last step (Delivered/Cancelled), it should be a checkmark too because it's completely finished
-                        const isFinished = index === currentStepIndex && index === statusSteps.length - 1;
-
-                        if (isFinished || index < currentStepIndex) dotClass += ' completed';
-                        else if (index === currentStepIndex) dotClass += ' current';
-                        
-                        return (
-                            <div key={step} className={`timeline-block ${index <= currentStepIndex ? 'active' : ''}`}>
-                                <div className={dotClass}>
-                                    {(isFinished || index < currentStepIndex) && <span className="check-mark">✓</span>}
-                                </div>
-                                <div className="timeline-title">{step}</div>
-                            </div>
-                        )
-                    })}
-                </div>
-            </div>
-
-            {/* Order Items List */}
+            {/* Order Items List (Moved to top) */}
             <div className="tracking-card">
                 <h3 className="section-title">Items ({order.items.length})</h3>
                 <div className="items-grid">
@@ -198,45 +165,91 @@ const OrderTracking = () => {
                                         </button>
                                     )}
                                 </div>
-
-                                {/* Mini Logistical Timeline for Returns & Exchanges */}
-                                {(item.status.includes('Return') || item.status.includes('Exchange')) && !item.status.includes('Rejected') && (
-                                    <div className="mini-timeline-container" style={{ marginTop: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-                                        <h5 style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#64748b' }}>
-                                            {item.status.includes('Return') ? 'Return Status' : 'Exchange Status'}
-                                        </h5>
-                                        <div className="modern-timeline" style={{ padding: '0' }}>
-                                            {(() => {
-                                                const steps = item.status.includes('Return') 
-                                                    ? ['Return Requested', 'Return Approved', 'Return Completed']
-                                                    : ['Exchange Requested', 'Exchange Approved', 'Exchange Completed'];
-                                                
-                                                const currentIndex = steps.indexOf(item.status);
-                                                
-                                                return steps.map((step, idx) => {
-                                                    let dotClass = 'timeline-dot';
-                                                    const isFinished = idx === currentIndex && idx === steps.length - 1;
-
-                                                    if (isFinished || idx < currentIndex) dotClass += ' completed';
-                                                    else if (idx === currentIndex) dotClass += ' current';
-                                                    
-                                                    return (
-                                                        <div key={step} className={`timeline-block ${idx <= currentIndex ? 'active' : ''}`} style={{ width: `${100 / steps.length}%` }}>
-                                                            <div className={dotClass} style={{ width: '24px', height: '24px', marginBottom: '6px' }}>
-                                                                {(isFinished || idx < currentIndex) && <span className="check-mark" style={{ fontSize: '10px' }}>✓</span>}
-                                                            </div>
-                                                            <div className="timeline-title" style={{ fontSize: '10px' }}>{step.replace('Return', '').replace('Exchange', '').replace('(Exchange)', '').trim() || (item.status.includes('Return') ? 'Completed' : 'Completed')}</div>
-                                                        </div>
-                                                    )
-                                                });
-                                            })()}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     ))}
                 </div>
+            </div>
+
+            {/* Order Tracking Details (Moved below items) */}
+            <div className="tracking-card">
+                <div className="order-meta-header">
+                    <div className="order-meta-left">
+                        <h2>Order #{order.orderId}</h2>
+                        <span className="order-date">{new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    </div>
+                    <span className={`status-pill status-${order.status.toLowerCase().replace(/ /g, '-')}`}>
+                        {order.status}
+                    </span>
+                </div>
+
+                {/* Status Timeline */}
+                <div className="modern-timeline">
+                    {statusSteps.map((step, index) => {
+                        let dotClass = 'timeline-dot';
+                        // If we are at the very last step (Delivered/Cancelled), it should be a checkmark too because it's completely finished
+                        const isFinished = index === currentStepIndex && index === statusSteps.length - 1;
+
+                        if (isFinished || index < currentStepIndex) dotClass += ' completed';
+                        else if (index === currentStepIndex) dotClass += ' current';
+                        
+                        return (
+                            <div key={step} className={`timeline-block ${index <= currentStepIndex ? 'active' : ''}`}>
+                                <div className={dotClass}>
+                                    {(isFinished || index < currentStepIndex) && <span className="check-mark">✓</span>}
+                                </div>
+                                <div className="timeline-title">{step}</div>
+                            </div>
+                        )
+                    })}
+                </div>
+
+                {/* Mini Logistical Timeline for Returns & Exchanges (Moved here underneath original tracking) */}
+                {order.items.map((item, index) => {
+                    if ((item.status.includes('Return') || item.status.includes('Exchange')) && !item.status.includes('Rejected')) {
+                        return (
+                            <div key={`logistics-${index}`} className="mini-timeline-container" style={{ marginTop: '24px', borderTop: '2px dashed #e2e8f0', paddingTop: '20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <h5 style={{ margin: 0, fontSize: '14px', color: '#334155', fontWeight: 600 }}>
+                                        {item.status.includes('Return') ? 'Return Status' : 'Exchange Status'}
+                                    </h5>
+                                    {order.items.length > 1 && (
+                                        <span style={{ fontSize: '12px', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '12px' }}>
+                                            For: {item.name.length > 20 ? item.name.substring(0, 20) + '...' : item.name}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="modern-timeline" style={{ padding: '0' }}>
+                                    {(() => {
+                                        const steps = item.status.includes('Return') 
+                                            ? ['Return Requested', 'Return Approved', 'Return Completed']
+                                            : ['Exchange Requested', 'Exchange Approved', 'Exchange Completed'];
+                                        
+                                        const currentIndex = steps.indexOf(item.status);
+                                        
+                                        return steps.map((step, idx) => {
+                                            let dotClass = 'timeline-dot';
+                                            const isFinished = idx === currentIndex && idx === steps.length - 1;
+
+                                            if (isFinished || idx < currentIndex) dotClass += ' completed';
+                                            else if (idx === currentIndex) dotClass += ' current';
+                                            
+                                            return (
+                                                <div key={step} className={`timeline-block ${idx <= currentIndex ? 'active' : ''}`} style={{ width: `${100 / steps.length}%` }}>
+                                                    <div className={dotClass} style={{ width: '28px', height: '28px', marginBottom: '8px' }}>
+                                                        {(isFinished || idx < currentIndex) && <span className="check-mark" style={{ fontSize: '12px' }}>✓</span>}
+                                                    </div>
+                                                    <div className="timeline-title" style={{ fontSize: '11px', fontWeight: 500 }}>{step.replace('Return', '').replace('Exchange', '').replace('(Exchange)', '').trim() || (item.status.includes('Return') ? 'Completed' : 'Completed')}</div>
+                                                </div>
+                                            )
+                                        });
+                                    })()}
+                                </div>
+                            </div>
+                        );
+                    }
+                    return null;
+                })}
             </div>
 
             <div className="split-cards">
