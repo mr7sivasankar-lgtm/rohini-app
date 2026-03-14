@@ -488,8 +488,11 @@ router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
         };
         if (timestampMap[status]) timestampMap[status]();
 
-        // Handle stock refunds
-        if (status === 'Returned' && item.status !== 'Returned') {
+        // Set the item status early so allResolved check sees the new state
+        item.status = status;
+
+        // Handle stock refunds and order-level status update when return completes
+        if (status === 'Returned') {
             const productId = item.product?._id || item.product;
             if (productId) {
                 const product = await Product.findById(productId);
@@ -499,21 +502,19 @@ router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
                 }
             }
 
-            // Auto-update order status to 'Returned' when all items are returned/cancelled
-            const allResolved = order.items.every(i => 
-                i._id.toString() === itemId ? true : ['Returned', 'Cancelled', 'Exchanged', 'Exchange Rejected', 'Return Rejected'].includes(i.status)
-            );
-            if (allResolved && order.status !== 'Returned') {
-                order.status = 'Returned';
+            // Auto-set order status to Cancelled when ALL items are resolved
+            const resolvedStatuses = ['Returned', 'Cancelled', 'Exchanged', 'Exchange Rejected', 'Return Rejected'];
+            const allResolved = order.items.every(i => resolvedStatuses.includes(i.status));
+            if (allResolved && order.status !== 'Cancelled') {
+                order.status = 'Cancelled';
                 order.statusHistory.push({
-                    status: 'Returned',
+                    status: 'Cancelled',
                     timestamp: now,
-                    note: 'Auto-updated: all items returned/resolved.'
+                    note: 'Auto-cancelled: all items returned/resolved by customer.'
                 });
             }
         }
 
-        item.status = status;
         await order.save();
 
         res.status(200).json({
@@ -522,8 +523,8 @@ router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
             data: order
         });
     } catch (error) {
-        console.error('Update item status error:', error);
-        res.status(500).json({ success: false, message: 'Error updating item status' });
+        console.error('Update item status error:', error?.message || error);
+        res.status(500).json({ success: false, message: error?.message || 'Error updating item status' });
     }
 });
 
