@@ -2,34 +2,35 @@
     min-height: 100dvh;
     display: flex; align-items: center; justify-content: center;
     padding: 24px;
-    background: linear-gradient(135deg, #0f172a 0%, #1a2744 50%, #0f172a 100%);
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fff7ed 100%);
     position: relative; overflow: hidden;
 }
 .login-glow {
     position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
     width: 400px; height: 400px;
-    background: radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 70%);
     pointer-events: none;
 }
 .login-card {
-    background: rgba(30,41,59,0.85);
+    background: rgba(255,255,255,0.95);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(249,115,22,0.2);
+    border: 1px solid rgba(249,115,22,0.15);
     border-radius: 24px;
     padding: 36px 28px;
     width: 100%; max-width: 400px;
     display: flex; flex-direction: column; gap: 24px;
+    box-shadow: 0 8px 40px rgba(249,115,22,0.08);
 }
 .login-brand { text-align: center; }
 .brand-icon { font-size: 48px; margin-bottom: 8px; }
-.login-brand h1 { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.login-brand h1 { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #f97316, #ea580c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .login-brand p { font-size: 13px; color: var(--muted); margin-top: 4px; }
 
 .mode-tabs { display: flex; background: var(--surface2); border-radius: 12px; padding: 4px; }
 .mode-tabs button { flex: 1; padding: 10px; border: none; border-radius: 9px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--muted); }
-.mode-tabs button.active { background: var(--accent); color: white; }
+.mode-tabs button.active { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(249,115,22,0.3); }
 
-.error-msg { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #fca5a5; }
+.error-msg { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #dc2626; }
 
 .login-form { display: flex; flex-direction: column; gap: 16px; }
 
@@ -38,6 +39,7 @@
     color: white; border: none; border-radius: 12px;
     padding: 14px; font-size: 16px; font-weight: 700;
     cursor: pointer; margin-top: 4px;
+    box-shadow: 0 4px 16px rgba(249,115,22,0.3);
     transition: opacity 0.2s, transform 0.1s;
 }
 .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
