@@ -172,7 +172,7 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
 
         // Map delivery status to main order status
         const statusMap = {
-            'Picked Up': 'Packed',          // still packed stage, just picked up
+            'Picked Up': 'Picked Up',
             'Out for Delivery': 'Out for Delivery',
             'Delivered': 'Delivered'
         };
