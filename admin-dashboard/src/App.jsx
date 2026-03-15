@@ -696,6 +696,7 @@ const ORDER_FILTER_TABS = [
   { label: 'New', value: 'Placed' },
   { label: 'Accepted', value: 'Accepted' },
   { label: 'Packed', value: 'Packed' },
+  { label: 'Picked Up', value: 'Picked Up' },
   { label: 'Out for Delivery', value: 'Out for Delivery' },
   { label: 'Delivered', value: 'Delivered' },
   { label: 'Cancelled', value: 'Cancelled' },
@@ -828,7 +829,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
   const [expandedOrders, setExpandedOrders] = useState({});
   const toggleHistory = (id) => setExpandedOrders(p => ({ ...p, [id]: !p[id] }));
 
-  const statusOptions = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'];
+  const statusOptions = ['Placed', 'Accepted', 'Packed', 'Picked Up', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
   return (
     <table className="table">

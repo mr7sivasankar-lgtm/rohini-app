@@ -133,7 +133,7 @@ const OrderTracking = () => {
         );
     }
 
-    const statusSteps = ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered'];
+    const statusSteps = ['Placed', 'Accepted', 'Packed', 'Picked Up', 'Out for Delivery', 'Delivered'];
     const currentStepIndex = statusSteps.indexOf(order.status);
 
     return (
