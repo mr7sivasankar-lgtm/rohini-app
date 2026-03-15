@@ -46,8 +46,10 @@ app.use(cors({
         const allowedOrigins = [
             'http://localhost:5173',
             'http://localhost:5174',
+            'http://localhost:5175',
             'https://rohini-app.vercel.app',
-            'https://rohini-admin.vercel.app'
+            'https://rohini-admin.vercel.app',
+            'https://rohini-app-4ncj.vercel.app'
         ];
 
         // Allow vercel preview deployments dynamically
