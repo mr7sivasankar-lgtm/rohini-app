@@ -1,0 +1,49 @@
+.profile-page { padding-bottom: 40px; background: var(--bg); min-height: 100dvh; }
+
+.profile-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.profile-header h2 { font-size: 17px; font-weight: 700; }
+.edit-btn { background: rgba(249,115,22,0.1); color: var(--accent); border: 1px solid rgba(249,115,22,0.3); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+.profile-hero {
+    background: linear-gradient(180deg, rgba(249,115,22,0.1) 0%, transparent 100%);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 32px 20px 24px; gap: 6px;
+    border-bottom: 1px solid var(--border);
+}
+.profile-avatar { font-size: 64px; width: 80px; height: 80px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+.profile-hero h2 { font-size: 22px; font-weight: 800; }
+.profile-hero p { font-size: 14px; color: var(--muted); }
+.id-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; font-size: 11px; color: var(--muted); font-family: monospace; margin-top: 4px; }
+
+.status-toggle-wrap { display: flex; align-items: center; gap: 10px; margin-top: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; }
+.status-dot.online { background: var(--success); box-shadow: 0 0 6px rgba(16,185,129,0.6); }
+.status-dot.offline { background: var(--muted); }
+.status-toggle-wrap > span { font-size: 14px; font-weight: 600; }
+
+/* Toggle Switch */
+.toggle { position: relative; display: inline-block; width: 46px; height: 26px; margin-left: 8px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; inset: 0; background: var(--surface2); border-radius: 20px; transition: 0.3s; }
+.slider::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+input:checked + .slider { background: var(--success); }
+input:checked + .slider::before { transform: translateX(20px); }
+
+.profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.pstat { background: var(--surface); padding: 20px 10px; text-align: center; }
+.pstat-val { font-size: 24px; font-weight: 800; color: var(--accent); }
+.pstat-label { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 4px; text-transform: uppercase; }
+
+.profile-info-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin: 16px; padding: 16px; }
+.profile-info-card h3 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+.info-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.info-row:last-child { border-bottom: none; }
+.info-row span { color: var(--muted); }
+.info-row strong { color: var(--text); }
+
+.profile-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.profile-form h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.save-btn { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 4px; }
+.save-btn:disabled { opacity: 0.6; }
+
+.logout-full-btn { display: block; width: calc(100% - 32px); margin: 8px 16px 0; background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; }

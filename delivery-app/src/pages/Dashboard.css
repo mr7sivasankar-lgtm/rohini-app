@@ -1,0 +1,49 @@
+.dashboard-page { padding: 0 0 100px; background: var(--bg); min-height: 100dvh; }
+
+.dash-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 20px 16px;
+    background: linear-gradient(180deg, rgba(249,115,22,0.08) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border);
+}
+.dash-greeting { display: flex; align-items: center; gap: 12px; }
+.avatar { width: 44px; height: 44px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.dash-greeting h2 { font-size: 18px; font-weight: 700; color: var(--text); }
+.dash-greeting p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.dash-actions { display: flex; gap: 8px; }
+.icon-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; transition: background 0.2s; }
+.icon-btn:hover { background: var(--surface2); }
+.logout-btn { color: var(--danger); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px; }
+.stat-card { background: var(--surface); border-radius: var(--radius); padding: 14px 10px; text-align: center; border: 1px solid var(--border); }
+.stat-icon { font-size: 22px; margin-bottom: 4px; }
+.stat-value { font-size: 22px; font-weight: 800; }
+.stat-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-top: 4px; }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px 12px; }
+.section-header h3 { font-size: 16px; font-weight: 700; }
+.refresh-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 13px; padding: 4px 12px; cursor: pointer; }
+
+.orders-list { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
+
+.order-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: border-color 0.2s, transform 0.15s; }
+.order-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.order-card:active { transform: scale(0.99); }
+
+.order-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+.order-id { font-size: 16px; font-weight: 800; color: var(--text); }
+.delivery-type-badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; margin-top: 4px; display: inline-block; }
+.status-pill { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; color: white; white-space: nowrap; }
+
+.order-card-info { display: flex; flex-direction: column; gap: 6px; }
+.info-row { display: flex; gap: 8px; font-size: 13px; color: var(--muted); align-items: flex-start; }
+.info-row > span:first-child { min-width: 18px; }
+.info-row > span:last-child { color: var(--text); }
+.address-text { line-height: 1.4; }
+.amount { color: var(--accent) !important; font-weight: 700; }
+
+.order-card-footer { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+.tap-hint { font-size: 12px; color: var(--accent); font-weight: 600; }
+
+.loading-page { min-height: 100dvh; display: flex; align-items: center; justify-content: center; }

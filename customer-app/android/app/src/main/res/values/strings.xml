@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Rohini</string>
+    <string name="title_activity_main">Rohini</string>
+    <string name="package_name">com.rohini.customerapp</string>
+    <string name="custom_url_scheme">com.rohini.customerapp</string>
+</resources>

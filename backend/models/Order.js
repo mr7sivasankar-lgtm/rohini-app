@@ -99,7 +99,28 @@ const orderSchema = new mongoose.Schema({
         },
         note: String
     }],
-    cancelReason: String
+    cancelReason: String,
+
+    // Delivery Partner Assignment
+    deliveryPartner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DeliveryPartner',
+        default: null
+    },
+    deliveryStatus: {
+        type: String,
+        enum: ['', 'Assigned', 'Picked Up', 'Out for Delivery', 'Delivered'],
+        default: ''
+    },
+    deliveryType: {
+        type: String,
+        enum: ['Normal', 'Return Pickup', 'Exchange Pickup'],
+        default: 'Normal'
+    },
+    deliveredAt: {
+        type: Date,
+        default: null
+    }
 }, {
     timestamps: true
 });

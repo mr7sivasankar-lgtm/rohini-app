@@ -3,6 +3,7 @@ import Order from '../models/Order.js';
 import User from '../models/User.js';
 import Product from '../models/Product.js';
 import { protect, adminOnly } from '../middleware/auth.js';
+import { autoAssignDeliveryPartner } from './delivery.js';
 
 const router = express.Router();
 
@@ -413,6 +414,11 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
         });
 
         await order.save();
+
+        // Auto-assign delivery partner when order becomes Packed
+        if (status === 'Packed' && !order.deliveryPartner) {
+            autoAssignDeliveryPartner(order._id).catch(e => console.error('[AutoAssign] Failed:', e.message));
+        }
 
         res.status(200).json({
             success: true,
