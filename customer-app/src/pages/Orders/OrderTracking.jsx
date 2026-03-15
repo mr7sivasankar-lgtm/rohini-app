@@ -273,6 +273,20 @@ const OrderTracking = () => {
                     })}
                 </div>
 
+                {/* Delivery Partner Info */}
+                {order.deliveryPartnerId && (
+                    <div className="delivery-partner-card" style={{ marginTop: '24px', padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '40px', height: '40px', background: '#f97316', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '20px' }}>
+                            🚚
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Delivery Partner</div>
+                            <div style={{ fontSize: '15px', color: '#0f172a', fontWeight: 700 }}>{order.deliveryPartnerId.name}</div>
+                            <div style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>📞 +91 {order.deliveryPartnerId.phone}</div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Mini Logistical Timeline for Returns & Exchanges (Moved here underneath original tracking) */}
                 {order.items.map((item, index) => {
                     if ((item.status.includes('Return') || item.status.includes('Exchange')) && !item.status.includes('Rejected')) {
