@@ -365,6 +365,9 @@ function App() {
         <div className={`menu-item ${activeTab === 'users' ? 'active' : ''}`} onClick={() => handleTabChange('users')}>
           👥 Users
         </div>
+        <div className={`menu-item ${activeTab === 'delivery-partners' ? 'active' : ''}`} onClick={() => handleTabChange('delivery-partners')}>
+          🚴 Delivery Partners
+        </div>
         <div className="menu-item" onClick={handleLogout}>
           Logout
         </div>
@@ -805,6 +808,8 @@ const OrderManagementTab = ({ orders, updateOrderStatus, deleteOrder, handleUpda
   );
 };
 
+// ... other tabs ...
+
 const ITEM_NEXT_STATES = {
   'Active':                     [],
   'Return Requested':           ['Return Approved', 'Return Rejected'],
@@ -1165,6 +1170,171 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
         })}
       </tbody>
     </table>
+  );
+};
+
+const DeliveryPartnersTab = () => {
+  const [partners, setPartners] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  const fetchPartners = async () => {
+    try {
+      const res = await api.get('/delivery/admin/partners');
+      if (res.data.success) setPartners(res.data.data);
+    } catch (e) {
+      console.error('Failed to fetch partners:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchPartners(); }, []);
+
+  const toggleActive = async (partner) => {
+    const action = partner.isActive ? 'deactivate' : 'reactivate';
+    if (!window.confirm(`Are you sure you want to ${action} ${partner.name}?`)) return;
+    try {
+      await api.put(`/delivery/admin/partners/${partner._id}`, { isActive: !partner.isActive });
+      fetchPartners();
+    } catch {
+      alert('Failed to update partner status');
+    }
+  };
+
+  const filtered = partners.filter(p => {
+    const q = search.toLowerCase();
+    return !q || p.name?.toLowerCase().includes(q) || p.phone?.includes(q) || p.vehicleNumber?.toLowerCase().includes(q);
+  });
+
+  const totalActive = partners.filter(p => p.isActive).length;
+  const totalOnline = partners.filter(p => p.isOnline).length;
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>🚴 Delivery Partners</h1>
+        <p>Manage your delivery team</p>
+      </div>
+
+      {/* Summary Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+        {[
+          { label: 'Total Partners', value: partners.length, color: '#3b82f6', border: '#93c5fd' },
+          { label: 'Active', value: totalActive, color: '#16a34a', border: '#86efac' },
+          { label: 'Currently Online', value: totalOnline, color: '#f59e0b', border: '#fcd34d' },
+          { label: 'Total Deliveries', value: partners.reduce((s, p) => s + (p.totalDeliveries || 0), 0), color: '#8b5cf6', border: '#c4b5fd' },
+        ].map(c => (
+          <div key={c.label} className="stat-card" style={{ borderTop: `4px solid ${c.border}` }}>
+            <h3>{c.label}</h3>
+            <div className="value" style={{ color: c.color }}>{c.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card">
+        {/* Search */}
+        <div style={{ marginBottom: '16px' }}>
+          <input
+            type="text"
+            placeholder="Search by name, phone, or vehicle number…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+          />
+        </div>
+
+        {loading ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading…</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚴</div>
+            <div>{search ? 'No partners match your search' : 'No delivery partners registered yet'}</div>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Partner</th>
+                  <th>Phone</th>
+                  <th>Vehicle</th>
+                  <th>Status</th>
+                  <th>Active Orders</th>
+                  <th>Total Deliveries</th>
+                  <th>Joined</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(partner => (
+                  <tr key={partner._id} style={{ opacity: partner.isActive ? 1 : 0.5 }}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #f97316, #fb923c)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚴</div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '14px' }}>{partner.name}</div>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>ID: {partner._id?.slice(-6).toUpperCase()}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ fontSize: '14px' }}>{partner.phone}</td>
+                    <td>
+                      <div style={{ fontSize: '13px', fontWeight: 600 }}>{partner.vehicleType}</div>
+                      {partner.vehicleNumber && <div style={{ fontSize: '12px', color: '#64748b' }}>{partner.vehicleNumber}</div>}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '5px',
+                          padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
+                          background: partner.isOnline ? '#dcfce7' : '#f1f5f9',
+                          color: partner.isOnline ? '#16a34a' : '#64748b'
+                        }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: partner.isOnline ? '#16a34a' : '#94a3b8', display: 'inline-block' }}></span>
+                          {partner.isOnline ? 'Online' : 'Offline'}
+                        </span>
+                        {!partner.isActive && (
+                          <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, background: '#fee2e2', color: '#dc2626' }}>
+                            Deactivated
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span style={{
+                        background: partner.activeOrdersCount > 0 ? '#fef3c7' : '#f0fdf4',
+                        color: partner.activeOrdersCount > 0 ? '#b45309' : '#16a34a',
+                        padding: '4px 10px', borderRadius: '20px', fontWeight: 700, fontSize: '13px'
+                      }}>
+                        {partner.activeOrdersCount || 0}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'center', fontWeight: 600 }}>{partner.totalDeliveries || 0}</td>
+                    <td style={{ fontSize: '13px', color: '#64748b' }}>
+                      {new Date(partner.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => toggleActive(partner)}
+                        style={{
+                          padding: '5px 12px', border: 'none', borderRadius: '6px',
+                          fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                          background: partner.isActive ? '#fee2e2' : '#dcfce7',
+                          color: partner.isActive ? '#dc2626' : '#16a34a'
+                        }}
+                      >
+                        {partner.isActive ? 'Deactivate' : 'Reactivate'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
