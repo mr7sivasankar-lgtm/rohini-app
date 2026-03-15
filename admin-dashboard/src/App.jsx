@@ -671,6 +671,12 @@ function App() {
           </div>
         )}
 
+
+
+        {activeTab === 'delivery-partners' && (
+          <DeliveryPartnersTab />
+        )}
+
         {activeTab === 'users' && (
           <div>
             <div className="page-header">
