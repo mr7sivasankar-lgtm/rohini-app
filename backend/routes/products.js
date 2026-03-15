@@ -32,11 +32,13 @@ router.get('/', async (req, res) => {
         }
         if (sizes) {
             const sizesArray = sizes.split(',').map(s => s.trim());
-            query.sizes = { $in: sizesArray };
+            // Case-insensitive regex match for each size
+            query.sizes = { $in: sizesArray.map(s => new RegExp(`^${s}$`, 'i')) };
         }
         if (colors) {
             const colorsArray = colors.split(',').map(c => c.trim());
-            query.colors = { $in: colorsArray };
+            // Case-insensitive regex match for each color
+            query.colors = { $in: colorsArray.map(c => new RegExp(`^${c}$`, 'i')) };
         }
         if (inStock === 'true') {
             query.stock = { $gt: 0 };

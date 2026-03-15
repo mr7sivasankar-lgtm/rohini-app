@@ -47,6 +47,13 @@ const Search = () => {
         };
     }, [searchInput, activeSort, activeFilters]);
 
+    const PRICE_RANGES = {
+        '0-500':     { min: 0,    max: 500  },
+        '500-1000':  { min: 500,  max: 1000 },
+        '1000-2000': { min: 1000, max: 2000 },
+        '2000+':     { min: 2000, max: null },
+    };
+
     const searchProducts = async (searchQuery, sort, filters) => {
         try {
             setLoading(true);
@@ -54,15 +61,23 @@ const Search = () => {
             // Build Query string
             const params = new URLSearchParams();
             params.append('search', searchQuery);
-            if (sort !== 'newest') params.append('sort', sort);
+            if (sort && sort !== 'newest') params.append('sort', sort);
             if (filters.inStock) params.append('inStock', 'true');
-            if (filters.priceRange) {
-                const [min, max] = filters.priceRange.split('-');
-                if (min) params.append('minPrice', min.replace('+', ''));
-                if (max) params.append('maxPrice', max);
+            
+            // Use lookup table for safe price range parsing
+            if (filters.priceRange && PRICE_RANGES[filters.priceRange]) {
+                const { min, max } = PRICE_RANGES[filters.priceRange];
+                params.append('minPrice', min);
+                if (max !== null) params.append('maxPrice', max);
             }
-            if (filters.sizes && filters.sizes.length > 0) params.append('sizes', filters.sizes.join(','));
-            if (filters.colors && filters.colors.length > 0) params.append('colors', filters.colors.join(','));
+            
+            // Send sizes and colors as-is (backend does case-insensitive match)
+            if (filters.sizes && filters.sizes.length > 0) {
+                params.append('sizes', filters.sizes.join(','));
+            }
+            if (filters.colors && filters.colors.length > 0) {
+                params.append('colors', filters.colors.join(','));
+            }
 
             const response = await api.get(`/products?${params.toString()}`);
             if (response.data.success) {

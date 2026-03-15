@@ -17,26 +17,41 @@ const CategoryProducts = () => {
     const [activeSort, setActiveSort] = useState('newest');
     const [activeFilters, setActiveFilters] = useState({ priceRange: '', sizes: [], colors: [], inStock: false });
 
+    const PRICE_RANGES = {
+        '0-500':     { min: 0,    max: 500  },
+        '500-1000':  { min: 500,  max: 1000 },
+        '1000-2000': { min: 1000, max: 2000 },
+        '2000+':     { min: 2000, max: null },
+    };
+
     useEffect(() => {
-        fetchCategoryProducts();
+        fetchCategoryProducts(activeSort, activeFilters);
     }, [categoryId, activeSort, activeFilters]);
 
-    const fetchCategoryProducts = async () => {
+    const fetchCategoryProducts = async (sort, filters) => {
         try {
             setLoading(true);
             
             // Build Query string for products
             const params = new URLSearchParams();
             params.append('category', categoryId);
-            if (activeSort !== 'newest') params.append('sort', activeSort);
-            if (activeFilters.inStock) params.append('inStock', 'true');
-            if (activeFilters.priceRange) {
-                const [min, max] = activeFilters.priceRange.split('-');
-                if (min) params.append('minPrice', min.replace('+', ''));
-                if (max) params.append('maxPrice', max);
+            if (sort && sort !== 'newest') params.append('sort', sort);
+            if (filters.inStock) params.append('inStock', 'true');
+            
+            // Use lookup table for safe price range parsing
+            if (filters.priceRange && PRICE_RANGES[filters.priceRange]) {
+                const { min, max } = PRICE_RANGES[filters.priceRange];
+                params.append('minPrice', min);
+                if (max !== null) params.append('maxPrice', max);
             }
-            if (activeFilters.sizes && activeFilters.sizes.length > 0) params.append('sizes', activeFilters.sizes.join(','));
-            if (activeFilters.colors && activeFilters.colors.length > 0) params.append('colors', activeFilters.colors.join(','));
+            
+            // Send sizes/colors to backend
+            if (filters.sizes && filters.sizes.length > 0) {
+                params.append('sizes', filters.sizes.join(','));
+            }
+            if (filters.colors && filters.colors.length > 0) {
+                params.append('colors', filters.colors.join(','));
+            }
 
             // Fetch category details and filtered products
             const [categoryRes, productsRes] = await Promise.all([
