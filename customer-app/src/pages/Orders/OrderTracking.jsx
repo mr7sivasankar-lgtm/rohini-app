@@ -249,12 +249,25 @@ const OrderTracking = () => {
                         if (isFinished || index < currentStepIndex) dotClass += ' completed';
                         else if (index === currentStepIndex) dotClass += ' current';
                         
+                        // Find if this step is reached to show its timestamp
+                        let stepTimestamp = null;
+                        if (index <= currentStepIndex && order.statusHistory) {
+                            const historyItem = order.statusHistory.find(h => h.status === step);
+                            if (historyItem && historyItem.timestamp) {
+                                const d = new Date(historyItem.timestamp);
+                                stepTimestamp = `${d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+                            }
+                        }
+
                         return (
                             <div key={step} className={`timeline-block ${index <= currentStepIndex ? 'active' : ''}`}>
                                 <div className={dotClass}>
                                     {(isFinished || index < currentStepIndex) && <span className="check-mark">✓</span>}
                                 </div>
                                 <div className="timeline-title">{step}</div>
+                                {stepTimestamp && (
+                                    <div className="timeline-timestamp">{stepTimestamp}</div>
+                                )}
                             </div>
                         )
                     })}
