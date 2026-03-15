@@ -1,0 +1,121 @@
+﻿commit 03ddb5b91c7cd056283612ed5b2efb204616e351
+Author: mr7sivasankar-lgtm <mr7sivasankar-lgtm@users.noreply.github.com>
+Date:   Sun Mar 15 22:41:07 2026 +0530
+
+    feat(admin): add delivery partners tab with registration and status management
+
+diff --git a/admin-dashboard/src/App.jsx b/admin-dashboard/src/App.jsx
+index 89735e6..23e6865 100644
+--- a/admin-dashboard/src/App.jsx
++++ b/admin-dashboard/src/App.jsx
+@@ -808,6 +808,10 @@ const OrderManagementTab = ({ orders, updateOrderStatus, deleteOrder, handleUpda
+           </div>
+         )}
+       </div>
++
++      {activeTab === 'delivery-partners' && (
++        <DeliveryPartnersTab />
++      )}
+     </div>
+   );
+ };
+@@ -1173,9 +1177,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
+       </tbody>
+     </table>
+   );
+-};
+-
+-export default App;
++}
+ 
+ const DeliveryPartnersTab = () => {
+   const [partners, setPartners] = useState([]);
+@@ -1206,6 +1208,19 @@ const DeliveryPartnersTab = () => {
+     }
+   };
+ 
++  const handleAddPartner = async (e) => {
++    e.preventDefault();
++    try {
++      await api.post('/delivery/register', newPartnerForm);
++      setShowAddPartnerForm(false);
++      setNewPartnerForm({ name: '', phone: '', vehicleType: 'Bike', vehicleNumber: '', password: '' });
++      fetchPartners();
++      alert('Delivery partner registered successfully');
++    } catch (err) {
++      alert(err.response?.data?.message || 'Failed to register partner');
++    }
++  };
++
+   const filtered = partners.filter(p => {
+     const q = search.toLowerCase();
+     return !q || p.name?.toLowerCase().includes(q) || p.phone?.includes(q) || p.vehicleNumber?.toLowerCase().includes(q);
+@@ -1216,11 +1231,57 @@ const DeliveryPartnersTab = () => {
+ 
+   return (
+     <div>
+-      <div className="page-header">
+-        <h1>≡ƒÜ┤ Delivery Partners</h1>
+-        <p>Manage your delivery team</p>
++      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
++        <div>
++          <h1>≡ƒÜ┤ Delivery Partners</h1>
++          <p>Manage your delivery team</p>
++        </div>
++        <button 
++          className="btn btn-primary" 
++          onClick={() => setShowAddPartnerForm(!showAddPartnerForm)}
++        >
++          {showAddPartnerForm ? 'Cancel' : '+ Add Partner'}
++        </button>
+       </div>
+ 
++      {showAddPartnerForm && (
++        <div className="card" style={{ marginBottom: '20px' }}>
++          <h3>Register New Delivery Partner</h3>
++          <form onSubmit={handleAddPartner} style={{ display: 'grid', gap: '15px', gridTemplateColumns: '1fr 1fr', marginTop: '15px' }}>
++            <div>
++              <label>Full Name</label>
++              <input type="text" className="form-control" required value={newPartnerForm.name} onChange={e => setNewPartnerForm({...newPartnerForm, name: e.target.value})} />
++            </div>
++            <div>
++              <label>Phone Number</label>
++              <input type="text" className="form-control" placeholder="+91..." required value={newPartnerForm.phone} onChange={e => setNewPartnerForm({...newPartnerForm, phone: e.target.value})} />
++            </div>
++            <div>
++              <label>Vehicle Type</label>
++              <select className="form-control" value={newPartnerForm.vehicleType} onChange={e => setNewPartnerForm({...newPartnerForm, vehicleType: e.target.value})}>
++                <option value="Bike">Bike</option>
++                <option value="Scooter">Scooter</option>
++                <option value="Electric Bike">Electric Bike</option>
++                <option value="Van">Van</option>
++                <option value="Other">Other</option>
++              </select>
++            </div>
++            <div>
++              <label>Vehicle Number (Optional)</label>
++              <input type="text" className="form-control" placeholder="e.g. MH 12 AB 1234" value={newPartnerForm.vehicleNumber} onChange={e => setNewPartnerForm({...newPartnerForm, vehicleNumber: e.target.value})} />
++            </div>
++            <div style={{ gridColumn: '1 / -1' }}>
++              <label>Login Password</label>
++              <input type="text" className="form-control" required value={newPartnerForm.password} onChange={e => setNewPartnerForm({...newPartnerForm, password: e.target.value})} />
++            </div>
++            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
++              <button type="button" className="btn" onClick={() => setShowAddPartnerForm(false)} style={{ background: '#f1f5f9', color: '#475569' }}>Cancel</button>
++              <button type="submit" className="btn btn-primary">Create Partner</button>
++            </div>
++          </form>
++        </div>
++      )}
++
+       {/* Summary Cards */}
+       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+         {[
+@@ -1340,4 +1401,6 @@ const DeliveryPartnersTab = () => {
+       </div>
+     </div>
+   );
+-};
++}
++
++export default App;

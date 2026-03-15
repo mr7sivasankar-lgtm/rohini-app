@@ -7,20 +7,12 @@ import User from '../models/User.js';
 
 const router = express.Router();
 
-// Helper: only sends push if VAPID keys are configured in env
-const sendPushNotification = async (subscription, payload) => {
-    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return;
-    try {
-        webpush.setVapidDetails(
-            process.env.VAPID_EMAIL || 'mailto:admin@rohiniapp.com',
-            process.env.VAPID_PUBLIC_KEY,
-            process.env.VAPID_PRIVATE_KEY
-        );
-        await webpush.sendNotification(subscription, JSON.stringify(payload));
-    } catch (err) {
-        console.error('[Push] Send error:', err.message);
-    }
-};
+// Configure VAPID details (called once at module load)
+webpush.setVapidDetails(
+    process.env.VAPID_EMAIL || 'mailto:admin@rohiniapp.com',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+);
 
 // ── Middleware ──────────────────────────────────────────────────────────────
 const protectDelivery = async (req, res, next) => {
@@ -218,7 +210,10 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
                 };
                 const msg = pushMessages[deliveryStatus];
                 if (msg) {
-                    await sendPushNotification(customer.pushSubscription, { title: msg.title, body: msg.body, icon: '/vite.svg' });
+                    await webpush.sendNotification(
+                        customer.pushSubscription,
+                        JSON.stringify({ title: msg.title, body: msg.body, icon: '/logo192.png', badge: '/logo192.png' })
+                    );
                 }
             }
         } catch (pushErr) {
