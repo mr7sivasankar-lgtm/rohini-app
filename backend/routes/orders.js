@@ -579,15 +579,36 @@ router.put('/:id/item-action', protect, async (req, res) => {
             }
         } else if (action === 'return') {
             if (order.status !== 'Delivered') {
-                return res.status(400).json({ success: false, message: 'Item can only be returned after delivery.' });
+                return res.status(400).json({ success: false, message: 'Only delivered items can be returned.'});
             }
+
+            // Enforce 3-hour limit
+            const deliveredStatus = order.statusHistory.find(s => s.status === 'Delivered');
+            if (deliveredStatus) {
+                const hoursSinceDelivery = (new Date() - new Date(deliveredStatus.timestamp)) / (1000 * 60 * 60);
+                if (hoursSinceDelivery >= 3) {
+                    return res.status(403).json({ success: false, message: 'Return window expired. Returns are only allowed within 3 hours of delivery.'});
+                }
+            }
+
             item.status = 'Return Requested';
             item.returnRequestedAt = new Date();
         } else if (action === 'exchange') {
             if (order.status !== 'Delivered') {
-                return res.status(400).json({ success: false, message: 'Item can only be exchanged after delivery.' });
+                return res.status(400).json({ success: false, message: 'Only delivered items can be exchanged.'});
             }
+
+            // Enforce 3-hour limit
+            const deliveredStatus = order.statusHistory.find(s => s.status === 'Delivered');
+            if (deliveredStatus) {
+                const hoursSinceDelivery = (new Date() - new Date(deliveredStatus.timestamp)) / (1000 * 60 * 60);
+                if (hoursSinceDelivery >= 3) {
+                    return res.status(403).json({ success: false, message: 'Exchange window expired. Exchanges are only allowed within 3 hours of delivery.'});
+                }
+            }
+
             item.status = 'Exchange Requested';
+            item.exchangeRequestedAt = new Date();
             item.exchangeSize = exchangeSize || '';
             item.exchangeColor = exchangeColor || '';
 

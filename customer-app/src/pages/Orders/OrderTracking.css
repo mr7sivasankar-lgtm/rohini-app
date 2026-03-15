@@ -371,6 +371,38 @@
     color: #0f172a;
 }
 
+/* Time Window Banner */
+.time-window-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.time-window-banner .banner-icon {
+    font-size: 24px;
+}
+
+.time-window-banner .banner-text p {
+    margin: 0;
+}
+
+.active-banner {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+}
+
+.expired-banner {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
 .payment-method-badge {
     margin-top: 8px;
     display: inline-block;

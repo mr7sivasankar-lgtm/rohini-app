@@ -945,11 +945,37 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
             </td>
             <td style={{ fontWeight: 600 }}>₹{order.total.toFixed(2)}</td>
             <td>
-              <span className={`status-badge status-${order.status.toLowerCase().replace(/ /g, '-')}`}>
-                {order.status === 'Delivered' ? '✔ Delivered' : 
-                 order.status === 'Cancelled' ? '❌ Cancelled' : 
-                 order.status}
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                <span className={`status-badge status-${order.status.toLowerCase().replace(/ /g, '-')}`}>
+                  {order.status === 'Delivered' ? '✔ Delivered' : 
+                   order.status === 'Cancelled' ? '❌ Cancelled' : 
+                   order.status}
+                </span>
+
+                {/* Return window tag for delivered orders */}
+                {order.status === 'Delivered' && (() => {
+                  const deliveredStatus = order.statusHistory?.find(s => s.status === 'Delivered');
+                  if (!deliveredStatus) return null;
+                  
+                  const hoursSinceDelivery = (new Date() - new Date(deliveredStatus.timestamp)) / (1000 * 60 * 60);
+                  const isExpired = hoursSinceDelivery >= 3;
+                  
+                  return (
+                    <span style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: isExpired ? '#fef2f2' : '#eff6ff',
+                      color: isExpired ? '#ef4444' : '#3b82f6',
+                      border: `1px solid ${isExpired ? '#fecaca' : '#bfdbfe'}`,
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {isExpired ? 'Return Window: Expired' : 'Return Window: Active'}
+                    </span>
+                  );
+                })()}
+              </div>
             </td>
             <td>
               <div>{new Date(order.createdAt).toLocaleDateString('en-IN')}</div>

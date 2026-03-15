@@ -15,6 +15,10 @@ const OrderTracking = () => {
     const [actionExchangeSize, setActionExchangeSize] = useState('');
     const [actionExchangeColor, setActionExchangeColor] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Timer state
+    const [timeLeft, setTimeLeft] = useState(null);
+    const [isExpired, setIsExpired] = useState(false);
 
     useEffect(() => {
         fetchOrder();
@@ -26,12 +30,50 @@ const OrderTracking = () => {
             if (response.data.success) {
                 const foundOrder = response.data.data.find(o => o.orderId === orderId);
                 setOrder(foundOrder);
+                
+                // Initialize timer if delivered
+                if (foundOrder?.status === 'Delivered') {
+                    const deliveredStatus = foundOrder.statusHistory.find(s => s.status === 'Delivered');
+                    if (deliveredStatus) {
+                        calculateTimeLeft(deliveredStatus.timestamp);
+                    }
+                }
             }
         } catch (error) {
             console.error('Error fetching order:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    // Calculate the remaining time within the 3-hour window
+    const calculateTimeLeft = (deliveredTimestamp) => {
+        const checkTime = () => {
+            const deliveredAt = new Date(deliveredTimestamp).getTime();
+            const threeHoursInMs = 3 * 60 * 60 * 1000;
+            const expiresAt = deliveredAt + threeHoursInMs;
+            const now = new Date().getTime();
+            const difference = expiresAt - now;
+
+            if (difference <= 0) {
+                setIsExpired(true);
+                setTimeLeft('00:00:00');
+            } else {
+                setIsExpired(false);
+                const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+                const minutes = Math.floor((difference / 1000 / 60) % 60);
+                const seconds = Math.floor((difference / 1000) % 60);
+                
+                setTimeLeft(
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+                );
+            }
+        };
+
+        checkTime();
+        // Setup interval to continue counting down
+        const timer = setInterval(checkTime, 1000);
+        return () => clearInterval(timer);
     };
 
     const handleActionItem = async () => {
@@ -103,6 +145,20 @@ const OrderTracking = () => {
                 <h1 className="page-title">Order Details</h1>
             </div>
 
+            {/* Expired Window Banner */}
+            {order.status === 'Delivered' && timeLeft && (
+                <div className={`time-window-banner ${isExpired ? 'expired-banner' : 'active-banner'}`}>
+                    <div className="banner-icon">{isExpired ? '⏳' : '⏱️'}</div>
+                    <div className="banner-text">
+                        {isExpired ? (
+                            <p><strong>Return/Exchange window expired.</strong> Items can no longer be returned or exchanged.</p>
+                        ) : (
+                            <p>Return / Exchange available for: <strong>{timeLeft} remaining</strong></p>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Order Items List (Moved to top) */}
             <div className="tracking-card">
                 <h3 className="section-title">Items ({order.items.length})</h3>
@@ -146,7 +202,7 @@ const OrderTracking = () => {
                                             )}
 
                                             {/* RETURN/EXCHANGE ITEM if Order is Delivered */}
-                                            {order.status === 'Delivered' && (
+                                            {order.status === 'Delivered' && !isExpired && (
                                                 <div className="delivered-actions">
                                                     <button className="btn-action action-return" onClick={() => openModal(item, 'return')}>
                                                         Return

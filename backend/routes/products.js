@@ -13,13 +13,35 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
     try {
-        const { category, gender, search, featured, limit = 20, page = 1 } = req.query;
+        const { 
+            category, gender, search, featured, limit = 20, page = 1,
+            sort, minPrice, maxPrice, sizes, colors, inStock
+        } = req.query;
 
         const query = { isActive: true };
 
         if (category) query.category = category;
         if (gender) query.gender = gender;
         if (featured) query.featured = true;
+        
+        // Advanced Filters
+        if (minPrice || maxPrice) {
+            query.price = {};
+            if (minPrice) query.price.$gte = Number(minPrice);
+            if (maxPrice) query.price.$lte = Number(maxPrice);
+        }
+        if (sizes) {
+            const sizesArray = sizes.split(',').map(s => s.trim());
+            query.sizes = { $in: sizesArray };
+        }
+        if (colors) {
+            const colorsArray = colors.split(',').map(c => c.trim());
+            query.colors = { $in: colorsArray };
+        }
+        if (inStock === 'true') {
+            query.stock = { $gt: 0 };
+        }
+
         if (search) {
             // Split compound terms like "Kurtis & Tunics" into individual keywords
             const keywords = search
@@ -84,12 +106,18 @@ router.get('/', async (req, res) => {
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
+        // Sorting Logic
+        let sortObj = { createdAt: -1 }; // Default: Newest first
+        if (sort === 'price_asc') sortObj = { price: 1 };
+        else if (sort === 'price_desc') sortObj = { price: -1 };
+        else if (sort === 'popularity') sortObj = { bestSeller: -1, trending: -1, createdAt: -1 };
+
         const products = await Product.find(query)
             .populate('category', 'name gender')
             .populate('subcategory', 'name')
             .limit(parseInt(limit))
             .skip(skip)
-            .sort({ createdAt: -1 });
+            .sort(sortObj);
 
         const total = await Product.countDocuments(query);
 

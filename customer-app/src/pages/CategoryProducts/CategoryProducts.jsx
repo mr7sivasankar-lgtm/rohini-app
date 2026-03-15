@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useWishlist } from '../../contexts/WishlistContext';
 import api, { getImageUrl } from '../../utils/api';
+import FilterSortBar from '../../components/FilterSortBar/FilterSortBar';
 import './CategoryProducts.css';
 
 const CategoryProducts = () => {
@@ -11,18 +12,36 @@ const CategoryProducts = () => {
     const [products, setProducts] = useState([]);
     const [category, setCategory] = useState(null);
     const [loading, setLoading] = useState(true);
+    
+    // Sort and Filter State
+    const [activeSort, setActiveSort] = useState('newest');
+    const [activeFilters, setActiveFilters] = useState({ priceRange: '', sizes: [], colors: [], inStock: false });
 
     useEffect(() => {
         fetchCategoryProducts();
-    }, [categoryId]);
+    }, [categoryId, activeSort, activeFilters]);
 
     const fetchCategoryProducts = async () => {
         try {
             setLoading(true);
-            // Fetch category details and products
+            
+            // Build Query string for products
+            const params = new URLSearchParams();
+            params.append('category', categoryId);
+            if (activeSort !== 'newest') params.append('sort', activeSort);
+            if (activeFilters.inStock) params.append('inStock', 'true');
+            if (activeFilters.priceRange) {
+                const [min, max] = activeFilters.priceRange.split('-');
+                if (min) params.append('minPrice', min.replace('+', ''));
+                if (max) params.append('maxPrice', max);
+            }
+            if (activeFilters.sizes && activeFilters.sizes.length > 0) params.append('sizes', activeFilters.sizes.join(','));
+            if (activeFilters.colors && activeFilters.colors.length > 0) params.append('colors', activeFilters.colors.join(','));
+
+            // Fetch category details and filtered products
             const [categoryRes, productsRes] = await Promise.all([
                 api.get(`/categories/${categoryId}`),
-                api.get(`/products?category=${categoryId}`)
+                api.get(`/products?${params.toString()}`)
             ]);
 
             if (categoryRes.data.success) {
@@ -50,6 +69,15 @@ const CategoryProducts = () => {
                 <h1>{category?.name || 'Category'}</h1>
                 <div className="spacer"></div>
             </div>
+            
+            <FilterSortBar 
+                activeSort={activeSort}
+                onSortChange={setActiveSort}
+                activeFilters={activeFilters}
+                onFilterChange={setActiveFilters}
+                onClearFilters={() => setActiveFilters({ priceRange: '', sizes: [], colors: [], inStock: false })}
+                totalResults={products.length}
+            />
 
             {/* Products */}
             <div className="category-content">

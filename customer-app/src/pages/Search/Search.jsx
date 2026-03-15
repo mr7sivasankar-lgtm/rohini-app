@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useWishlist } from '../../contexts/WishlistContext';
 import api, { getImageUrl } from '../../utils/api';
+import FilterSortBar from '../../components/FilterSortBar/FilterSortBar';
 import './Search.css';
 
 const Search = () => {
@@ -12,6 +13,9 @@ const Search = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchInput, setSearchInput] = useState(query);
+    const [activeSort, setActiveSort] = useState('newest');
+    const [activeFilters, setActiveFilters] = useState({ priceRange: '', sizes: [], colors: [], inStock: false });
+    
     const inputRef = useRef(null);
     const debounceRef = useRef(null);
 
@@ -22,7 +26,7 @@ const Search = () => {
         }
     }, []);
 
-    // Debounced live search as user types
+    // Debounced live search OR sort/filter changes
     useEffect(() => {
         const q = searchInput.trim();
         if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -34,19 +38,33 @@ const Search = () => {
         }
 
         debounceRef.current = setTimeout(() => {
-            searchProducts(q);
+            searchProducts(q, activeSort, activeFilters);
             setSearchParams({ q }, { replace: true });
         }, 350);
 
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
         };
-    }, [searchInput]);
+    }, [searchInput, activeSort, activeFilters]);
 
-    const searchProducts = async (searchQuery) => {
+    const searchProducts = async (searchQuery, sort, filters) => {
         try {
             setLoading(true);
-            const response = await api.get(`/products?search=${encodeURIComponent(searchQuery)}`);
+            
+            // Build Query string
+            const params = new URLSearchParams();
+            params.append('search', searchQuery);
+            if (sort !== 'newest') params.append('sort', sort);
+            if (filters.inStock) params.append('inStock', 'true');
+            if (filters.priceRange) {
+                const [min, max] = filters.priceRange.split('-');
+                if (min) params.append('minPrice', min.replace('+', ''));
+                if (max) params.append('maxPrice', max);
+            }
+            if (filters.sizes && filters.sizes.length > 0) params.append('sizes', filters.sizes.join(','));
+            if (filters.colors && filters.colors.length > 0) params.append('colors', filters.colors.join(','));
+
+            const response = await api.get(`/products?${params.toString()}`);
             if (response.data.success) {
                 setProducts(response.data.data);
             }
@@ -60,6 +78,8 @@ const Search = () => {
     const handleClear = () => {
         setSearchInput('');
         setProducts([]);
+        setActiveFilters({ priceRange: '', sizes: [], colors: [], inStock: false });
+        setActiveSort('newest');
         setSearchParams({}, { replace: true });
         if (inputRef.current) inputRef.current.focus();
     };
@@ -99,6 +119,18 @@ const Search = () => {
                     )}
                 </div>
             </div>
+
+            {/* Filter and Sort Bar */}
+            {searchInput.trim() && (
+                <FilterSortBar 
+                    activeSort={activeSort}
+                    onSortChange={setActiveSort}
+                    activeFilters={activeFilters}
+                    onFilterChange={setActiveFilters}
+                    onClearFilters={() => setActiveFilters({ priceRange: '', sizes: [], colors: [], inStock: false })}
+                    totalResults={products.length}
+                />
+            )}
 
             {/* Search Results */}
             <div className="search-content">
