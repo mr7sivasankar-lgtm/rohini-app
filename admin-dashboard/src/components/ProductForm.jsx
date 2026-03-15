@@ -482,8 +482,28 @@ const ProductForm = ({ product, categories, onClose, onSave }) => {
                     <div className="section">
                         <h3>Delivery & Advanced</h3>
                         <div className="form-row">
-                            <div className="form-group"><label>Delivery Time</label><input name="deliveryTime" value={formData.deliveryTime} onChange={handleChange} className="input" /></div>
-                            <div className="form-group"><label>Return Policy</label><input name="returnPolicy" value={formData.returnPolicy} onChange={handleChange} className="input" /></div>
+                            <div className="form-group">
+                                <label>Delivery Time</label>
+                                <select name="deliveryTime" value={formData.deliveryTime} onChange={handleChange} className="input">
+                                    <option value="30 Mins">30 Mins</option>
+                                    <option value="1 Hour">1 Hour</option>
+                                    <option value="2 Hours">2 Hours</option>
+                                    <option value="Same Day">Same Day</option>
+                                    <option value="Next Day">Next Day</option>
+                                    <option value="2-3 Days">2-3 Days</option>
+                                    <option value="3-5 Days">3-5 Days</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Return Policy</label>
+                                <select name="returnPolicy" value={formData.returnPolicy} onChange={handleChange} className="input">
+                                    <option value="No Returns">No Returns</option>
+                                    <option value="2 Hours">2 Hours Return Window</option>
+                                    <option value="3 Hours">3 Hours Return Window</option>
+                                    <option value="Same Day">Same Day Return</option>
+                                    <option value="7 Days">7 Days Return</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div className="form-group" style={{ marginTop: 10 }}>
