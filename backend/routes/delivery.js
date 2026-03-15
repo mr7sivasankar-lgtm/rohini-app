@@ -169,55 +169,92 @@ router.get('/orders/single/:id', protectDelivery, async (req, res) => {
 router.put('/orders/:id/status', protectDelivery, async (req, res) => {
     try {
         const { deliveryStatus } = req.body;
-        const validStatuses = ['Picked Up', 'Out for Delivery', 'Delivered'];
-        if (!validStatuses.includes(deliveryStatus)) {
-            return res.status(400).json({ success: false, message: 'Invalid delivery status' });
-        }
 
-        const order = await Order.findOne({ _id: req.params.id, deliveryPartner: req.partner._id });
+        const order = await Order.findOne({ _id: req.params.id, deliveryPartner: req.partner._id })
+            .populate('items.product', 'stock');
         if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+        const isReturnPickup = order.deliveryType === 'Return Pickup';
+
+        // Return Pickup orders accept: 'Picked Up' (en-route to collect), 'Collected' (collected from customer)
+        // Normal orders accept: 'Picked Up', 'Out for Delivery', 'Delivered'
+        const validStatuses = isReturnPickup
+            ? ['Picked Up', 'Collected']
+            : ['Picked Up', 'Out for Delivery', 'Delivered'];
+
+        if (!validStatuses.includes(deliveryStatus)) {
+            return res.status(400).json({ success: false, message: `Invalid status for this order type. Valid: ${validStatuses.join(', ')}` });
+        }
 
         order.deliveryStatus = deliveryStatus;
 
-        // Map delivery status to main order status
-        const statusMap = {
-            'Picked Up': 'Picked Up',
-            'Out for Delivery': 'Out for Delivery',
-            'Delivered': 'Delivered'
-        };
-        order.status = statusMap[deliveryStatus];
-        order.statusHistory.push({ status: statusMap[deliveryStatus], timestamp: new Date(), note: `Updated by delivery partner` });
+        if (isReturnPickup) {
+            // Return Pickup: when collected, mark all Return Approved items as Return Completed
+            if (deliveryStatus === 'Collected') {
+                const now = new Date();
+                for (const item of order.items) {
+                    if (item.status === 'Return Approved') {
+                        item.status = 'Return Completed';
+                        item.returnCompletedAt = now;
+                        // Restore stock
+                        const Product = (await import('../models/Product.js')).default;
+                        const product = await Product.findById(item.product?._id || item.product);
+                        if (product) {
+                            product.stock += item.quantity;
+                            await product.save();
+                        }
+                    }
+                }
+                order.statusHistory.push({ status: 'Return Completed', timestamp: now, note: 'Return collected by delivery partner' });
+                await DeliveryPartner.findByIdAndUpdate(req.partner._id, {
+                    $inc: { activeOrdersCount: -1, totalDeliveries: 1 }
+                });
+            } else {
+                // Picked Up (heading to customer to collect)
+                order.statusHistory.push({ status: 'Picked Up', timestamp: new Date(), note: 'Delivery partner en-route to collect return' });
+            }
+        } else {
+            // Normal delivery
+            const statusMap = {
+                'Picked Up': 'Picked Up',
+                'Out for Delivery': 'Out for Delivery',
+                'Delivered': 'Delivered'
+            };
+            order.status = statusMap[deliveryStatus];
+            order.statusHistory.push({ status: statusMap[deliveryStatus], timestamp: new Date(), note: 'Updated by delivery partner' });
 
-        if (deliveryStatus === 'Delivered') {
-            order.deliveredAt = new Date();
-            // Decrement partner active count, increment total
-            await DeliveryPartner.findByIdAndUpdate(req.partner._id, {
-                $inc: { activeOrdersCount: -1, totalDeliveries: 1 }
-            });
+            if (deliveryStatus === 'Delivered') {
+                order.deliveredAt = new Date();
+                await DeliveryPartner.findByIdAndUpdate(req.partner._id, {
+                    $inc: { activeOrdersCount: -1, totalDeliveries: 1 }
+                });
+            }
         }
 
         await order.save();
 
-        // Send push notification to customer
-        try {
-            const populatedOrder = await Order.findById(order._id).populate('user', 'pushSubscription name');
-            const customer = populatedOrder?.user;
-            if (customer?.pushSubscription) {
-                const pushMessages = {
-                    'Picked Up':       { title: 'Order Picked Up! 🚴', body: `Your order #${order.orderId?.slice(-6)} has been picked up and is on its way.` },
-                    'Out for Delivery': { title: 'Out for Delivery! 🚚', body: `Your order #${order.orderId?.slice(-6)} is just around the corner!` },
-                    'Delivered':        { title: 'Delivered! ✅', body: `Your order #${order.orderId?.slice(-6)} has been delivered. Enjoy!` },
-                };
-                const msg = pushMessages[deliveryStatus];
-                if (msg) {
-                    await webpush.sendNotification(
-                        customer.pushSubscription,
-                        JSON.stringify({ title: msg.title, body: msg.body, icon: '/logo192.png', badge: '/logo192.png' })
-                    );
+        // Push notification (only for normal deliveries)
+        if (!isReturnPickup) {
+            try {
+                const populatedOrder = await Order.findById(order._id).populate('user', 'pushSubscription name');
+                const customer = populatedOrder?.user;
+                if (customer?.pushSubscription) {
+                    const pushMessages = {
+                        'Picked Up':        { title: 'Order Picked Up! 🚴', body: `Your order #${order.orderId?.slice(-6)} has been picked up and is on its way.` },
+                        'Out for Delivery': { title: 'Out for Delivery! 🚚', body: `Your order #${order.orderId?.slice(-6)} is just around the corner!` },
+                        'Delivered':        { title: 'Delivered! ✅', body: `Your order #${order.orderId?.slice(-6)} has been delivered. Enjoy!` },
+                    };
+                    const msg = pushMessages[deliveryStatus];
+                    if (msg) {
+                        await webpush.sendNotification(
+                            customer.pushSubscription,
+                            JSON.stringify({ title: msg.title, body: msg.body, icon: '/logo192.png', badge: '/logo192.png' })
+                        );
+                    }
                 }
+            } catch (pushErr) {
+                console.error('[Push] Failed to send notification:', pushErr.message);
             }
-        } catch (pushErr) {
-            console.error('[Push] Failed to send notification:', pushErr.message);
         }
 
         res.json({ success: true, message: `Status updated to ${deliveryStatus}`, data: order });

@@ -3,13 +3,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import './OrderDetail.css';
 
-const NEXT_STATUS = {
-    'Assigned': 'Picked Up',
-    'Picked Up': 'Out for Delivery',
+const NEXT_STATUS_NORMAL = {
+    'Assigned':        'Picked Up',
+    'Picked Up':       'Out for Delivery',
     'Out for Delivery': 'Delivered',
 };
 
-const STATUS_STEPS = ['Assigned', 'Picked Up', 'Out for Delivery', 'Delivered'];
+const NEXT_STATUS_RETURN = {
+    'Assigned':  'Picked Up',
+    'Picked Up': 'Collected',
+};
+
+const STATUS_STEPS_NORMAL = ['Assigned', 'Picked Up', 'Out for Delivery', 'Delivered'];
+const STATUS_STEPS_RETURN = ['Assigned', 'Picked Up', 'Collected'];
 
 export default function OrderDetail() {
     const { id } = useParams();
@@ -66,6 +72,9 @@ export default function OrderDetail() {
         }
     };
 
+    const isReturnPickup = order?.deliveryType === 'Return Pickup';
+    const NEXT_STATUS = isReturnPickup ? NEXT_STATUS_RETURN : NEXT_STATUS_NORMAL;
+    const STATUS_STEPS = isReturnPickup ? STATUS_STEPS_RETURN : STATUS_STEPS_NORMAL;
     const currentStepIndex = STATUS_STEPS.indexOf(order?.deliveryStatus);
 
     if (loading) return <div className="loading-page"><div className="spinner"></div></div>;
@@ -77,7 +86,9 @@ export default function OrderDetail() {
             <div className="detail-header">
                 <button className="back-btn" onClick={() => navigate('/')}>← Back</button>
                 <h2>Order #{order.orderId?.slice(-6)}</h2>
-                <div className="delivery-type-tag">{order.deliveryType}</div>
+                <div className={`delivery-type-tag ${isReturnPickup ? 'return-tag' : ''}`}>
+                    {isReturnPickup ? '↩️ Return Pickup' : order.deliveryType}
+                </div>
             </div>
 
             {/* Progress Steps */}
@@ -139,6 +150,9 @@ export default function OrderDetail() {
             )}
             {order.deliveryStatus === 'Delivered' && (
                 <div className="delivered-banner">✅ This order has been delivered!</div>
+            )}
+            {order.deliveryStatus === 'Collected' && (
+                <div className="delivered-banner">✅ Return collected successfully! Stock restored.</div>
             )}
         </div>
     );
