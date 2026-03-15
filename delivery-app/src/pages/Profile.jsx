@@ -105,8 +105,6 @@ export default function Profile() {
                     <div className="info-row"><span>Joined</span><strong>{p?.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</strong></div>
                 </div>
             )}
-
-            <button className="logout-full-btn" onClick={logout}>Logout</button>
         </div>
     );
 }

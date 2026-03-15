@@ -47,11 +47,6 @@ export default function Dashboard() {
                         <p>Ready to deliver?</p>
                     </div>
                 </div>
-                <div className="dash-actions">
-                    <button className="icon-btn" onClick={() => navigate('/profile')} title="Profile">👤</button>
-                    <button className="icon-btn" onClick={() => navigate('/history')} title="History">📋</button>
-                    <button className="icon-btn logout-btn" onClick={logout} title="Logout">⏻</button>
-                </div>
             </div>
 
             {/* Stats Cards */}

@@ -6,10 +6,17 @@ import OrderDetail from './pages/OrderDetail';
 import Profile from './pages/Profile';
 import History from './pages/History';
 
+import BottomNav from './components/BottomNav';
+
 const PrivateRoute = ({ children }) => {
     const { partner, loading } = useAuth();
     if (loading) return <div className="splash"><div className="spinner"></div></div>;
-    return partner ? children : <Navigate to="/login" replace />;
+    return partner ? (
+        <>
+            {children}
+            <BottomNav />
+        </>
+    ) : <Navigate to="/login" replace />;
 };
 
 export default function App() {
