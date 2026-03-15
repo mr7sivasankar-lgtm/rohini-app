@@ -510,6 +510,16 @@ router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
 
         await order.save();
 
+        // Auto-assign a delivery partner for return pickups when admin approves
+        if (status === 'Return Approved') {
+            try {
+                await autoAssignDeliveryPartner(order._id, 'Return Pickup');
+                console.log(`[Return Auto-Assign] Return pickup task created for order ${order._id}`);
+            } catch (assignErr) {
+                console.error('[Return Auto-Assign] Failed to assign delivery partner:', assignErr.message);
+            }
+        }
+
         res.status(200).json({
             success: true,
             message: `Item status updated to ${status}`,

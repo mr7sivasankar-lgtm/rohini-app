@@ -64,6 +64,10 @@ const userSchema = new mongoose.Schema({
   },
   lastLogin: {
     type: Date
+  },
+  pushSubscription: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
   }
 }, {
   timestamps: true

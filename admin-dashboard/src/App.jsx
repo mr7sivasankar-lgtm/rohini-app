@@ -983,6 +983,13 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                     </span>
                   );
                 })()}
+
+                {order.deliveryPartnerId && (
+                  <div style={{ marginTop: '4px', padding: '4px 6px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontWeight: 600, color: '#334155' }}>🚚 {order.deliveryPartnerId.name}</span>
+                    <span style={{ color: '#64748b' }}>{order.deliveryPartnerId.phone}</span>
+                  </div>
+                )}
               </div>
             </td>
             <td>
