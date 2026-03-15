@@ -34,8 +34,8 @@ export default function Login() {
             <div className="login-card">
                 <div className="login-brand">
                     <div className="brand-icon">🚴</div>
-                    <h1>Rohini Delivery</h1>
-                    <p>Partner Portal</p>
+                    <h1>Partner Delivery</h1>
+                    <p>Delivery Partner Portal</p>
                 </div>
 
                 <div className="mode-tabs">
