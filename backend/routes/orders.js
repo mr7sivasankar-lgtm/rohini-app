@@ -114,6 +114,7 @@ router.post('/', protect, async (req, res) => {
 router.get('/', protect, async (req, res) => {
     try {
         const orders = await Order.find({ user: req.user._id })
+            .populate('deliveryPartnerId', 'name phone')
             .sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -143,6 +144,7 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
 
         const orders = await Order.find(query)
             .populate('user', 'name phone email')
+            .populate('deliveryPartnerId', 'name phone')
             .sort({ createdAt: -1 })
             .limit(parseInt(limit));
 
