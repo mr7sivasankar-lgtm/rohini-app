@@ -78,7 +78,7 @@ const Login = () => {
                                 <span className="phone-prefix">+91</span>
                                 <input
                                     type="tel"
-                                    placeholder="9700079239"
+                                    placeholder="Enter your phone number"
                                     value={phone}
                                     onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                     autoComplete="off"
