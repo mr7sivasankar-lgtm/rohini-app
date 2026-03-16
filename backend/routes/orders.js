@@ -293,7 +293,8 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
         console.error('Get all orders error:', error);
         res.status(500).json({
             success: false,
-            message: 'Error fetching orders'
+            message: error.message || 'Error fetching orders',
+            stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
         });
     }
 });
