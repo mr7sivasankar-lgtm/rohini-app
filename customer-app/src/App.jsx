@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { WishlistProvider } from './contexts/WishlistContext';
+import { FavoritesProvider } from './contexts/FavoritesContext';
 import { LocationProvider } from './contexts/LocationContext';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -25,6 +26,7 @@ import Addresses from './pages/Addresses/Addresses';
 import AddressForm from './pages/Addresses/AddressForm';
 import EditProfile from './pages/EditProfile/EditProfile';
 import Wishlist from './pages/Wishlist/Wishlist';
+import Favorites from './pages/Favorites/Favorites';
 import ShopProfile from './pages/ShopProfile/ShopProfile';
 
 // Protected Route Component
@@ -156,6 +158,12 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
 
+        <Route path="/favorites" element={
+          <ProtectedRoute>
+            <Favorites />
+          </ProtectedRoute>
+        } />
+
         <Route path="/" element={<Navigate to="/home" />} />
         <Route path="*" element={<Navigate to="/home" />} />
       </Routes>
@@ -173,9 +181,11 @@ function App() {
           <LocationProvider>
             <CartProvider>
               <WishlistProvider>
-                <div className="app-container">
-                  <AppRoutes />
-                </div>
+                <FavoritesProvider>
+                  <div className="app-container">
+                    <AppRoutes />
+                  </div>
+                </FavoritesProvider>
               </WishlistProvider>
             </CartProvider>
           </LocationProvider>

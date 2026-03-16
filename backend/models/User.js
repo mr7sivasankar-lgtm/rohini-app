@@ -28,6 +28,10 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   }],
+  favoriteShops: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Seller'
+  }],
   cart: [{
     product: {
       type: mongoose.Schema.Types.ObjectId,

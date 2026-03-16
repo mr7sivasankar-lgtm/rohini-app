@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useLocation } from '../../contexts/LocationContext';
+import { useFavorites } from '../../contexts/FavoritesContext';
 import api, { getImageUrl } from '../../utils/api';
 import './Home.css';
 
@@ -391,8 +392,15 @@ const ShopSlideshow = ({ shops, navigate }) => {
 
 /* ---- Compact Shop Card ---- */
 const ShopCard = ({ shop, onClick, nearby }) => {
+    const { isInFavorites, toggleFavorite } = useFavorites();
+    const isFav = isInFavorites(shop._id);
     const tags = getShopTags(shop);
     const addr = shop.shopAddress ? shop.shopAddress.substring(0, 28) + (shop.shopAddress.length > 28 ? '…' : '') : 'Local Market';
+
+    const handleFavClick = (e) => {
+        e.stopPropagation();
+        toggleFavorite(shop._id);
+    };
 
     return (
         <div className="shop-card-compact" onClick={onClick}>
@@ -411,6 +419,12 @@ const ShopCard = ({ shop, onClick, nearby }) => {
                         </span>
                     )}
                 </div>
+
+                <button className={`scc-fav-btn ${isFav ? 'active' : ''}`} onClick={handleFavClick} aria-label="Favorite Shop">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill={isFav ? '#ef4444' : 'none'} stroke={isFav ? '#ef4444' : '#fff'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                </button>
 
                 {/* Slideshow dots overlay (if it was a single image carousel, not relevant here) */}
                 <div className="scc-bottom-gradient"></div>
