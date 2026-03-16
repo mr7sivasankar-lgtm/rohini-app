@@ -9,8 +9,10 @@ const Search = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const query = searchParams.get('q') || '';
+    const shopId = searchParams.get('shopId');
 
     const [products, setProducts] = useState([]);
+    const [shopDetails, setShopDetails] = useState(null);
     const [loading, setLoading] = useState(false);
     const [searchInput, setSearchInput] = useState(query);
     const [activeSort, setActiveSort] = useState('newest');
@@ -24,7 +26,21 @@ const Search = () => {
         if (inputRef.current) {
             inputRef.current.focus();
         }
-    }, []);
+        if (shopId) {
+            fetchShopDetails(shopId);
+        }
+    }, [shopId]);
+
+    const fetchShopDetails = async (id) => {
+        try {
+            const res = await api.get(`/sellers/${id}`);
+            if (res.data.success) {
+                setShopDetails(res.data.data);
+            }
+        } catch (error) {
+            console.error('Error fetching shop details for search context:', error);
+        }
+    };
 
     // Debounced live search OR sort/filter changes
     useEffect(() => {
@@ -39,7 +55,10 @@ const Search = () => {
 
         debounceRef.current = setTimeout(() => {
             searchProducts(q, activeSort, activeFilters);
-            setSearchParams({ q }, { replace: true });
+            
+            const newParams = new URLSearchParams(searchParams);
+            newParams.set('q', q);
+            setSearchParams(newParams, { replace: true });
         }, 350);
 
         return () => {
@@ -61,6 +80,7 @@ const Search = () => {
             // Build Query string
             const params = new URLSearchParams();
             params.append('search', searchQuery);
+            if (shopId) params.append('sellerId', shopId);
             if (sort && sort !== 'newest') params.append('sort', sort);
             if (filters.inStock) params.append('inStock', 'true');
             
@@ -95,7 +115,11 @@ const Search = () => {
         setProducts([]);
         setActiveFilters({ priceRange: '', sizes: [], colors: [], inStock: false });
         setActiveSort('newest');
-        setSearchParams({}, { replace: true });
+        
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('q');
+        setSearchParams(newParams, { replace: true });
+        
         if (inputRef.current) inputRef.current.focus();
     };
 
@@ -133,6 +157,11 @@ const Search = () => {
                         </button>
                     )}
                 </div>
+                {shopDetails && (
+                    <div className="search-shop-context">
+                        Searching only in <strong>{shopDetails.shopName}</strong>
+                    </div>
+                )}
             </div>
 
             {/* Filter and Sort Bar */}

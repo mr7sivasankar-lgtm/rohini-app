@@ -10,6 +10,12 @@ const ShopProfile = () => {
     const [shop, setShop] = useState(null);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // Filters and Categories
+    const [activeCategory, setActiveCategory] = useState('All');
+    const [categories, setCategories] = useState(['All']);
+    const [showSort, setShowSort] = useState(false);
+    const [sortBy, setSortBy] = useState('recommended');
 
     useEffect(() => {
         fetchShopDetails();
@@ -24,7 +30,14 @@ const ShopProfile = () => {
             ]);
 
             if (shopRes.data.success) setShop(shopRes.data.data);
-            if (productsRes.data.success) setProducts(productsRes.data.data);
+            if (productsRes.data.success) {
+                const prods = productsRes.data.data;
+                setProducts(prods);
+                
+                // Extract unique categories from shop's products
+                const uniqueCats = ['All', ...new Set(prods.map(p => p.category).filter(Boolean))];
+                setCategories(uniqueCats);
+            }
         } catch (error) {
             console.error('Error fetching shop:', error);
         } finally {
@@ -34,6 +47,23 @@ const ShopProfile = () => {
 
     if (loading) return <div className="loading-state">Loading shop details...</div>;
     if (!shop) return <div className="empty-state">Shop not found</div>;
+
+    // Filter and Sort Products
+    let displayProducts = [...products];
+    if (activeCategory !== 'All') {
+        displayProducts = displayProducts.filter(p => p.category === activeCategory);
+    }
+    if (sortBy === 'price_low') displayProducts.sort((a, b) => a.price - b.price);
+    if (sortBy === 'price_high') displayProducts.sort((a, b) => b.price - a.price);
+
+    // Calculate delivery time based on distance (roughly 4 mins per km + 20 mins base prep)
+    let deliveryTimeStr = '~35 mins';
+    if (shop.distance) {
+        const distKm = shop.distance / 1000;
+        const mins = Math.round(20 + (distKm * 4));
+        deliveryTimeStr = `~${mins} mins`;
+        if (shop.distanceText) deliveryTimeStr = `~${shop.durationText || mins + ' mins'}`;
+    }
 
     return (
         <div className="shop-profile-page">
@@ -59,7 +89,7 @@ const ShopProfile = () => {
                     <p className="shop-desc">{shop.description || 'Welcome to our shop! Check out our collection below.'}</p>
                     <div className="shop-stats">
                         <div className="stat-item">
-                            <span className="stat-value">🛵 ~20 Mins</span>
+                            <span className="stat-value">🛵 {deliveryTimeStr}</span>
                             <span className="stat-label">Delivery Time</span>
                         </div>
                         <div className="stat-divider"></div>
@@ -72,10 +102,37 @@ const ShopProfile = () => {
             </div>
 
             <div className="shop-products-section">
-                <h2 className="section-title">All Products</h2>
-                {products.length > 0 ? (
+                {/* Categories Scroll Tab */}
+                {categories.length > 1 && (
+                    <div className="shop-categories-scroll">
+                        {categories.map(cat => (
+                            <button 
+                                key={cat} 
+                                className={`shop-cat-btn ${activeCategory === cat ? 'active' : ''}`}
+                                onClick={() => setActiveCategory(cat)}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* Sort / Filter Controls */}
+                <div className="shop-filter-bar">
+                    <button className="sf-btn" onClick={() => setSortBy(prev => prev === 'price_low' ? 'recommended' : 'price_low')}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                        {sortBy === 'price_low' ? 'Price: Low' : 'Sort'}
+                    </button>
+                    <div className="sf-divider"></div>
+                    <button className="sf-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                        Filter
+                    </button>
+                </div>
+
+                {displayProducts.length > 0 ? (
                     <div className="products-grid">
-                        {products.map((product) => (
+                        {displayProducts.map((product) => (
                             <ProductCard key={product._id} product={product} onClick={() => navigate(`/product/${product._id}`)} />
                         ))}
                     </div>

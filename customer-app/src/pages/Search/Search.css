@@ -189,6 +189,34 @@
     border-radius: 8px;
 }
 
+.search-clear-btn {
+    position: absolute;
+    right: 16px;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #475569;
+    cursor: pointer;
+}
+
+.search-shop-context {
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 11px;
+    padding: 6px 12px;
+    margin: 4px 16px 0;
+    border-radius: 8px;
+    display: inline-block;
+    border: 1px solid #c7d2fe;
+}
+.search-shop-context strong { font-weight: 700; }
+
+/* Content Section Layout */
 .wishlist-heart {
     position: absolute;
     top: 8px;

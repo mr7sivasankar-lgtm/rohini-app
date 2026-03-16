@@ -45,7 +45,7 @@
 .shop-info-card {
     background: white;
     border-radius: 20px;
-    margin: -40px 16px 0;
+    margin: -80px 16px 0;
     position: relative;
     z-index: 5;
     padding: 24px;
@@ -130,7 +130,69 @@
     font-size: 20px;
     font-weight: 700;
     color: #0f172a;
-    margin: 0 0 20px 0;
+    margin: 0 0 16px 0;
+}
+
+/* Category Scroll Tabs */
+.shop-categories-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    padding: 0 0 12px 0;
+    margin: 0 0 16px 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.shop-categories-scroll::-webkit-scrollbar { display: none; }
+
+.shop-cat-btn {
+    white-space: nowrap;
+    padding: 8px 16px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.shop-cat-btn.active {
+    background: #0f172a;
+    color: white;
+    border-color: #0f172a;
+}
+
+/* Sort & Filter Bar */
+.shop-filter-bar {
+    display: flex;
+    align-items: center;
+    background: white;
+    padding: 12px 0;
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 24px;
+}
+
+.sf-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+}
+.sf-btn svg { width: 16px; height: 16px; color: #64748b; }
+
+.sf-divider {
+    width: 1px;
+    height: 24px;
+    background: #e2e8f0;
 }
 
 /* Reusing grid & card styles */
@@ -207,7 +269,7 @@
         height: 320px;
     }
     .shop-info-card {
-        margin: -60px auto 0;
+        margin: -80px auto 0;
         max-width: 800px;
         padding: 32px;
     }

@@ -45,7 +45,14 @@ const BottomNav = () => {
             <div className="nav-search-wrap">
                 <button
                     className={`floating-search-btn ${isActive('/search') ? 'active' : ''}`}
-                    onClick={() => navigate('/search')}
+                    onClick={() => {
+                        if (location.pathname.startsWith('/shop/')) {
+                            const shopId = location.pathname.split('/')[2];
+                            navigate(`/search?shopId=${shopId}`);
+                        } else {
+                            navigate('/search');
+                        }
+                    }}
                     aria-label="Search"
                 >
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
