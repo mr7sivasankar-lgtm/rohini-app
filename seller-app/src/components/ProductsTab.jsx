@@ -6,6 +6,7 @@ const ProductsTab = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [editProduct, setEditProduct] = useState(null);
 
     useEffect(() => {
         fetchProducts();
@@ -59,6 +60,7 @@ const ProductsTab = () => {
                                 <th style={{ padding: '16px', fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Price</th>
                                 <th style={{ padding: '16px', fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Stock</th>
                                 <th style={{ padding: '16px', fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Status</th>
+                                <th style={{ padding: '16px', fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -82,6 +84,9 @@ const ProductsTab = () => {
                                             {product.isActive ? 'Active' : 'Inactive'}
                                         </span>
                                     </td>
+                                    <td style={{ padding: '12px 16px' }}>
+                                        <button onClick={() => setEditProduct(product)} style={{ background: '#e0e7ff', color: '#4f46e5', border: 'none', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Edit</button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -89,11 +94,13 @@ const ProductsTab = () => {
                 </div>
             )}
 
-            {showAddModal && (
-                <ProductModal 
-                    onClose={() => setShowAddModal(false)}
+            {(showAddModal || editProduct) && (
+                <ProductModal
+                    product={editProduct || null}
+                    onClose={() => { setShowAddModal(false); setEditProduct(null); }}
                     onSuccess={() => {
                         setShowAddModal(false);
+                        setEditProduct(null);
                         fetchProducts();
                     }}
                 />
