@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import Seller from '../models/Seller.js';
 import { protect, adminOnly } from '../middleware/auth.js';
 import sendOTP from '../utils/sms.js';
-import { uploadSingle } from '../middleware/upload.js';
+import { upload, uploadSingle } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -124,7 +124,7 @@ router.post('/verify-otp', async (req, res) => {
 // @desc    Register a new seller
 // @route   POST /api/sellers/register
 // @access  Public
-router.post('/register', uploadSingle('shopLogo'), async (req, res) => {
+router.post('/register', upload.single('shopLogo'), async (req, res) => {
     try {
         const { shopName, ownerName, phone, password, shopAddress, latitude, longitude, shopCategory, gstNumber, openingTime, closingTime } = req.body;
 
