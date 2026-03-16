@@ -283,8 +283,17 @@ router.put('/profile', sellerProtect, async (req, res) => {
             seller.ownerName = req.body.ownerName || seller.ownerName;
             seller.shopAddress = req.body.shopAddress || seller.shopAddress;
             seller.bannerImage = req.body.bannerImage || seller.bannerImage;
-            seller.description = req.body.description || seller.description;
+            // Handle both 'description' and 'shopDescription' field names
+            seller.description = req.body.description || req.body.shopDescription || seller.description;
+            // Handle both 'gstNumber' and 'gstin' field names
+            if (req.body.gstNumber !== undefined) seller.gstNumber = req.body.gstNumber;
+            if (req.body.gstin !== undefined) seller.gstNumber = req.body.gstin;
             if (req.body.isOpen !== undefined) seller.isOpen = req.body.isOpen;
+            if (req.body.deliveryRadius !== undefined) seller.deliveryRadius = Number(req.body.deliveryRadius);
+            if (req.body.minOrderAmount !== undefined) seller.minOrderAmount = Number(req.body.minOrderAmount);
+            if (req.body.shopCategory) seller.shopCategory = req.body.shopCategory;
+            if (req.body.openingTime) seller.openingTime = req.body.openingTime;
+            if (req.body.closingTime) seller.closingTime = req.body.closingTime;
 
             if (req.body.latitude && req.body.longitude) {
                 seller.location.coordinates = [req.body.longitude, req.body.latitude];
@@ -298,6 +307,7 @@ router.put('/profile', sellerProtect, async (req, res) => {
 
             res.json({
                 success: true,
+                message: 'Profile updated successfully',
                 data: updatedSeller
             });
         } else {
@@ -307,6 +317,7 @@ router.put('/profile', sellerProtect, async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
 
 // -------------------------------------------------------------
 // PUBLIC DISCOVERY APIS FOR CUSTOMER APP

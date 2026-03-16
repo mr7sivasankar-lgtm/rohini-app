@@ -90,6 +90,14 @@ const sellerSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    deliveryRadius: {
+        type: Number,
+        default: 5
+    },
+    minOrderAmount: {
+        type: Number,
+        default: 0
+    },
     isPhoneVerified: {
         type: Boolean,
         default: false
