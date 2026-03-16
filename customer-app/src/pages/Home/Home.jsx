@@ -301,37 +301,27 @@ const Home = () => {
             {/* Shop Discovery Section */}
             <div className="shops-section">
 
-                {/* Top Rated Shops */}
+                {/* Top Rated Shops — Auto Slideshow */}
                 <div className="discovery-block">
                     <div className="section-header">
-                        <h2>
-                            ⭐ Top Rated Shops
-                        </h2>
+                        <h2>⭐ Top Rated Shops</h2>
                     </div>
                     {loading ? (
                         <div className="loading-state">Finding best shops...</div>
                     ) : topRatedShops.length > 0 ? (
-                        <div className="shops-grid">
-                            {topRatedShops.map((shop) => (
-                                <ShopCard key={shop._id} shop={shop} onClick={() => navigate(`/shop/${shop._id}`)} />
-                            ))}
-                        </div>
+                        <ShopSlideshow shops={topRatedShops} navigate={navigate} />
                     ) : (
-                        <div className="empty-state">
-                            <p>No shops available at the moment</p>
-                        </div>
+                        <div className="empty-state"><p>No shops available at the moment</p></div>
                     )}
                 </div>
 
-                {/* Nearby Shops (Only if location is granted) */}
+                {/* Nearby Shops — Vertical list */}
                 {latitude && longitude && nearbyShops.length > 0 && (
                     <div className="discovery-block">
                         <div className="section-header">
-                            <h2>
-                                📍 Nearby Shops
-                            </h2>
+                            <h2>📍 Nearby Shops</h2>
                         </div>
-                        <div className="shops-grid">
+                        <div className="nearby-shops-list">
                             {nearbyShops.map((shop) => (
                                 <ShopCard key={shop._id} shop={shop} onClick={() => navigate(`/shop/${shop._id}`)} nearby />
                             ))}
@@ -344,91 +334,104 @@ const Home = () => {
     );
 };
 
+/* ----------- helpers ----------- */
 const CATEGORY_MAP = {
-    women: ['Kurtas', 'Sarees', 'Tops', 'Salwar Suits', 'Kurtis', 'Lehenga', 'Ethnic Wear'],
-    men: ['Shirts', 'T-Shirts', 'Jeans', 'Trousers', 'Ethnic Wear', 'Casual Wear', 'Formal Wear'],
-    kids: ['Boys Wear', 'Girls Wear', 'Baby Clothes', 'School Uniform', 'Ethnic Kids'],
-    all: ['Kurtas', 'Jeans', 'T-Shirts', 'Tops', 'Sarees', 'Ethnic Wear', 'Casual Wear'],
-    clothing: ['Kurtas', 'Sarees', 'Tops', 'Jeans', 'T-Shirts', 'Dresses'],
+    women: ['Kurtas', 'Sarees', 'Tops', 'Kurtis'],
+    men: ['Shirts', 'T-Shirts', 'Jeans', 'Trousers'],
+    kids: ['Boys Wear', 'Girls Wear', 'Baby Clothes', 'Ethnic Kids'],
+    all: ['Kurtas', 'Jeans', 'Tops', 'Sarees'],
+    clothing: ['Kurtas', 'Sarees', 'Tops', 'Dresses'],
 };
 
 const getShopTags = (shop) => {
     if (shop.shopCategory) {
         const key = shop.shopCategory.toLowerCase();
         for (const [k, tags] of Object.entries(CATEGORY_MAP)) {
-            if (key.includes(k)) return tags.slice(0, 4);
+            if (key.includes(k)) return tags.slice(0, 3);
         }
     }
-    // Fallback defaults
-    return ['Ethnic Wear', 'Casual Wear', 'Tops', 'Kurtas'];
+    return ['Ethnic Wear', 'Tops', 'Kurtas'];
 };
 
-const ShopCard = ({ shop, onClick, nearby }) => {
-    const tags = getShopTags(shop);
-    const displayAddress = shop.shopAddress
-        ? shop.shopAddress.substring(0, 30) + (shop.shopAddress.length > 30 ? '...' : '')
-        : 'Local Market';
+/* ---- Auto Slideshow for Top Rated ---- */
+const ShopSlideshow = ({ shops, navigate }) => {
+    const [active, setActive] = useState(0);
+    const timerRef = useRef(null);
+
+    const goTo = (idx) => setActive((idx + shops.length) % shops.length);
+
+    useEffect(() => {
+        timerRef.current = setInterval(() => setActive(prev => (prev + 1) % shops.length), 3200);
+        return () => clearInterval(timerRef.current);
+    }, [shops.length]);
 
     return (
-        <div className="shop-card-v2" onClick={onClick}>
+        <div className="slideshow-wrapper">
+            <div className="slideshow-track" style={{ transform: `translateX(-${active * 100}%)` }}>
+                {shops.map((shop) => (
+                    <div className="slideshow-slide" key={shop._id}>
+                        <ShopCard shop={shop} onClick={() => navigate(`/shop/${shop._id}`)} />
+                    </div>
+                ))}
+            </div>
+
+            {/* Dot nav */}
+            <div className="slideshow-dots">
+                {shops.map((_, i) => (
+                    <button key={i} className={`slideshow-dot${i === active ? ' active' : ''}`} onClick={() => goTo(i)} />
+                ))}
+            </div>
+
+            {/* Prev / Next arrows */}
+            <button className="slide-arrow left" onClick={() => goTo(active - 1)}>‹</button>
+            <button className="slide-arrow right" onClick={() => goTo(active + 1)}>›</button>
+        </div>
+    );
+};
+
+/* ---- Compact Shop Card ---- */
+const ShopCard = ({ shop, onClick, nearby }) => {
+    const tags = getShopTags(shop);
+    const addr = shop.shopAddress ? shop.shopAddress.substring(0, 28) + (shop.shopAddress.length > 28 ? '…' : '') : 'Local Market';
+
+    return (
+        <div className="shop-card-compact" onClick={onClick}>
             {/* Banner */}
-            <div className="shop-card-banner">
-                {shop.bannerImage ? (
-                    <img
-                        src={getImageUrl(shop.bannerImage)}
-                        alt={shop.shopName}
-                        onError={(e) => {
-                            e.target.parentElement.innerHTML = '<div class="shop-card-no-banner"></div>';
-                        }}
-                    />
-                ) : (
-                    <div className="shop-card-no-banner"></div>
-                )}
+            <div className="scc-banner">
+                {shop.bannerImage
+                    ? <img src={getImageUrl(shop.bannerImage)} alt={shop.shopName} onError={(e) => { e.target.style.display = 'none'; }} />
+                    : <div className="scc-no-banner" />
+                }
+                <div className="scc-overlay" />
 
-                {/* Gradient overlay */}
-                <div className="shop-card-banner-overlay"></div>
-
-                {/* Shop Logo */}
+                {/* Logo */}
                 {shop.logoImage && (
-                    <div className="shop-card-logo">
-                        <img src={getImageUrl(shop.logoImage)} alt={`${shop.shopName} logo`}
-                            onError={(e) => e.target.style.display = 'none'} />
+                    <div className="scc-logo">
+                        <img src={getImageUrl(shop.logoImage)} alt="" onError={(e) => e.target.style.display = 'none'} />
                     </div>
                 )}
 
-                {/* Rating Badge */}
-                <div className="shop-card-badge">
-                    ⭐ {shop.rating > 0 ? shop.rating.toFixed(1) : 'New'}
-                </div>
-
-                {/* Open/Closed pill */}
+                <span className="scc-rating">⭐ {shop.rating > 0 ? shop.rating.toFixed(1) : 'New'}</span>
                 {shop.isOpen !== undefined && (
-                    <div className={`shop-card-status ${shop.isOpen ? 'open' : 'closed'}`}>
+                    <span className={`scc-status ${shop.isOpen ? 'open' : 'closed'}`}>
                         {shop.isOpen ? '🟢 Open' : '🔴 Closed'}
-                    </div>
+                    </span>
                 )}
             </div>
 
-            {/* Info */}
-            <div className="shop-card-body">
-                <div className="shop-card-row">
-                    <h3 className="shop-card-name">{shop.shopName}</h3>
-                    {nearby && shop.distance && (
-                        <span className="shop-card-dist">🛵 {(shop.distance / 1000).toFixed(1)} km</span>
-                    )}
+            {/* Body */}
+            <div className="scc-body">
+                <div className="scc-title-row">
+                    <span className="scc-name">{shop.shopName}</span>
+                    {nearby && shop.distance && <span className="scc-dist">🛵 {(shop.distance / 1000).toFixed(1)} km</span>}
                 </div>
-                <p className="shop-card-address">📍 {displayAddress}</p>
-
-                {/* Category Tags */}
-                <div className="shop-card-tags">
-                    {tags.map((tag, i) => (
-                        <span key={i} className="shop-tag">{tag}</span>
-                    ))}
+                <p className="scc-addr">📍 {addr}</p>
+                <div className="scc-tags">
+                    {tags.map((t, i) => <span key={i} className="scc-tag">{t}</span>)}
                 </div>
-
-                <div className="shop-card-footer">
-                    <span className="shop-explore-btn">Explore Collection →</span>
-                    <span className="shop-card-delivery">⚡ Express Delivery</span>
+                <div className="scc-footer">
+                    <span className="scc-btn">Shop Now →</span>
+                    <span className="scc-deliver">⚡ Fast</span>
                 </div>
             </div>
         </div>
