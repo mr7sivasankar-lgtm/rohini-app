@@ -170,7 +170,7 @@ router.post('/register', upload.single('shopLogo'), async (req, res) => {
     }
 });
 
-// @desc    Auth seller & get token
+// @desc    Auth seller & get token (password)
 // @route   POST /api/sellers/login
 // @access  Public
 router.post('/login', async (req, res) => {
@@ -193,6 +193,66 @@ router.post('/login', async (req, res) => {
         } else {
             res.status(401).json({ success: false, message: 'Invalid phone or password' });
         }
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// @desc    Send OTP for seller login (passwordless)
+// @route   POST /api/sellers/login-otp
+// @access  Public
+router.post('/login-otp', async (req, res) => {
+    try {
+        const { phone, otp } = req.body;
+
+        // If OTP not provided → send OTP
+        if (!otp) {
+            const seller = await Seller.findOne({ phone });
+            if (!seller) {
+                return res.status(404).json({ success: false, message: 'No seller account found with this phone number.' });
+            }
+
+            const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+            const otpExpiry = new Date(Date.now() + 10 * 60000);
+
+            await Seller.findByIdAndUpdate(seller._id, { otp: generatedOtp, otpExpiry });
+
+            const smsSent = await sendOTP(phone, generatedOtp);
+            console.log(`📱 Seller Login OTP for ${phone}: ${generatedOtp}`);
+
+            return res.json({
+                success: true,
+                message: smsSent ? 'OTP sent successfully' : 'OTP logged to console (dev mode)',
+                otp: process.env.NODE_ENV !== 'production' ? generatedOtp : undefined
+            });
+        }
+
+        // OTP provided → verify and login
+        const seller = await Seller.findOne({ phone }).select('+otp +otpExpiry');
+        if (!seller) {
+            return res.status(404).json({ success: false, message: 'Seller not found' });
+        }
+        if (!seller.otp || seller.otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP' });
+        }
+        if (seller.otpExpiry < Date.now()) {
+            return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
+        }
+
+        // Clear OTP and return token
+        await Seller.findByIdAndUpdate(seller._id, { otp: null, otpExpiry: null });
+
+        res.json({
+            success: true,
+            data: {
+                _id: seller._id,
+                shopName: seller.shopName,
+                ownerName: seller.ownerName,
+                phone: seller.phone,
+                status: seller.status,
+                token: generateToken(seller._id)
+            }
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

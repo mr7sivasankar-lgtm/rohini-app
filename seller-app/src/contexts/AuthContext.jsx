@@ -34,12 +34,26 @@ export const AuthProvider = ({ children }) => {
             const response = await api.post('/sellers/login', { phone, password });
             if (response.data.success) {
                 localStorage.setItem('sellerToken', response.data.data.token);
-                setSeller(response.data.data); // data contains _id, shopName, etc.
+                setSeller(response.data.data);
                 return { success: true };
             }
             return { success: false, message: response.data.message };
         } catch (error) {
             return { success: false, message: error.response?.data?.message || 'Login failed' };
+        }
+    };
+
+    const loginWithOtp = async (phone, otp) => {
+        try {
+            const response = await api.post('/sellers/login-otp', { phone, otp });
+            if (response.data.success) {
+                localStorage.setItem('sellerToken', response.data.data.token);
+                setSeller(response.data.data);
+                return { success: true };
+            }
+            return { success: false, message: response.data.message };
+        } catch (error) {
+            return { success: false, message: error.response?.data?.message || 'OTP verification failed' };
         }
     };
 
@@ -61,7 +75,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ seller, loading, login, register, logout, checkAuth }}>
+        <AuthContext.Provider value={{ seller, loading, login, loginWithOtp, register, logout, checkAuth }}>
             {!loading && children}
         </AuthContext.Provider>
     );
