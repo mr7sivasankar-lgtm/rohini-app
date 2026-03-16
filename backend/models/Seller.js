@@ -57,6 +57,10 @@ const sellerSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    logoImage: {
+        type: String,
+        default: ''
+    },
     openingTime: {
         type: String,
         default: '10:00'

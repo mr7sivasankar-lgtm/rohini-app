@@ -20,6 +20,10 @@ const ProfileTab = ({ seller }) => {
     const [locationLoading, setLocationLoading] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
+    const [bannerPreview, setBannerPreview] = useState(null);
+    const [logoPreview, setLogoPreview] = useState(null);
+    const [uploadingBanner, setUploadingBanner] = useState(false);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
 
     useEffect(() => {
         if (seller) {
@@ -34,6 +38,8 @@ const ProfileTab = ({ seller }) => {
                 minOrderAmount: seller.minOrderAmount || 0,
                 location: seller.location || { type: 'Point', coordinates: [0, 0] }
             });
+            if (seller.bannerImage) setBannerPreview(seller.bannerImage);
+            if (seller.logoImage) setLogoPreview(seller.logoImage);
         }
     }, [seller]);
 
@@ -79,6 +85,36 @@ const ProfileTab = ({ seller }) => {
         );
     };
 
+    const handleImageUpload = async (e, type) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const setUploading = type === 'banner' ? setUploadingBanner : setUploadingLogo;
+        const fieldName = type === 'banner' ? 'bannerImage' : 'logoImage';
+        const setPreview = type === 'banner' ? setBannerPreview : setLogoPreview;
+
+        setUploading(true);
+        setErrorMsg('');
+        try {
+            const form = new FormData();
+            form.append('image', file);
+            const res = await api.post('/sellers/upload-image', form, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (res.data.success) {
+                const url = res.data.url;
+                setPreview(url);
+                setFormData(prev => ({ ...prev, [fieldName]: url }));
+                setSuccessMsg(`✅ ${type === 'banner' ? 'Banner' : 'Logo'} uploaded! Save below to apply.`);
+                setTimeout(() => setSuccessMsg(''), 4000);
+            }
+        } catch (err) {
+            setErrorMsg('Image upload failed: ' + (err.response?.data?.message || 'Please try again'));
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -107,6 +143,58 @@ const ProfileTab = ({ seller }) => {
 
             {successMsg && <div className="alert alert-success">{successMsg}</div>}
             {errorMsg && <div className="alert alert-error">{errorMsg}</div>}
+
+            {/* Banner Image Upload */}
+            <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '24px', overflow: 'hidden' }}>
+                <div style={{ position: 'relative', height: '160px', background: 'linear-gradient(135deg,#1a1a2e,#533483,#0f3460)', cursor: 'pointer' }}
+                    onClick={() => document.getElementById('banner-upload').click()}>
+                    {bannerPreview ? (
+                        <img src={bannerPreview} alt="Shop banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '8px', color: 'rgba(255,255,255,0.7)' }}>
+                            <span style={{ fontSize: '36px' }}>🖼️</span>
+                            <span style={{ fontSize: '14px', fontWeight: 600 }}>Click to upload Shop Banner</span>
+                            <span style={{ fontSize: '12px', opacity: 0.7 }}>Recommended: 1200×400 px</span>
+                        </div>
+                    )}
+                    {uploadingBanner && (
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div className="spinner" style={{ borderTopColor: '#fff' }}></div>
+                        </div>
+                    )}
+                    <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', color: 'white', padding: '5px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}>
+                        {uploadingBanner ? 'Uploading...' : '✏️ Change Banner'}
+                    </div>
+                </div>
+                <input id="banner-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageUpload(e, 'banner')} />
+
+                {/* Logo */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px' }}>
+                    <div style={{ width: '72px', height: '72px', borderRadius: '12px', border: '2px dashed #cbd5e1', overflow: 'hidden', flexShrink: 0, cursor: 'pointer', position: 'relative', background: '#f8fafc' }}
+                        onClick={() => document.getElementById('logo-upload').click()}>
+                        {logoPreview ? (
+                            <img src={logoPreview} alt="Shop logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '4px', color: '#94a3b8' }}>
+                                <span style={{ fontSize: '22px' }}>🏪</span>
+                            </div>
+                        )}
+                        {uploadingLogo && (
+                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div className="spinner" style={{ borderTopColor: '#fff', width: '18px', height: '18px' }}></div>
+                            </div>
+                        )}
+                    </div>
+                    <div>
+                        <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b', marginBottom: '4px' }}>Shop Logo</div>
+                        <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Shown as badge on your shop card</div>
+                        <button type="button" onClick={() => document.getElementById('logo-upload').click()} style={{ padding: '6px 14px', border: '1px solid #4f46e5', color: '#4f46e5', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: 'white' }}>
+                            {uploadingLogo ? 'Uploading...' : '📷 Upload Logo'}
+                        </button>
+                    </div>
+                </div>
+                <input id="logo-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageUpload(e, 'logo')} />
+            </div>
 
             <form onSubmit={handleSave} className="profile-form">
                 <div className="form-group">

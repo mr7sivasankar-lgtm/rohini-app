@@ -3,26 +3,7 @@ import jwt from 'jsonwebtoken';
 import Seller from '../models/Seller.js';
 import { protect, adminOnly } from '../middleware/auth.js';
 import sendOTP from '../utils/sms.js';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Multer config for shop logo
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dir = path.join(__dirname, '..', 'uploads', 'logos');
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, `logo_${Date.now()}${path.extname(file.originalname)}`);
-    }
-});
-const upload = multer({ storage });
+import { uploadSingle } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -58,6 +39,21 @@ const sellerProtect = async (req, res, next) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+
+// @route   POST /api/sellers/upload-image
+// @desc    Upload a single image (banner/logo) to Cloudinary
+// @access  Private/Seller
+router.post('/upload-image', sellerProtect, uploadSingle, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No image file provided' });
+        }
+        res.status(200).json({ success: true, url: req.file.path });
+    } catch (error) {
+        console.error('Upload image error:', error);
+        res.status(500).json({ success: false, message: 'Error uploading image' });
+    }
+});
 
 // @desc    Send OTP to seller phone for verification
 // @route   POST /api/sellers/send-otp
@@ -283,6 +279,7 @@ router.put('/profile', sellerProtect, async (req, res) => {
             seller.ownerName = req.body.ownerName || seller.ownerName;
             seller.shopAddress = req.body.shopAddress || seller.shopAddress;
             seller.bannerImage = req.body.bannerImage || seller.bannerImage;
+            if (req.body.logoImage !== undefined) seller.logoImage = req.body.logoImage;
             // Handle both 'description' and 'shopDescription' field names
             seller.description = req.body.description || req.body.shopDescription || seller.description;
             // Handle both 'gstNumber' and 'gstin' field names

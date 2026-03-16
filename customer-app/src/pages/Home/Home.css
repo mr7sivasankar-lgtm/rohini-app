@@ -919,3 +919,211 @@
     text-transform: uppercase;
     backdrop-filter: blur(4px);
 }
+
+/* ======================================
+   Premium Shop Card v2
+   ====================================== */
+.shops-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 20px;
+    padding: 0 20px 8px;
+}
+
+.shop-card-v2 {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease;
+    border: 1px solid rgba(255,255,255,0.6);
+}
+
+.shop-card-v2:hover,
+.shop-card-v2:active {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 36px rgba(99, 91, 255, 0.18);
+}
+
+/* Banner area */
+.shop-card-banner {
+    position: relative;
+    width: 100%;
+    height: 160px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1a1a2e, #533483, #0f3460);
+}
+
+.shop-card-banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.shop-card-no-banner {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1a1a2e 0%, #533483 50%, #0f3460 100%);
+}
+
+/* Gradient overlay to make text readable */
+.shop-card-banner-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.05) 0%,
+        rgba(0,0,0,0.15) 60%,
+        rgba(0,0,0,0.55) 100%
+    );
+    pointer-events: none;
+}
+
+/* Logo badge in bottom-left corner */
+.shop-card-logo {
+    position: absolute;
+    bottom: 12px;
+    left: 14px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    border: 2.5px solid rgba(255,255,255,0.9);
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    z-index: 2;
+}
+
+.shop-card-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Star rating pill — top right */
+.shop-card-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(8px);
+    color: #1a1a2e;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 2;
+}
+
+/* Open / Closed pill — top left */
+.shop-card-status {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    backdrop-filter: blur(8px);
+    z-index: 2;
+}
+
+.shop-card-status.open {
+    background: rgba(16, 185, 129, 0.9);
+    color: white;
+}
+
+.shop-card-status.closed {
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+}
+
+/* Info body */
+.shop-card-body {
+    padding: 14px 16px 16px;
+}
+
+.shop-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.shop-card-name {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.shop-card-dist {
+    font-size: 12px;
+    color: #8b5cf6;
+    font-weight: 700;
+    white-space: nowrap;
+    background: #f5f3ff;
+    padding: 3px 8px;
+    border-radius: 10px;
+}
+
+.shop-card-address {
+    margin: 0 0 12px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+/* Category pill tags */
+.shop-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.shop-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: #4f46e5;
+    background: #eef2ff;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid #e0e7ff;
+    white-space: nowrap;
+}
+
+/* Footer */
+.shop-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.shop-explore-btn {
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    padding: 7px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    letter-spacing: 0.2px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}
+
+.shop-card-delivery {
+    font-size: 11px;
+    font-weight: 600;
+    color: #10b981;
+    background: #ecfdf5;
+    padding: 5px 10px;
+    border-radius: 10px;
+}
