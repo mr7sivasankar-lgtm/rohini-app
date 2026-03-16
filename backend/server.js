@@ -7,6 +7,9 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
 
+// Load environment variables FIRST before any route imports
+dotenv.config();
+
 // Import routes
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
@@ -22,9 +25,6 @@ import userRoutes from './routes/users.js';
 import geocodeRoutes from './routes/geocode.js';
 import deliveryRoutes from './routes/delivery.js';
 import pushRoutes from './routes/push.js';
-
-// Load environment variables
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

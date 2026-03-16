@@ -6,11 +6,15 @@ import { protect } from '../middleware/auth.js';
 const router = express.Router();
 
 // Configure VAPID
-webpush.setVapidDetails(
-    process.env.VAPID_EMAIL,
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+        process.env.VAPID_EMAIL || 'mailto:admin@rohiniapp.com',
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+    );
+} else {
+    console.warn('[WebPush] VAPID keys not configured — push notifications disabled.');
+}
 
 // GET /api/push/vapid-public-key — send public key to browser
 router.get('/vapid-public-key', (req, res) => {
