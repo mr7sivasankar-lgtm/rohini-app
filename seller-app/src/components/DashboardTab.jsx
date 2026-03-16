@@ -71,8 +71,8 @@ const DashboardTab = () => {
                     <div style={{ color: '#64748b' }}>No recent orders to show</div>
                 </div>
             ) : (
-                <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
                         <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                             <tr>
                                 <th style={{ padding: '16px', fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Order ID</th>

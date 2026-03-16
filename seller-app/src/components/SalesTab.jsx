@@ -42,7 +42,7 @@ const SalesTab = () => {
                 <p>Track your shop's financial performance (Note: Only Delivered orders count towards revenue)</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '16px', marginBottom: '32px' }}>
                 {cards.map((card, idx) => (
                     <div key={idx} style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                         <div style={{ color: '#64748b', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>{card.label}</div>
@@ -52,7 +52,7 @@ const SalesTab = () => {
                 ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
                 {/* Sales Trend Chart */}
                 <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                     <h3 style={{ margin: '0 0 24px', fontSize: '18px', color: '#1e293b' }}>Sales Trend (Last 7 Days)</h3>

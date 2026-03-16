@@ -133,7 +133,7 @@ const ProfileTab = ({ seller }) => {
                     <label>Shop Address</label>
                     <textarea name="shopAddress" value={formData.shopAddress} onChange={handleChange} rows="2" required />
                     
-                    <div style={{ marginTop: '12px', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ marginTop: '12px', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                         <div>
                             <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>GPS Coordinates</div>
                             <div style={{ fontSize: '13px', color: '#64748b' }}>

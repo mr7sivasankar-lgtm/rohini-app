@@ -70,6 +70,9 @@ const Dashboard = () => {
                          activeTab === 'products' ? 'Product Catalog' : 
                          activeTab === 'sales' ? 'Sales Analytics' : 'Shop Profile'}
                     </h1>
+                    <div className="mobile-header-actions">
+                        <button className="mobile-logout-btn" onClick={logout} title="Logout">🚪</button>
+                    </div>
                 </header>
 
                 <div className="dashboard-content">

@@ -56,7 +56,7 @@ const ProductsTab = () => {
 
     return (
         <div className="products-tab">
-            <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
                 <div>
                     <h2>Product Catalog</h2>
                     <p>Manage the items available in your shop</p>
@@ -97,8 +97,8 @@ const ProductsTab = () => {
                     <p>Start adding products to your shop so customers can buy from you.</p>
                 </div>
             ) : (
-                <div className="table-wrapper" style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <div className="table-wrapper" style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
                         <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                             <tr>
                                 <th style={{ padding: '16px', fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Image</th>
