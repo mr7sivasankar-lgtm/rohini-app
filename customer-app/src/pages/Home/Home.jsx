@@ -404,34 +404,46 @@ const ShopCard = ({ shop, onClick, nearby }) => {
                 }
                 <div className="scc-overlay" />
 
-                {/* Logo */}
-                {shop.logoImage && (
-                    <div className="scc-logo">
-                        <img src={getImageUrl(shop.logoImage)} alt="" onError={(e) => e.target.style.display = 'none'} />
-                    </div>
-                )}
+                <div className="scc-top-badges">
+                    {shop.isOpen !== undefined && (
+                        <span className={`scc-status ${shop.isOpen ? 'open' : 'closed'}`}>
+                            {shop.isOpen ? '🟢 Open' : '🔴 Closed'}
+                        </span>
+                    )}
+                </div>
 
-                <span className="scc-rating">⭐ {shop.rating > 0 ? shop.rating.toFixed(1) : 'New'}</span>
-                {shop.isOpen !== undefined && (
-                    <span className={`scc-status ${shop.isOpen ? 'open' : 'closed'}`}>
-                        {shop.isOpen ? '🟢 Open' : '🔴 Closed'}
-                    </span>
-                )}
+                {/* Slideshow dots overlay (if it was a single image carousel, not relevant here) */}
+                <div className="scc-bottom-gradient"></div>
             </div>
 
             {/* Body */}
             <div className="scc-body">
+                {/* Delivery Time & Distance block (like the second screenshot) */}
+                <div className="scc-delivery-info">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span>~34 mins</span>
+                    {nearby && shop.distance && (
+                        <>
+                            <span className="scc-dot">•</span>
+                            <span>{(shop.distance / 1000).toFixed(1)} km</span>
+                        </>
+                    )}
+                </div>
+
                 <div className="scc-title-row">
                     <span className="scc-name">{shop.shopName}</span>
-                    {nearby && shop.distance && <span className="scc-dist">🛵 {(shop.distance / 1000).toFixed(1)} km</span>}
+                    <span className="scc-rating-square">⭐ {shop.rating > 0 ? shop.rating.toFixed(1) : 'New'}</span>
                 </div>
-                <p className="scc-addr">📍 {addr}</p>
-                <div className="scc-tags">
-                    {tags.map((t, i) => <span key={i} className="scc-tag">{t}</span>)}
-                </div>
+                
+                <p className="scc-addr">
+                    {tags.join(' • ')} • ₹150 for one
+                </p>
+
                 <div className="scc-footer">
                     <span className="scc-btn">Shop Now →</span>
-                    <span className="scc-deliver">⚡ Fast</span>
                 </div>
             </div>
         </div>
