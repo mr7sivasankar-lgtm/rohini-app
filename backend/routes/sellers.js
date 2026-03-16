@@ -124,7 +124,7 @@ router.post('/verify-otp', async (req, res) => {
 // @desc    Register a new seller
 // @route   POST /api/sellers/register
 // @access  Public
-router.post('/register', upload.single('shopLogo'), async (req, res) => {
+router.post('/register', uploadSingle('shopLogo'), async (req, res) => {
     try {
         const { shopName, ownerName, phone, password, shopAddress, latitude, longitude, shopCategory, gstNumber, openingTime, closingTime } = req.body;
 
@@ -141,7 +141,7 @@ router.post('/register', upload.single('shopLogo'), async (req, res) => {
             gstNumber, openingTime, closingTime,
             isPhoneVerified: true,
             ...(locationData && { location: locationData }),
-            ...(req.file && { shopLogo: `/uploads/logos/${req.file.filename}` }),
+            ...(req.file && { shopLogo: req.file.path }), // req.file.path holds the Cloudinary URL
         };
 
         let seller;
