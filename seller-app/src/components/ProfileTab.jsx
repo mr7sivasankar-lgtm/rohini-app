@@ -7,13 +7,14 @@ const ProfileTab = ({ seller }) => {
         phone: '',
         shopName: '',
         shopAddress: '',
-        shopDescription: '',
-        gstin: '',
+        description: '',
+        gstNumber: '',
         deliveryRadius: 5,
         minOrderAmount: 0
     });
     const [loading, setLoading] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
 
     useEffect(() => {
         if (seller) {
@@ -22,8 +23,8 @@ const ProfileTab = ({ seller }) => {
                 phone: seller.phone || '',
                 shopName: seller.shopName || '',
                 shopAddress: seller.shopAddress || '',
-                shopDescription: seller.shopDescription || '',
-                gstin: seller.gstin || '',
+                description: seller.description || '',
+                gstNumber: seller.gstNumber || '',
                 deliveryRadius: seller.deliveryRadius || 5,
                 minOrderAmount: seller.minOrderAmount || 0
             });
@@ -42,14 +43,16 @@ const ProfileTab = ({ seller }) => {
         e.preventDefault();
         setLoading(true);
         setSuccessMsg('');
+        setErrorMsg('');
 
         try {
             const res = await api.put('/sellers/profile', formData);
             if (res.data.success) {
-                setSuccessMsg('Profile updated successfully!');
+                setSuccessMsg('✅ Profile updated successfully!');
+                setTimeout(() => setSuccessMsg(''), 4000);
             }
         } catch (error) {
-            alert(error.response?.data?.message || 'Failed to update profile');
+            setErrorMsg(error.response?.data?.message || 'Failed to update profile');
         } finally {
             setLoading(false);
         }
@@ -63,13 +66,14 @@ const ProfileTab = ({ seller }) => {
             </div>
 
             {successMsg && <div className="alert alert-success">{successMsg}</div>}
+            {errorMsg && <div className="alert alert-error">{errorMsg}</div>}
 
             <form onSubmit={handleSave} className="profile-form">
                 <div className="form-group">
                     <label>Shop Name</label>
                     <input type="text" name="shopName" value={formData.shopName} onChange={handleChange} required />
                 </div>
-                
+
                 <div className="form-group">
                     <label>Owner Name</label>
                     <input type="text" name="ownerName" value={formData.ownerName} onChange={handleChange} required />
@@ -77,13 +81,12 @@ const ProfileTab = ({ seller }) => {
 
                 <div className="form-group">
                     <label>Phone Number</label>
-                    <input type="tel" name="phone" value={formData.phone} onChange={handleChange} disabled />
-                    <small style={{ color: '#64748b' }}>Phone number cannot be changed directly.</small>
+                    <input type="tel" name="phone" value={formData.phone} onChange={handleChange} />
                 </div>
 
                 <div className="form-group">
                     <label>GSTIN</label>
-                    <input type="text" name="gstin" value={formData.gstin} onChange={handleChange} />
+                    <input type="text" name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="e.g. 29XXXXX1234X1Z5" />
                 </div>
 
                 <div className="form-group full-width">
@@ -93,7 +96,7 @@ const ProfileTab = ({ seller }) => {
 
                 <div className="form-group full-width">
                     <label>Shop Description</label>
-                    <textarea name="shopDescription" value={formData.shopDescription} onChange={handleChange} rows="3" placeholder="Tell customers about your shop..." />
+                    <textarea name="description" value={formData.description} onChange={handleChange} rows="3" placeholder="Tell customers about your shop..." />
                 </div>
 
                 <div className="form-group">
