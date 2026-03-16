@@ -11,7 +11,7 @@ const router = express.Router();
 router.get('/', protect, async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
-            .populate('cart.product', 'name images price discount stock colors sizes');
+            .populate({ path: 'cart.product', select: 'name images price discount stock colors sizes', populate: { path: 'seller', select: 'shopName' } });
 
         if (!user) {
             return res.status(404).json({
@@ -65,6 +65,20 @@ router.post('/', protect, async (req, res) => {
 
         const user = await User.findById(req.user._id);
 
+        // Enforce single-shop per cart
+        if (user.cart.length > 0) {
+            // Find the seller of the first item currently in the cart
+            const firstCartItemProduct = await Product.findById(user.cart[0].product);
+            
+            // If the existing cart item's seller doesn't match the new product's seller, block it
+            if (firstCartItemProduct && firstCartItemProduct.seller.toString() !== product.seller.toString()) {
+                return res.status(400).json({
+                    success: false,
+                    message: `You already have items from another shop in your cart. Please clear your cart to add items from ${product.name}'s shop.`
+                });
+            }
+        }
+
         // Check if item already in cart
         const existingItemIndex = user.cart.findIndex(
             item => item.product.toString() === productId &&
@@ -95,7 +109,7 @@ router.post('/', protect, async (req, res) => {
         }
 
         await user.save();
-        await user.populate('cart.product', 'name images price discount stock colors sizes');
+        await user.populate({ path: 'cart.product', select: 'name images price discount stock colors sizes', populate: { path: 'seller', select: 'shopName' } });
 
         res.status(200).json({
             success: true,
@@ -146,7 +160,7 @@ router.put('/:itemId', protect, async (req, res) => {
 
         cartItem.quantity = quantity;
         await user.save();
-        await user.populate('cart.product', 'name images price discount stock colors sizes');
+        await user.populate({ path: 'cart.product', select: 'name images price discount stock colors sizes', populate: { path: 'seller', select: 'shopName' } });
 
         res.status(200).json({
             success: true,
@@ -171,7 +185,7 @@ router.delete('/:itemId', protect, async (req, res) => {
 
         user.cart = user.cart.filter(item => item._id.toString() !== req.params.itemId);
         await user.save();
-        await user.populate('cart.product', 'name images price discount stock colors sizes');
+        await user.populate({ path: 'cart.product', select: 'name images price discount stock colors sizes', populate: { path: 'seller', select: 'shopName' } });
 
         res.status(200).json({
             success: true,

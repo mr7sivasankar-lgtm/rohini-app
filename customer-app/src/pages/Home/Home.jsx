@@ -7,10 +7,11 @@ import './Home.css';
 
 const Home = () => {
     const navigate = useNavigate();
-    const { locality, city, pincode, fullAddress, serviceable, loading: locLoading, detectLocation, setManualPincode, searchLocations, selectLocation, permissionDenied } = useLocation();
+    const { locality, city, pincode, fullAddress, latitude, longitude, serviceable, loading: locLoading, detectLocation, setManualPincode, searchLocations, selectLocation, permissionDenied } = useLocation();
     const [banners, setBanners] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [products, setProducts] = useState([]);
+    const [nearbyShops, setNearbyShops] = useState([]);
+    const [topRatedShops, setTopRatedShops] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentBanner, setCurrentBanner] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
@@ -22,7 +23,8 @@ const Home = () => {
 
     useEffect(() => {
         fetchData();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [latitude, longitude]);
 
     // Auto-rotate banners
     useEffect(() => {
@@ -37,13 +39,24 @@ const Home = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [bannersRes, productsRes] = await Promise.all([
+            const apis = [
                 api.get('/banners'),
-                api.get('/products')
-            ]);
+                api.get('/sellers/top-rated')
+            ];
+
+            if (latitude && longitude) {
+                apis.push(api.get(`/sellers/nearby?lat=${latitude}&lng=${longitude}`));
+            }
+
+            const results = await Promise.all(apis);
+            const bannersRes = results[0];
+            const topRatedRes = results[1];
+            const nearbyRes = results.length > 2 ? results[2] : null;
 
             if (bannersRes.data.success) setBanners(bannersRes.data.data);
-            if (productsRes.data.success) setProducts(productsRes.data.data);
+            if (topRatedRes.data.success) setTopRatedShops(topRatedRes.data.data);
+            if (nearbyRes && nearbyRes.data.success) setNearbyShops(nearbyRes.data.data);
+
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -285,89 +298,84 @@ const Home = () => {
                 )}
             </div>
 
-            {/* Just For You Section */}
-            <div className="products-section">
-                <div className="section-header">
-                    <h2>
-                        Just For You
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#fbbf24" stroke="none">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                    </h2>
-                </div>
-                {serviceable === false ? (
-                    <div className="not-serviceable-card">
-                        <div className="not-serviceable-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#667eea" strokeWidth="1.5">
-                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                <circle cx="12" cy="10" r="3" />
-                            </svg>
+            {/* Shop Discovery Section */}
+            <div className="shops-section">
+                
+                {/* Nearby Shops (Only if location is granted) */}
+                {latitude && longitude && nearbyShops.length > 0 && (
+                    <div className="discovery-block">
+                        <div className="section-header">
+                            <h2>
+                                Nearby Shops
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667eea" strokeWidth="2">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                    <circle cx="12" cy="10" r="3" />
+                                </svg>
+                            </h2>
                         </div>
-                        <h3 className="not-serviceable-title">We're Not Here Yet!</h3>
-                        <p className="not-serviceable-area">{fullAddress || 'Your area'}</p>
-                        <p className="not-serviceable-msg">
-                            Currently we are not servicing your area.<br />
-                            We will be there soon. 🚀
-                        </p>
-                    </div>
-                ) : loading ? (
-                    <div className="loading-state">Loading products...</div>
-                ) : products.length > 0 ? (
-                    <div className="products-grid">
-                        {products.map((product) => (
-                            <ProductCard key={product._id} product={product} onClick={() => navigate(`/product/${product._id}`)} />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="empty-state">
-                        <p>No products available at the moment</p>
+                        <div className="shops-horizontal-scroll">
+                            {nearbyShops.map((shop) => (
+                                <ShopCard key={shop._id} shop={shop} onClick={() => navigate(`/shop/${shop._id}`)} />
+                            ))}
+                        </div>
                     </div>
                 )}
+
+                {/* Top Rated Shops */}
+                <div className="discovery-block">
+                    <div className="section-header">
+                        <h2>
+                            Top Rated Shops
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#fbbf24" stroke="none">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                        </h2>
+                    </div>
+                    {loading ? (
+                        <div className="loading-state">Finding best shops...</div>
+                    ) : topRatedShops.length > 0 ? (
+                        <div className="shops-grid">
+                            {topRatedShops.map((shop) => (
+                                <ShopCard key={shop._id} shop={shop} onClick={() => navigate(`/shop/${shop._id}`)} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="empty-state">
+                            <p>No shops available at the moment</p>
+                        </div>
+                    )}
+                </div>
+
             </div>
         </div>
     );
 };
 
-const ProductCard = ({ product, onClick }) => {
-    const { isInWishlist, toggleWishlist } = useWishlist();
-    const wishlisted = isInWishlist(product._id);
-    const finalPrice = product.discount > 0
-        ? product.price * (1 - product.discount / 100)
-        : product.price;
-
-    const handleWishlist = (e) => {
-        e.stopPropagation();
-        toggleWishlist(product._id);
-    };
-
+const ShopCard = ({ shop, onClick }) => {
     return (
-        <div className="product-card-modern" onClick={onClick}>
-            <div className={`product-image-container ${product.stock === 0 ? 'out-of-stock-container' : ''}`}>
-                {product.images && product.images.length > 0 ? (
+        <div className="shop-card-modern" onClick={onClick}>
+            <div className="shop-banner">
+                {shop.bannerImage ? (
                     <img
-                        src={getImageUrl(product.images[0])}
-                        alt={product.name}
+                        src={getImageUrl(shop.bannerImage)}
+                        alt={shop.shopName}
                         onError={(e) => {
-                            e.target.src = 'https://via.placeholder.com/200x250/f3f4f6/9ca3af?text=No+Image';
+                            e.target.src = 'https://via.placeholder.com/400x200/f3f4f6/9ca3af?text=No+Banner';
                         }}
                     />
                 ) : (
-                    <div className="placeholder-image">No Image</div>
+                    <div className="placeholder-image">No Banner</div>
                 )}
-                {product.stock === 0 && (
-                    <div className="out-of-stock-overlay">
-                        <span>Out of Stock</span>
-                    </div>
-                )}
-                <button className={`wishlist-heart ${wishlisted ? 'active' : ''}`} onClick={handleWishlist} aria-label="Toggle wishlist">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill={wishlisted ? '#ef4444' : 'none'} stroke={wishlisted ? '#ef4444' : '#fff'} strokeWidth="2">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </button>
+                <div className="shop-rating-badge">
+                    ⭐ {shop.rating > 0 ? shop.rating.toFixed(1) : 'New'}
+                </div>
             </div>
-            <div className="product-info">
-                <span className="product-title">{product.name}</span>
-                <p className="product-price">₹{finalPrice.toFixed(2)}</p>
+            <div className="shop-info">
+                <h3 className="shop-name">{shop.shopName}</h3>
+                <p className="shop-meta">📍 {shop.shopAddress ? (shop.shopAddress.substring(0,25) + (shop.shopAddress.length>25 ? '...' : '')) : 'Local Market'} • 🛵 ~20 mins</p>
+                <div className="shop-bottom-row">
+                    <span className="shop-starting-price">Explore Collection</span>
+                </div>
             </div>
         </div>
     );

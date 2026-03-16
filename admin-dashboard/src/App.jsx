@@ -4,6 +4,7 @@ import ProductForm from './components/ProductForm';
 import ServiceAreas from './components/ServiceAreas';
 import { DashboardCharts } from './components/DashboardCharts';
 import Users from './components/Users';
+import Sellers from './components/Sellers';
 import './index.css';
 
 function App() {
@@ -365,6 +366,9 @@ function App() {
         <div className={`menu-item ${activeTab === 'users' ? 'active' : ''}`} onClick={() => handleTabChange('users')}>
           👥 Users
         </div>
+        <div className={`menu-item ${activeTab === 'sellers' ? 'active' : ''}`} onClick={() => handleTabChange('sellers')}>
+          🏪 Sellers
+        </div>
         <div className={`menu-item ${activeTab === 'delivery-partners' ? 'active' : ''}`} onClick={() => handleTabChange('delivery-partners')}>
           🚴 Delivery Partners
         </div>
@@ -584,6 +588,10 @@ function App() {
           />
         )}
 
+        {activeTab === 'sellers' && (
+          <Sellers />
+        )}
+
         {activeTab === 'products' && (
           <div>
             <div className="page-header">
@@ -605,6 +613,7 @@ function App() {
                       <th>Name</th>
                       <th>Brand</th>
                       <th>Gender</th>
+                      <th>Seller</th>
                       <th>Price</th>
                       <th>Stock</th>
                       <th>Category</th>
@@ -628,7 +637,14 @@ function App() {
                         </td>
                         <td>{product.brand || '-'}</td>
                         <td>{product.gender || '-'}</td>
-                        <td>${product.price}</td>
+                        <td>
+                          {product.seller ? (
+                            <span style={{ fontWeight: 500, color: '#3b82f6' }}>{product.seller.shopName}</span>
+                          ) : (
+                            <span style={{ color: '#64748b' }}>Admin</span>
+                          )}
+                        </td>
+                        <td>₹{product.price}</td>
                         <td>
                           <span style={{ color: product.stock < 10 ? 'red' : 'green' }}>
                             {product.stock}
@@ -841,6 +857,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
         <tr>
           <th>Order ID</th>
           <th>Customer</th>
+          <th>Seller</th>
           <th>Items Received</th>
           <th>Product Code</th>
           <th>Quantity</th>
@@ -887,6 +904,11 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                   <div style={{ fontSize: '0.85em', color: '#666' }}>{order.contactInfo?.phone}</div>
                 </div>
               </div>
+            </td>
+            <td>
+              <span style={{ fontWeight: 600, color: '#3b82f6', fontSize: '13px' }}>
+                {order.seller?.shopName || 'Admin'}
+              </span>
             </td>
             <td>
               <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>

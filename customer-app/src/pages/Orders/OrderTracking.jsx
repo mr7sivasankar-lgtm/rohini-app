@@ -161,7 +161,10 @@ const OrderTracking = () => {
 
             {/* Order Items List (Moved to top) */}
             <div className="tracking-card">
-                <h3 className="section-title">Items ({order.items.length})</h3>
+                <h3 className="section-title">
+                    Items ({order.items.length}) 
+                    {order.seller && <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '500', marginLeft: '6px' }}>from {order.seller.shopName}</span>}
+                </h3>
                 <div className="items-grid">
                     {order.items.map((item, index) => (
                         <div key={index} className="modern-order-item">

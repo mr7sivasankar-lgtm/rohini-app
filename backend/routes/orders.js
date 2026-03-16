@@ -2,7 +2,8 @@ import express from 'express';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
 import Product from '../models/Product.js';
-import { protect, adminOnly } from '../middleware/auth.js';
+import { protect, adminOnly, sellerOrAdmin } from '../middleware/auth.js';
+import { sellerProtect } from './sellers.js';
 import { autoAssignDeliveryPartner } from './delivery.js';
 
 const router = express.Router();
@@ -31,6 +32,7 @@ router.post('/', protect, async (req, res) => {
         // Verify stock and calculate total
         let subtotal = 0;
         const orderItems = [];
+        let orderSeller = null;
 
         for (const item of items) {
             const product = await Product.findById(item.product);
@@ -39,6 +41,16 @@ router.post('/', protect, async (req, res) => {
                 return res.status(404).json({
                     success: false,
                     message: `Product not found: ${item.product}`
+                });
+            }
+
+            // Enforce single seller per order
+            if (!orderSeller) {
+                orderSeller = product.seller;
+            } else if (orderSeller.toString() !== product.seller.toString()) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'All items in a single order must be purchased from the same shop. Please clear your cart or order separately.'
                 });
             }
 
@@ -78,6 +90,7 @@ router.post('/', protect, async (req, res) => {
         // Create order
         const order = await Order.create({
             user: req.user._id,
+            seller: orderSeller,
             items: orderItems,
             shippingAddress,
             contactInfo,
@@ -114,6 +127,7 @@ router.post('/', protect, async (req, res) => {
 router.get('/', protect, async (req, res) => {
     try {
         const orders = await Order.find({ user: req.user._id })
+            .populate('seller', 'shopName bannerImage')
             .populate('deliveryPartner', 'name phone')
             .sort({ createdAt: -1 });
 
@@ -127,6 +141,73 @@ router.get('/', protect, async (req, res) => {
             success: false,
             message: 'Error fetching orders'
         });
+    }
+});
+
+// ========== SELLER ROUTES ==========
+
+// @route   GET /api/orders/seller
+// @desc    Get orders for the logged in seller
+// @access  Private/Seller
+router.get('/seller', sellerProtect, async (req, res) => {
+    try {
+        const orders = await Order.find({ seller: req.seller._id })
+            .populate('user', 'name phone email')
+            .populate('deliveryPartner', 'name phone')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            data: orders
+        });
+    } catch (error) {
+        console.error('Get seller orders error:', error);
+        res.status(500).json({ success: false, message: 'Error fetching orders' });
+    }
+});
+
+// @route   PUT /api/orders/seller/:id/status
+// @desc    Update order status by seller (Accept, Reject, Ready for Pickup)
+// @access  Private/Seller
+router.put('/seller/:id/status', sellerProtect, async (req, res) => {
+    try {
+        const { status } = req.body;
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        if (order.seller.toString() !== req.seller._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized to update this order' });
+        }
+
+        order.status = status;
+        order.statusHistory.push({
+            status,
+            timestamp: new Date(),
+            note: `Updated by Shop Owner: ${status}`
+        });
+
+        await order.save();
+
+        // Trigger Auto Assignment if the seller marks the order as "Ready for Pickup"
+        if (status === 'Ready for Pickup') {
+            try {
+                // Call asynchronously so we don't block the API response
+                autoAssignDeliveryPartner(order._id).catch(console.error);
+            } catch (err) {
+                console.error('Failed to trigger auto assignment:', err);
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            data: order
+        });
+    } catch (error) {
+        console.error('Update order status error:', error);
+        res.status(500).json({ success: false, message: 'Error updating order status' });
     }
 });
 
@@ -144,6 +225,7 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
 
         const orders = await Order.find(query)
             .populate('user', 'name phone email')
+            .populate('seller', 'shopName phone location')
             .populate('deliveryPartner', 'name phone')
             .sort({ createdAt: -1 })
             .limit(parseInt(limit));

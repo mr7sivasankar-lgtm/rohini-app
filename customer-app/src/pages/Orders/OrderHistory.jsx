@@ -52,6 +52,11 @@ const OrderHistory = () => {
                         <div className="order-card-header">
                             <div>
                                 <h3>Order #{order.orderId}</h3>
+                                {order.seller && (
+                                    <p className="order-shop-name" style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 4px', fontWeight: '500' }}>
+                                        Sold by: {order.seller.shopName}
+                                    </p>
+                                )}
                                 <p className="order-date">
                                     {new Date(order.createdAt).toLocaleDateString('en-US', {
                                         year: 'numeric',

@@ -272,6 +272,11 @@ const Cart = () => {
                                     <p className="cart-item-name">{item.product?.name}</p>
                                     <button className="cart-delete-btn" onClick={() => handleRemove(item._id)}>🗑</button>
                                 </div>
+                                {item.product?.seller && (
+                                    <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 4px', fontWeight: '500' }}>
+                                        Sold by: {item.product.seller.shopName}
+                                    </p>
+                                )}
                                 <div className="cart-item-variants">
                                     {item.color && <span className="variant-chip">{item.color}</span>}
                                     {item.size && <span className="variant-chip">Size {item.size}</span>}

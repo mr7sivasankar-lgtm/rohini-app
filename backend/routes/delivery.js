@@ -287,7 +287,6 @@ export const autoAssignDeliveryPartner = async (orderId, deliveryType = 'Normal'
 
         await Order.findByIdAndUpdate(orderId, {
             deliveryPartner: partner._id,
-            deliveryPartnerId: partner._id,
             deliveryStatus: 'Assigned',
             deliveryType: deliveryType
         });

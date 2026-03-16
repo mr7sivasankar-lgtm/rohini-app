@@ -10,6 +10,11 @@ const orderSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    seller: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Seller',
+        required: true
+    },
     items: [{
         product: {
             type: mongoose.Schema.Types.ObjectId,
@@ -88,7 +93,7 @@ const orderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Placed', 'Accepted', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'],
+        enum: ['Placed', 'Accepted', 'Ready for Pickup', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled'],
         default: 'Placed'
     },
     statusHistory: [{

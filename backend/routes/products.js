@@ -1,7 +1,7 @@
 import express from 'express';
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
-import { protect, adminOnly } from '../middleware/auth.js';
+import { protect, adminOnly, sellerOrAdmin } from '../middleware/auth.js';
 import { uploadMultiple, cloudinary } from '../middleware/upload.js';
 import fs from 'fs';
 import path from 'path';
@@ -15,11 +15,12 @@ router.get('/', async (req, res) => {
     try {
         const { 
             category, gender, search, featured, limit = 20, page = 1,
-            sort, minPrice, maxPrice, sizes, colors, inStock
+            sort, minPrice, maxPrice, sizes, colors, inStock, sellerId
         } = req.query;
 
         const query = { isActive: true };
 
+        if (sellerId) query.seller = sellerId;
         if (category) query.category = category;
         if (gender) query.gender = gender;
         if (featured) query.featured = true;
@@ -117,6 +118,7 @@ router.get('/', async (req, res) => {
         const products = await Product.find(query)
             .populate('category', 'name gender')
             .populate('subcategory', 'name')
+            .populate('seller', 'shopName')
             .limit(parseInt(limit))
             .skip(skip)
             .sort(sortObj);
@@ -173,19 +175,17 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/products
 // @desc    Create product
 // @access  Private/Admin
-const debugLog = (msg) => {
-    try { fs.appendFileSync(path.join(process.cwd(), 'test.log'), new Date().toISOString() + ' ' + msg + '\n'); } catch (e) { }
-};
-
-router.post('/', protect, adminOnly, (req, res, next) => {
-    debugLog('Hit generic log middleware');
-    next();
-}, uploadMultiple, async (req, res) => {
-    debugLog('Multer passed');
+router.post('/', sellerOrAdmin, uploadMultiple, async (req, res) => {
     try {
-        debugLog('Parsing JSON');
         const productData = JSON.parse(req.body.data);
-        debugLog('JSON Parsed');
+
+        // Determine seller: If uploaded by a seller, set to their ID.
+        // If uploaded by an admin, the admin must provide the seller ID in the form data.
+        if (req.seller) {
+            productData.seller = req.seller._id;
+        } else if (req.user && req.user.role === 'admin' && !productData.seller) {
+            return res.status(400).json({ success: false, message: 'Admin must specify a seller when creating a product' });
+        }
 
         // Get uploaded image URLs from Cloudinary
         const images = req.files ? req.files.map(file => file.path) : [];
@@ -218,8 +218,8 @@ router.post('/', protect, adminOnly, (req, res, next) => {
 
 // @route   PUT /api/products/:id
 // @desc    Update product
-// @access  Private/Admin
-router.put('/:id', protect, adminOnly, uploadMultiple, async (req, res) => {
+// @access  Private/Admin or Seller
+router.put('/:id', sellerOrAdmin, uploadMultiple, async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
 
@@ -230,7 +230,17 @@ router.put('/:id', protect, adminOnly, uploadMultiple, async (req, res) => {
             });
         }
 
+        // Ensure sellers can only update their own products
+        if (req.seller && product.seller.toString() !== req.seller._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized to update this product' });
+        }
+
         const productData = JSON.parse(req.body.data);
+
+        // Security: Prevent sellers from changing the product's owner
+        if (req.seller) {
+            delete productData.seller;
+        }
 
         // Handle removed images - delete from Cloudinary
         if (productData.removedImages && productData.removedImages.length > 0) {
@@ -283,8 +293,8 @@ router.put('/:id', protect, adminOnly, uploadMultiple, async (req, res) => {
 
 // @route   DELETE /api/products/:id
 // @desc    Delete product (soft delete)
-// @access  Private/Admin
-router.delete('/:id', protect, adminOnly, async (req, res) => {
+// @access  Private/Admin or Seller
+router.delete('/:id', sellerOrAdmin, async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
 
@@ -293,6 +303,11 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
                 success: false,
                 message: 'Product not found'
             });
+        }
+
+        // Ensure sellers can only delete their own products
+        if (req.seller && product.seller.toString() !== req.seller._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized to delete this product' });
         }
 
         product.isActive = false;

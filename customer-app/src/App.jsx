@@ -25,6 +25,7 @@ import Addresses from './pages/Addresses/Addresses';
 import AddressForm from './pages/Addresses/AddressForm';
 import EditProfile from './pages/EditProfile/EditProfile';
 import Wishlist from './pages/Wishlist/Wishlist';
+import ShopProfile from './pages/ShopProfile/ShopProfile';
 
 // Protected Route Component
 import { useAuth } from './contexts/AuthContext';
@@ -80,6 +81,12 @@ const AppRoutes = () => {
         <Route path="/product/:id" element={
           <ProtectedRoute>
             <ProductDetail />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/shop/:id" element={
+          <ProtectedRoute>
+            <ShopProfile />
           </ProtectedRoute>
         } />
 
