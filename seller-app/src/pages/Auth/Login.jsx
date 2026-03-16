@@ -81,6 +81,7 @@ const Login = () => {
                                     placeholder="9700079239"
                                     value={phone}
                                     onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                    autoComplete="off"
                                     autoFocus
                                     required
                                 />
