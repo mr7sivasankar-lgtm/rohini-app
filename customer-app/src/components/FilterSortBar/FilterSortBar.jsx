@@ -16,10 +16,13 @@ const FilterSortBar = ({
     const [tempFilters, setTempFilters] = useState(activeFilters);
 
     const sortOptions = [
-        { id: 'newest', label: 'Newest First' },
+        { id: 'relevance', label: 'Relevance' },
+        { id: 'newest', label: 'Newest Arrivals' },
         { id: 'price_asc', label: 'Price: Low to High' },
         { id: 'price_desc', label: 'Price: High to Low' },
         { id: 'popularity', label: 'Popularity' },
+        { id: 'top_rated', label: 'Top Rated' },
+        { id: 'discount_desc', label: 'Discount: High to Low' },
     ];
 
     const filterOptions = {
@@ -30,7 +33,9 @@ const FilterSortBar = ({
             { id: '2000+', label: '₹2000+', min: 2000, max: null }
         ],
         sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-        colors: ['Black', 'White', 'Blue', 'Red', 'Green', 'Yellow', 'Pink', 'Purple', 'Grey', 'Brown']
+        colors: ['Black', 'White', 'Blue', 'Red', 'Green', 'Yellow', 'Pink', 'Purple', 'Grey', 'Brown'],
+        fabric: ['Cotton', 'Silk', 'Linen', 'Polyester', 'Georgette', 'Denim'],
+        sleeve: ['Half Sleeve', 'Full Sleeve', 'Sleeveless', '3/4 Sleeve']
     };
 
     const handleSortSelect = (sortId) => {
@@ -74,6 +79,8 @@ const FilterSortBar = ({
     const activeFilterCount = (activeFilters.priceRange ? 1 : 0) + 
                               (activeFilters.sizes?.length || 0) + 
                               (activeFilters.colors?.length || 0) + 
+                              (activeFilters.fabric?.length || 0) + 
+                              (activeFilters.sleeve?.length || 0) + 
                               (activeFilters.inStock ? 1 : 0);
 
     return (
@@ -184,6 +191,37 @@ const FilterSortBar = ({
                                     >
                                         <span className="color-dot" style={{ backgroundColor: color.toLowerCase() }}></span>
                                         {color}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="filter-group">
+                            <h4 className="filter-title">Fabric / Material</h4>
+                            <div className="pills-grid">
+                                {filterOptions.fabric.map(fb => (
+                                    <button 
+                                        key={fb} 
+                                        className={`filter-pill ${(tempFilters.fabric || []).includes(fb) ? 'active' : ''}`}
+                                        onClick={() => handleToggleFilter('fabric', fb)}
+                                    >
+                                        {fb}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Sleeve Type */}
+                        <div className="filter-group">
+                            <h4 className="filter-title">Sleeve Type</h4>
+                            <div className="pills-grid">
+                                {filterOptions.sleeve.map(sl => (
+                                    <button 
+                                        key={sl} 
+                                        className={`filter-pill ${(tempFilters.sleeve || []).includes(sl) ? 'active' : ''}`}
+                                        onClick={() => handleToggleFilter('sleeve', sl)}
+                                    >
+                                        {sl}
                                     </button>
                                 ))}
                             </div>

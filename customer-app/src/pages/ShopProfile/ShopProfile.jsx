@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWishlist } from '../../contexts/WishlistContext';
 import api, { getImageUrl } from '../../utils/api';
+import FilterSortBar from '../../components/FilterSortBar/FilterSortBar';
 import './ShopProfile.css';
 
 const ShopProfile = () => {
@@ -14,8 +15,8 @@ const ShopProfile = () => {
     // Filters and Categories
     const [activeCategory, setActiveCategory] = useState('All');
     const [categories, setCategories] = useState(['All']);
-    const [showSort, setShowSort] = useState(false);
-    const [sortBy, setSortBy] = useState('recommended');
+    const [activeSort, setActiveSort] = useState('newest');
+    const [activeFilters, setActiveFilters] = useState({ priceRange: '', sizes: [], colors: [], inStock: false });
 
     useEffect(() => {
         fetchShopDetails();
@@ -50,11 +51,72 @@ const ShopProfile = () => {
 
     // Filter and Sort Products
     let displayProducts = [...products];
+    
+    // 1. Category Filter
     if (activeCategory !== 'All') {
         displayProducts = displayProducts.filter(p => p.category === activeCategory);
     }
-    if (sortBy === 'price_low') displayProducts.sort((a, b) => a.price - b.price);
-    if (sortBy === 'price_high') displayProducts.sort((a, b) => b.price - a.price);
+    
+    // 2. In Stock Filter
+    if (activeFilters.inStock) {
+        displayProducts = displayProducts.filter(p => p.stock > 0);
+    }
+
+    // 3. Price Range Filter
+    const PRICE_RANGES = {
+        '0-500':     { min: 0,    max: 500  },
+        '500-1000':  { min: 500,  max: 1000 },
+        '1000-2000': { min: 1000, max: 2000 },
+        '2000+':     { min: 2000, max: null },
+    };
+    if (activeFilters.priceRange && PRICE_RANGES[activeFilters.priceRange]) {
+        const { min, max } = PRICE_RANGES[activeFilters.priceRange];
+        displayProducts = displayProducts.filter(p => {
+            const finalPrice = p.discount > 0 ? p.price * (1 - p.discount / 100) : p.price;
+            if (max === null) return finalPrice >= min;
+            return finalPrice >= min && finalPrice <= max;
+        });
+    }
+
+    // 4. Sizes Filter
+    if (activeFilters.sizes && activeFilters.sizes.length > 0) {
+        displayProducts = displayProducts.filter(p => {
+            if (!p.sizes) return false;
+            // Assuming p.sizes is an array of strings like ['S', 'M']
+            return activeFilters.sizes.some(size => p.sizes.includes(size));
+        });
+    }
+
+    // 5. Colors Filter
+    if (activeFilters.colors && activeFilters.colors.length > 0) {
+        displayProducts = displayProducts.filter(p => {
+            if (!p.colors) return false;
+            return activeFilters.colors.some(color => p.colors.includes(color));
+        });
+    }
+
+    // 6. Sorting
+    if (activeSort === 'price_asc') {
+        displayProducts.sort((a, b) => {
+            const pA = a.discount > 0 ? a.price * (1 - a.discount / 100) : a.price;
+            const pB = b.discount > 0 ? b.price * (1 - b.discount / 100) : b.price;
+            return pA - pB;
+        });
+    } else if (activeSort === 'price_desc') {
+        displayProducts.sort((a, b) => {
+            const pA = a.discount > 0 ? a.price * (1 - a.discount / 100) : a.price;
+            const pB = b.discount > 0 ? b.price * (1 - b.discount / 100) : b.price;
+            return pB - pA;
+        });
+    } else if (activeSort === 'popularity' || activeSort === 'top_rated') {
+        // Fallback to highest sales or highest rating if available, otherwise fallback to standard newest
+        displayProducts.sort((a, b) => (b.sales || 0) - (a.sales || 0));
+    } else if (activeSort === 'discount_desc') {
+        displayProducts.sort((a, b) => (b.discount || 0) - (a.discount || 0));
+    } else {
+        // default: newest
+        displayProducts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
 
     // Calculate delivery time based on distance (roughly 4 mins per km + 20 mins base prep)
     let deliveryTimeStr = '~35 mins';
@@ -118,16 +180,15 @@ const ShopProfile = () => {
                 )}
 
                 {/* Sort / Filter Controls */}
-                <div className="shop-filter-bar">
-                    <button className="sf-btn" onClick={() => setSortBy(prev => prev === 'price_low' ? 'recommended' : 'price_low')}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-                        {sortBy === 'price_low' ? 'Price: Low' : 'Sort'}
-                    </button>
-                    <div className="sf-divider"></div>
-                    <button className="sf-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                        Filter
-                    </button>
+                <div style={{ position: 'relative', zIndex: 20 }}>
+                    <FilterSortBar 
+                        activeSort={activeSort}
+                        onSortChange={setActiveSort}
+                        activeFilters={activeFilters}
+                        onFilterChange={setActiveFilters}
+                        onClearFilters={() => setActiveFilters({ priceRange: '', sizes: [], colors: [], inStock: false })}
+                        totalResults={displayProducts.length}
+                    />
                 </div>
 
                 {displayProducts.length > 0 ? (
