@@ -8,11 +8,15 @@ import User from '../models/User.js';
 const router = express.Router();
 
 // Configure VAPID details (called once at module load)
-webpush.setVapidDetails(
-    process.env.VAPID_EMAIL || 'mailto:admin@rohiniapp.com',
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+        process.env.VAPID_EMAIL || 'mailto:admin@rohiniapp.com',
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+    );
+} else {
+    console.warn('[WebPush] VAPID keys not configured — push notifications disabled.');
+}
 
 // ── Middleware ──────────────────────────────────────────────────────────────
 const protectDelivery = async (req, res, next) => {
