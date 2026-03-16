@@ -4,6 +4,7 @@ import api, { getImageUrl } from '../utils/api';
 const OrdersTab = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('New');
 
     useEffect(() => {
         fetchOrders();
@@ -35,22 +36,61 @@ const OrdersTab = () => {
 
     if (loading) return <div className="loading"><div className="spinner" style={{borderTopColor: '#4f46e5'}}></div></div>;
 
+    const tabs = ['New', 'Accepted', 'Ready', 'Completed', 'Cancelled', 'Returns/Exchanges'];
+
+    const getFilteredOrders = () => {
+        switch (activeTab) {
+            case 'New': return orders.filter(o => o.status === 'Placed');
+            case 'Accepted': return orders.filter(o => o.status === 'Accepted' || o.status === 'Preparing');
+            case 'Ready': return orders.filter(o => o.status === 'Ready for Pickup' || o.status === 'Out for Delivery');
+            case 'Completed': return orders.filter(o => o.status === 'Delivered');
+            case 'Cancelled': return orders.filter(o => o.status === 'Cancelled' || o.status === 'Rejected');
+            case 'Returns/Exchanges': return orders.filter(o => o.status.includes('Return') || o.status.includes('Exchange'));
+            default: return orders;
+        }
+    };
+
+    const filteredOrders = getFilteredOrders();
+
     return (
         <div className="orders-tab">
-            <div className="section-header">
+            <div className="section-header" style={{ marginBottom: '16px' }}>
                 <h2>Order Management</h2>
                 <p>Track, accept, and prepare customer orders for pickup.</p>
             </div>
 
-            {orders.length === 0 ? (
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '16px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0' }}>
+                {tabs.map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        style={{
+                            padding: '8px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: 600, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                            background: activeTab === tab ? '#1e293b' : '#f1f5f9',
+                            color: activeTab === tab ? '#fff' : '#64748b'
+                        }}
+                    >
+                        {tab} ({
+                            tab === 'New' ? orders.filter(o => o.status === 'Placed').length :
+                            tab === 'Accepted' ? orders.filter(o => o.status === 'Accepted' || o.status === 'Preparing').length :
+                            tab === 'Ready' ? orders.filter(o => o.status === 'Ready for Pickup' || o.status === 'Out for Delivery').length :
+                            tab === 'Completed' ? orders.filter(o => o.status === 'Delivered').length :
+                            tab === 'Cancelled' ? orders.filter(o => o.status === 'Cancelled' || o.status === 'Rejected').length :
+                            orders.filter(o => o.status.includes('Return') || o.status.includes('Exchange')).length
+                        })
+                    </button>
+                ))}
+            </div>
+
+            {filteredOrders.length === 0 ? (
                 <div className="temp-placeholder">
-                    <span style={{ fontSize: '48px', margin: '0 0 16px', display: 'block' }}>📦</span>
-                    <h3>No orders yet</h3>
-                    <p>When customers buy your products, they will appear here.</p>
-                </div>
+                     <span style={{ fontSize: '48px', margin: '0 0 16px', display: 'block' }}>📦</span>
+                     <h3>No orders yet</h3>
+                     <p>When customers buy your products, they will appear here.</p>
+                 </div>
             ) : (
                 <div className="orders-grid" style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))' }}>
-                    {orders.map(order => (
+                    {filteredOrders.map(order => (
                         <div key={order._id} className="order-card" style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
                                 <div>
@@ -59,7 +99,14 @@ const OrdersTab = () => {
                                         {new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
                                     </span>
                                 </div>
-                                <span className={`status-badge status-${order.status.toLowerCase().replace(/ /g, '-')}`} style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, height: 'fit-content', background: order.status === 'Placed' ? '#fef3c7' : '#eef2ff', color: order.status === 'Placed' ? '#b45309' : '#4f46e5' }}>
+                                <span className={`status-badge`} style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, height: 'fit-content', 
+                                    background: ['Placed', 'Return Requested'].includes(order.status) ? '#fef3c7' : 
+                                                ['Delivered', 'Return Completed'].includes(order.status) ? '#dcfce7' : 
+                                                ['Cancelled', 'Rejected'].includes(order.status) ? '#fee2e2' : '#eef2ff', 
+                                    color: ['Placed', 'Return Requested'].includes(order.status) ? '#b45309' : 
+                                           ['Delivered', 'Return Completed'].includes(order.status) ? '#16a34a' : 
+                                           ['Cancelled', 'Rejected'].includes(order.status) ? '#dc2626' : '#4f46e5' 
+                                }}>
                                     {order.status}
                                 </span>
                             </div>
@@ -86,25 +133,41 @@ const OrdersTab = () => {
                                 <div style={{ fontSize: '14px' }}>
                                     Total: <strong style={{ fontSize: '18px' }}>₹{order.total.toFixed(0)}</strong>
                                 </div>
-                                <div className="order-actions" style={{ display: 'flex', gap: '8px' }}>
+                                <div className="order-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                     {order.status === 'Placed' && (
                                         <>
                                             <button 
-                                                style={{ padding: '8px 16px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                                                style={{ padding: '8px 16px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                                 onClick={() => updateOrderStatus(order._id, 'Accepted')}
                                             >Accept</button>
                                             <button 
-                                                style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                                                style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                                 onClick={() => updateOrderStatus(order._id, 'Rejected')}
                                             >Reject</button>
                                         </>
                                     )}
                                     {order.status === 'Accepted' && (
                                         <button 
-                                            style={{ padding: '8px 16px', background: '#eab308', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                                            style={{ padding: '8px 16px', background: '#eab308', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                             onClick={() => updateOrderStatus(order._id, 'Ready for Pickup')}
                                             className="pulse-btn"
-                                        >Mark Ready for Pickup</button>
+                                        >Mark Ready</button>
+                                    )}
+                                    {order.status === 'Return Requested' && (
+                                        <>
+                                            <button style={{ padding: '8px 16px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                                onClick={() => updateOrderStatus(order._id, 'Return Approved')}>Approve Return</button>
+                                            <button style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                                onClick={() => updateOrderStatus(order._id, 'Return Rejected')}>Reject Return</button>
+                                        </>
+                                    )}
+                                    {order.status === 'Exchange Requested' && (
+                                        <>
+                                            <button style={{ padding: '8px 16px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                                onClick={() => updateOrderStatus(order._id, 'Exchange Approved')}>Approve Exchange</button>
+                                            <button style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                                onClick={() => updateOrderStatus(order._id, 'Exchange Rejected')}>Reject Exchange</button>
+                                        </>
                                     )}
                                 </div>
                             </div>

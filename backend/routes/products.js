@@ -290,6 +290,41 @@ router.put('/:id', sellerOrAdmin, uploadMultiple, async (req, res) => {
         });
     }
 });
+// @route   PUT /api/products/:id/toggle
+// @desc    Toggle product active status
+// @access  Private/Admin or Seller
+router.put('/:id/toggle', sellerOrAdmin, async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+
+        // Ensure sellers can only toggle their own products
+        if (req.seller && product.seller.toString() !== req.seller._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized to update this product' });
+        }
+
+        product.isActive = !product.isActive;
+        await product.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Product ${product.isActive ? 'activated' : 'deactivated'} successfully`,
+            data: product
+        });
+    } catch (error) {
+        console.error('Toggle product status error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating product status'
+        });
+    }
+});
 
 // @route   DELETE /api/products/:id
 // @desc    Delete product (soft delete)

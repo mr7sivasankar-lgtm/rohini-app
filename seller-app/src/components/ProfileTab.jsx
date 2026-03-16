@@ -10,9 +10,14 @@ const ProfileTab = ({ seller }) => {
         description: '',
         gstNumber: '',
         deliveryRadius: 5,
-        minOrderAmount: 0
+        minOrderAmount: 0,
+        location: {
+            type: 'Point',
+            coordinates: [0, 0] // [longitude, latitude]
+        }
     });
     const [loading, setLoading] = useState(false);
+    const [locationLoading, setLocationLoading] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
 
@@ -26,7 +31,8 @@ const ProfileTab = ({ seller }) => {
                 description: seller.description || '',
                 gstNumber: seller.gstNumber || '',
                 deliveryRadius: seller.deliveryRadius || 5,
-                minOrderAmount: seller.minOrderAmount || 0
+                minOrderAmount: seller.minOrderAmount || 0,
+                location: seller.location || { type: 'Point', coordinates: [0, 0] }
             });
         }
     }, [seller]);
@@ -37,6 +43,40 @@ const ProfileTab = ({ seller }) => {
             ...prev,
             [name]: type === 'number' ? Number(value) : value
         }));
+    };
+
+    const detectLocation = () => {
+        if (!navigator.geolocation) {
+            setErrorMsg('Geolocation is not supported by your browser.');
+            return;
+        }
+
+        setLocationLoading(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                setFormData(prev => ({
+                    ...prev,
+                    location: {
+                        type: 'Point',
+                        coordinates: [longitude, latitude] // MongoDB goes Longitude, Latitude
+                    }
+                }));
+                setLocationLoading(false);
+                setSuccessMsg('✅ GPS Coordinates captured successfully!');
+                setTimeout(() => setSuccessMsg(''), 3000);
+            },
+            (error) => {
+                setLocationLoading(false);
+                console.error('Error getting location:', error);
+                if (error.code === 1) {
+                    setErrorMsg('Please allow location access to detect your shop coordinates.');
+                } else {
+                    setErrorMsg('Make sure your device location is turned on.');
+                }
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
     };
 
     const handleSave = async (e) => {
@@ -89,9 +129,28 @@ const ProfileTab = ({ seller }) => {
                     <input type="text" name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="e.g. 29XXXXX1234X1Z5" />
                 </div>
 
-                <div className="form-group full-width">
+                <div className="form-group full-width" style={{ position: 'relative' }}>
                     <label>Shop Address</label>
                     <textarea name="shopAddress" value={formData.shopAddress} onChange={handleChange} rows="2" required />
+                    
+                    <div style={{ marginTop: '12px', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                            <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>GPS Coordinates</div>
+                            <div style={{ fontSize: '13px', color: '#64748b' }}>
+                                {formData.location?.coordinates[0] !== 0 && formData.location?.coordinates[1] !== 0 
+                                    ? `Lat: ${formData.location.coordinates[1].toFixed(6)}, Lng: ${formData.location.coordinates[0].toFixed(6)}` 
+                                    : 'Coordinates needed for delivery partner navigation.'}
+                            </div>
+                        </div>
+                        <button 
+                            type="button" 
+                            onClick={detectLocation}
+                            disabled={locationLoading}
+                            style={{ padding: '8px 16px', background: 'white', border: '1px solid #4f46e5', color: '#4f46e5', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                        >
+                            {locationLoading ? 'Detecting...' : '📍 Auto-Detect'}
+                        </button>
+                    </div>
                 </div>
 
                 <div className="form-group full-width">

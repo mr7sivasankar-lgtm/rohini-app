@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import DashboardTab from '../../components/DashboardTab';
 import OrdersTab from '../../components/OrdersTab';
 import ProductsTab from '../../components/ProductsTab';
 import ProfileTab from '../../components/ProfileTab';
+import SalesTab from '../../components/SalesTab';
 import './Dashboard.css';
 
 const Dashboard = () => {
     const { seller, logout } = useAuth();
-    const [activeTab, setActiveTab] = useState('orders');
+    const [activeTab, setActiveTab] = useState('dashboard');
 
     return (
         <div className="seller-dashboard">
@@ -23,6 +25,12 @@ const Dashboard = () => {
 
                 <nav className="sidebar-nav">
                     <button 
+                        className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('dashboard')}
+                    >
+                        📊 Dashboard
+                    </button>
+                    <button 
                         className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
                         onClick={() => setActiveTab('orders')}
                     >
@@ -33,6 +41,12 @@ const Dashboard = () => {
                         onClick={() => setActiveTab('products')}
                     >
                         👕 Products
+                    </button>
+                    <button 
+                        className={`nav-item ${activeTab === 'sales' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('sales')}
+                    >
+                        📈 Sales & Revenue
                     </button>
                     <button 
                         className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
@@ -51,14 +65,18 @@ const Dashboard = () => {
             <main className="dashboard-main">
                 <header className="dashboard-header">
                     <h1>
-                        {activeTab === 'orders' ? 'Order Management' : 
-                         activeTab === 'products' ? 'Product Catalog' : 'Shop Profile'}
+                        {activeTab === 'dashboard' ? 'Overview' :
+                         activeTab === 'orders' ? 'Order Management' : 
+                         activeTab === 'products' ? 'Product Catalog' : 
+                         activeTab === 'sales' ? 'Sales Analytics' : 'Shop Profile'}
                     </h1>
                 </header>
 
                 <div className="dashboard-content">
+                    {activeTab === 'dashboard' && <DashboardTab />}
                     {activeTab === 'orders' && <OrdersTab />}
                     {activeTab === 'products' && <ProductsTab />}
+                    {activeTab === 'sales' && <SalesTab />}
                     {activeTab === 'profile' && <ProfileTab seller={seller} />}
                 </div>
             </main>

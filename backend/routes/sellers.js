@@ -295,8 +295,12 @@ router.put('/profile', sellerProtect, async (req, res) => {
             if (req.body.openingTime) seller.openingTime = req.body.openingTime;
             if (req.body.closingTime) seller.closingTime = req.body.closingTime;
 
-            if (req.body.latitude && req.body.longitude) {
+            if (req.body.location && req.body.location.coordinates) {
+                seller.location.coordinates = req.body.location.coordinates;
+                seller.location.type = 'Point';
+            } else if (req.body.latitude && req.body.longitude) {
                 seller.location.coordinates = [req.body.longitude, req.body.latitude];
+                seller.location.type = 'Point';
             }
 
             if (req.body.password) {

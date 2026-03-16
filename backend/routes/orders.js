@@ -166,6 +166,150 @@ router.get('/seller', sellerProtect, async (req, res) => {
     }
 });
 
+// @route   GET /api/orders/seller/dashboard-stats
+// @desc    Get dashboard aggregated stats for the logged in seller
+// @access  Private/Seller
+router.get('/seller/dashboard-stats', sellerProtect, async (req, res) => {
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const orders = await Order.find({ seller: req.seller._id }).sort({ createdAt: -1 });
+
+        const stats = {
+            ordersToday: 0,
+            pendingOrders: 0,
+            revenueToday: 0,
+            delivered: 0,
+            returned: 0,
+            exchanged: 0,
+            recentOrders: []
+        };
+
+        orders.forEach(order => {
+            const isToday = new Date(order.createdAt) >= today;
+            
+            if (isToday) {
+                stats.ordersToday++;
+            }
+
+            if (['Placed', 'Accepted', 'Preparing'].includes(order.status)) {
+                stats.pendingOrders++;
+            }
+
+            if (order.status === 'Delivered') {
+                stats.delivered++;
+                if (isToday) {
+                    stats.revenueToday += order.total;
+                }
+            }
+
+            if (order.status === 'Return Completed') {
+                stats.returned++;
+            }
+
+            if (order.status.includes('Exchange')) {
+                stats.exchanged++;
+            }
+        });
+
+        // Get top 5 recent orders
+        stats.recentOrders = orders.slice(0, 5);
+
+        res.status(200).json({ success: true, data: stats });
+
+    } catch (error) {
+        console.error('Get seller dashboard stats error:', error);
+        res.status(500).json({ success: false, message: 'Error fetching stats' });
+    }
+});
+
+// @route   GET /api/orders/seller/sales-analytics
+// @desc    Get detailed sales analytics (revenue, top products, trend)
+// @access  Private/Seller
+router.get('/seller/sales-analytics', sellerProtect, async (req, res) => {
+    try {
+        const now = new Date();
+        const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+        
+        const startOfWeek = new Date(startOfDay);
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Sunday as start
+
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        // Fetch mostly Delivered orders since revenue only counts for delivered
+        // But fetch all to get correct order counts as well
+        const orders = await Order.find({ seller: req.seller._id }).sort({ createdAt: 1 });
+
+        const stats = {
+            today: { revenue: 0, orders: 0 },
+            week: { revenue: 0, orders: 0 },
+            month: { revenue: 0, orders: 0 },
+            total: { revenue: 0, orders: 0 },
+            trend: [],
+            topProducts: []
+        };
+
+        const productSales = {}; // map of productId -> { name, orders, revenue, image }
+        const trendMap = {}; // "YYYY-MM-DD" -> revenue
+
+        // Initialize last 7 days for trend graph
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(startOfDay);
+            d.setDate(d.getDate() - i);
+            trendMap[d.toISOString().split('T')[0]] = { day: d.toLocaleDateString('en-US', { weekday: 'short' }), revenue: 0 };
+        }
+
+        orders.forEach(order => {
+            const orderDate = new Date(order.createdAt);
+            const dateStr = orderDate.toISOString().split('T')[0];
+            const isDelivered = order.status === 'Delivered';
+
+            // General Order Counts
+            if (orderDate >= startOfDay) stats.today.orders++;
+            if (orderDate >= startOfWeek) stats.week.orders++;
+            if (orderDate >= startOfMonth) stats.month.orders++;
+            stats.total.orders++;
+
+            // Revenue & Top Products (Only for Delivered orders)
+            if (isDelivered) {
+                if (orderDate >= startOfDay) stats.today.revenue += order.total;
+                if (orderDate >= startOfWeek) stats.week.revenue += order.total;
+                if (orderDate >= startOfMonth) stats.month.revenue += order.total;
+                stats.total.revenue += order.total;
+
+                // Daily Trend
+                if (trendMap[dateStr]) {
+                    trendMap[dateStr].revenue += order.total;
+                }
+
+                // Top Products calculation
+                order.items.forEach(item => {
+                    const pid = item.product.toString();
+                    if (!productSales[pid]) {
+                        productSales[pid] = { name: item.name, image: item.image, orders: 0, revenue: 0 };
+                    }
+                    productSales[pid].orders += item.quantity;
+                    productSales[pid].revenue += (item.price * item.quantity);
+                });
+            }
+        });
+
+        // Convert Product Sales Map to Array and Sort
+        stats.topProducts = Object.values(productSales)
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 10); // top 10
+
+        stats.trend = Object.values(trendMap);
+
+        res.status(200).json({ success: true, data: stats });
+
+    } catch (error) {
+        console.error('Get seller sales analytics error:', error);
+        res.status(500).json({ success: false, message: 'Error fetching sales analytics' });
+    }
+});
+
 // @route   PUT /api/orders/seller/:id/status
 // @desc    Update order status by seller (Accept, Reject, Ready for Pickup)
 // @access  Private/Seller
