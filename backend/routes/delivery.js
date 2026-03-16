@@ -1,22 +1,13 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import webpush from 'web-push';
+
 import DeliveryPartner from '../models/DeliveryPartner.js';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
 
 const router = express.Router();
 
-// Configure VAPID details (called once at module load)
-if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-    webpush.setVapidDetails(
-        process.env.VAPID_EMAIL || 'mailto:admin@rohiniapp.com',
-        process.env.VAPID_PUBLIC_KEY,
-        process.env.VAPID_PRIVATE_KEY
-    );
-} else {
-    console.warn('[WebPush] VAPID keys not configured — push notifications disabled.');
-}
+
 
 // ── Middleware ──────────────────────────────────────────────────────────────
 const protectDelivery = async (req, res, next) => {
@@ -237,29 +228,6 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
 
         await order.save();
 
-        // Push notification (only for normal deliveries)
-        if (!isReturnPickup) {
-            try {
-                const populatedOrder = await Order.findById(order._id).populate('user', 'pushSubscription name');
-                const customer = populatedOrder?.user;
-                if (customer?.pushSubscription) {
-                    const pushMessages = {
-                        'Picked Up':        { title: 'Order Picked Up! 🚴', body: `Your order #${order.orderId?.slice(-6)} has been picked up and is on its way.` },
-                        'Out for Delivery': { title: 'Out for Delivery! 🚚', body: `Your order #${order.orderId?.slice(-6)} is just around the corner!` },
-                        'Delivered':        { title: 'Delivered! ✅', body: `Your order #${order.orderId?.slice(-6)} has been delivered. Enjoy!` },
-                    };
-                    const msg = pushMessages[deliveryStatus];
-                    if (msg) {
-                        await webpush.sendNotification(
-                            customer.pushSubscription,
-                            JSON.stringify({ title: msg.title, body: msg.body, icon: '/logo192.png', badge: '/logo192.png' })
-                        );
-                    }
-                }
-            } catch (pushErr) {
-                console.error('[Push] Failed to send notification:', pushErr.message);
-            }
-        }
 
         res.json({ success: true, message: `Status updated to ${deliveryStatus}`, data: order });
     } catch (err) {

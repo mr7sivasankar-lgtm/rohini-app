@@ -24,7 +24,7 @@ import serviceabilityRoutes from './routes/serviceability.js';
 import userRoutes from './routes/users.js';
 import geocodeRoutes from './routes/geocode.js';
 import deliveryRoutes from './routes/delivery.js';
-import pushRoutes from './routes/push.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -93,7 +93,7 @@ app.use('/api/serviceability', serviceabilityRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/geocode', geocodeRoutes);
 app.use('/api/delivery', deliveryRoutes);
-app.use('/api/push', pushRoutes);
+
 
 // 404 handler
 app.use((req, res) => {
