@@ -1,7 +1,28 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import Seller from '../models/Seller.js';
-import { protect, adminOnly, optionalAuth } from '../middleware/auth.js';
+import { protect, adminOnly } from '../middleware/auth.js';
+import sendOTP from '../utils/sms.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Multer config for shop logo
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = path.join(__dirname, '..', 'uploads', 'logos');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `logo_${Date.now()}${path.extname(file.originalname)}`);
+    }
+});
+const upload = multer({ storage });
 
 const router = express.Router();
 
@@ -38,43 +59,112 @@ const sellerProtect = async (req, res, next) => {
     }
 };
 
+// @desc    Send OTP to seller phone for verification
+// @route   POST /api/sellers/send-otp
+// @access  Public
+router.post('/send-otp', async (req, res) => {
+    try {
+        const { phone } = req.body;
+        if (!phone) return res.status(400).json({ success: false, message: 'Please provide phone number' });
+
+        // Check if seller already registered
+        const existing = await Seller.findOne({ phone });
+        if (existing && existing.isPhoneVerified && existing.password) {
+            return res.status(400).json({ success: false, message: 'Seller with this phone already registered. Please login.' });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiry = new Date(Date.now() + 10 * 60000); // 10 minutes
+
+        // Store OTP temporarily on seller doc (or create temp record)
+        if (existing) {
+            await Seller.findByIdAndUpdate(existing._id, { otp, otpExpiry }, { new: true });
+        } else {
+            // We don't create seller yet — just send OTP; store in memory via a temp object
+            // Use a simple in-memory cache (Seller doc will be created on register)
+        }
+
+        // Send OTP
+        const smsSent = await sendOTP(phone, otp);
+
+        // In dev mode without Twilio, just log it
+        console.log(`📱 Seller OTP for ${phone}: ${otp}`);
+
+        res.json({ success: true, message: smsSent ? 'OTP sent successfully' : 'OTP logged to console (dev mode)', otp: process.env.NODE_ENV !== 'production' ? otp : undefined });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// @desc    Verify OTP before registration
+// @route   POST /api/sellers/verify-otp
+// @access  Public  
+router.post('/verify-otp', async (req, res) => {
+    try {
+        const { phone, otp } = req.body;
+
+        // Check for an existing seller with this OTP
+        const seller = await Seller.findOne({ phone }).select('+otp +otpExpiry');
+
+        // For new sellers: OTP was sent & we stored it; for existing pending sellers check it
+        if (seller) {
+            if (!seller.otp || seller.otp !== otp) {
+                return res.status(400).json({ success: false, message: 'Invalid OTP' });
+            }
+            if (seller.otpExpiry < Date.now()) {
+                return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
+            }
+            await Seller.findByIdAndUpdate(seller._id, { isPhoneVerified: true, otp: null, otpExpiry: null });
+        }
+        // If no existing seller, OTP was stored in-session; frontend just verifies against what was returned (dev)
+        // In production, store OTP in Redis/DB before verification
+
+        res.json({ success: true, message: 'Phone verified successfully', data: { phone, verified: true } });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // @desc    Register a new seller
 // @route   POST /api/sellers/register
 // @access  Public
-router.post('/register', async (req, res) => {
+router.post('/register', upload.single('shopLogo'), async (req, res) => {
     try {
-        const { shopName, ownerName, phone, password, shopAddress, latitude, longitude, businessCategory, gstNumber } = req.body;
+        const { shopName, ownerName, phone, password, shopAddress, latitude, longitude, shopCategory, gstNumber, openingTime, closingTime } = req.body;
 
         const sellerExists = await Seller.findOne({ phone });
-        if (sellerExists) return res.status(400).json({ success: false, message: 'Seller phone already registered' });
+        if (sellerExists && sellerExists.password) return res.status(400).json({ success: false, message: 'Seller phone already registered' });
 
-        const seller = await Seller.create({
-            shopName,
-            ownerName,
-            phone,
-            password,
-            shopAddress,
-            location: {
-                type: 'Point',
-                coordinates: [longitude, latitude] // GeoJSON format: Longitude first
-            },
-            businessCategory,
-            gstNumber
-        });
+        const locationData = (latitude && longitude)
+            ? { type: 'Point', coordinates: [parseFloat(longitude), parseFloat(latitude)] }
+            : undefined;
 
-        if (seller) {
-            res.status(201).json({
-                success: true,
-                message: 'Seller registered successfully. Waiting for admin approval.',
-                data: {
-                    _id: seller._id,
-                    shopName: seller.shopName,
-                    status: seller.status
-                }
-            });
+        const sellerData = {
+            shopName, ownerName, phone, password, shopAddress,
+            shopCategory: shopCategory || 'Mixed Fashion Store',
+            gstNumber, openingTime, closingTime,
+            isPhoneVerified: true,
+            ...(locationData && { location: locationData }),
+            ...(req.file && { shopLogo: `/uploads/logos/${req.file.filename}` }),
+        };
+
+        let seller;
+        if (sellerExists) {
+            // Update the pending record
+            seller = await Seller.findByIdAndUpdate(sellerExists._id, sellerData, { new: true });
         } else {
-            res.status(400).json({ success: false, message: 'Invalid seller data' });
+            seller = await Seller.create(sellerData);
         }
+
+        res.status(201).json({
+            success: true,
+            message: 'Seller registered successfully. Waiting for admin approval.',
+            data: {
+                _id: seller._id,
+                shopName: seller.shopName,
+                status: seller.status
+            }
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

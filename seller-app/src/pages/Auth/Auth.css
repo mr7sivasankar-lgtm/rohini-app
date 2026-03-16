@@ -225,3 +225,247 @@
     50% { transform: scale(1.2); }
     100% { transform: scale(1); }
 }
+
+/* ── Step Indicator ───────────────────────── */
+.step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 16px;
+    gap: 0;
+}
+
+.step-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.step-dot.active {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.step-line {
+    height: 2px;
+    width: 50px;
+    background: #e2e8f0;
+    flex-shrink: 0;
+}
+
+/* ── Step Title ───────────────────────────── */
+.step-title {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.step-title h3 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    color: #1e293b;
+}
+
+.step-title p {
+    margin: 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* ── Phone Row ────────────────────────────── */
+.phone-row {
+    display: flex;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f8fafc;
+    transition: all 0.2s;
+}
+
+.phone-row:focus-within {
+    border-color: #6366f1;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.phone-prefix {
+    padding: 12px 14px;
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 700;
+    font-size: 14px;
+    border-right: 1.5px solid #e2e8f0;
+    user-select: none;
+}
+
+.phone-row input {
+    flex: 1;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding-left: 12px;
+}
+
+.phone-row input:focus {
+    outline: none;
+    border: none;
+    box-shadow: none !important;
+}
+
+/* ── OTP Input ────────────────────────────── */
+.otp-input {
+    text-align: center;
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    letter-spacing: 10px;
+    padding: 16px !important;
+}
+
+/* ── Dev OTP hint ─────────────────────────── */
+.dev-otp {
+    background: #fffbeb;
+    border: 1px dashed #f59e0b;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px !important;
+    color: #92400e !important;
+    margin-top: 6px;
+}
+
+/* ── Verified field ───────────────────────── */
+.verified-field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #166534;
+}
+
+.verified-badge {
+    background: #16a34a;
+    color: white;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 12px;
+}
+
+/* ── Styled Select ────────────────────────── */
+.styled-select {
+    padding: 12px 16px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 14px;
+    color: #1e293b;
+    background: #f8fafc;
+    transition: all 0.2s;
+    font-family: inherit;
+    cursor: pointer;
+    width: 100%;
+}
+
+.styled-select:focus {
+    outline: none;
+    border-color: #6366f1;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+/* ── Logo Upload ──────────────────────────── */
+.logo-upload-area {
+    border: 2px dashed #c7d2fe;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #6366f1;
+    font-size: 14px;
+    background: #f5f3ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-upload-area:hover {
+    background: #ede9fe;
+    border-color: #6366f1;
+}
+
+.logo-upload-icon {
+    font-size: 36px;
+}
+
+.logo-preview-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid #6366f1;
+}
+
+/* ── Location Button ──────────────────────── */
+.location-btn {
+    width: 100%;
+    margin-bottom: 6px;
+}
+
+/* ── Link Button ──────────────────────────── */
+.btn-link {
+    background: none;
+    border: none;
+    color: #6366f1;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.btn-link:hover:not(:disabled) {
+    color: #4338ca;
+    text-decoration: underline;
+}
+
+/* ── Status Badge ─────────────────────────── */
+.status-badge {
+    display: inline-block;
+    border-radius: 20px;
+    padding: 6px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 12px 0;
+}
+
+.status-badge.pending {
+    background: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+.hint-text {
+    font-size: 13px !important;
+    color: #94a3b8 !important;
+}
+
+/* ── Full-width btn in two-col-form ───────── */
+.full-width {
+    grid-column: 1 / -1;
+}

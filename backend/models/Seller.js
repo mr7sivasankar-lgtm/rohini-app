@@ -32,9 +32,18 @@ const sellerSchema = new mongoose.Schema({
         },
         coordinates: {
             type: [Number],
-            index: '2dsphere',
-            required: [true, 'Please provide coordinates [longitude, latitude]']
+            validate: {
+                validator: function(v) {
+                    return v && v.length === 2 && v[0] !== null && v[1] !== null;
+                },
+                message: 'Please provide valid coordinates [longitude, latitude]'
+            }
         }
+    },
+    shopCategory: {
+        type: String,
+        enum: ['Men Clothing', 'Women Clothing', 'Kids Clothing', 'Mixed Fashion Store'],
+        default: 'Mixed Fashion Store'
     },
     businessCategory: {
         type: String,
@@ -44,9 +53,21 @@ const sellerSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    shopLogo: {
+        type: String,
+        default: ''
+    },
+    openingTime: {
+        type: String,
+        default: '10:00'
+    },
+    closingTime: {
+        type: String,
+        default: '21:00'
+    },
     status: {
         type: String,
-        enum: ['Pending', 'Approved', 'Rejected'],
+        enum: ['Pending', 'Approved', 'Rejected', 'Suspended'],
         default: 'Pending'
     },
     rating: {
@@ -68,7 +89,13 @@ const sellerSchema = new mongoose.Schema({
     isOpen: {
         type: Boolean,
         default: true
-    }
+    },
+    isPhoneVerified: {
+        type: Boolean,
+        default: false
+    },
+    otp: { type: String, select: false },
+    otpExpiry: { type: Date, select: false }
 }, {
     timestamps: true
 });
