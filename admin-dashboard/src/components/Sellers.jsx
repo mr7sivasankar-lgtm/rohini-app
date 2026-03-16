@@ -11,7 +11,7 @@ const Sellers = () => {
 
   const fetchSellers = async () => {
     try {
-      const response = await api.get('/sellers');
+      const response = await api.get('/sellers/admin/all');
       if (response.data.success) {
         setSellers(response.data.data);
       }
@@ -26,7 +26,7 @@ const Sellers = () => {
     if (!window.confirm(`Are you sure you want to mark this seller as ${newStatus}?`)) return;
     
     try {
-      await api.put(`/sellers/${sellerId}/status`, { status: newStatus });
+      await api.put(`/sellers/admin/${sellerId}/status`, { status: newStatus });
       fetchSellers();
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to update seller status');
