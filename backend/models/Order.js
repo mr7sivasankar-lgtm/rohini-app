@@ -106,6 +106,13 @@ const orderSchema = new mongoose.Schema({
     }],
     cancelReason: String,
 
+    // Seller Pickup Details (Snapshot at order time)
+    sellerShopName: String,
+    sellerShopAddress: String,
+    sellerLocation: {
+        lat: Number,
+        lng: Number
+    },
     // Delivery Partner Assignment
     deliveryPartner: {
         type: mongoose.Schema.Types.ObjectId,

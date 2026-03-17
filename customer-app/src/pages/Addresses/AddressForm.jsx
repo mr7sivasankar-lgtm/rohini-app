@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../utils/api';
+import MapPicker from '../../components/MapPicker/MapPicker';
 import './AddressForm.css';
+
 
 const AddressForm = () => {
     const navigate = useNavigate();
@@ -24,6 +26,7 @@ const AddressForm = () => {
     });
     const [errors, setErrors] = useState({});
     const [detectingLocation, setDetectingLocation] = useState(false);
+    const [showMapPicker, setShowMapPicker] = useState(false);
 
     useEffect(() => {
         if (isEditMode) {
@@ -129,6 +132,24 @@ const AddressForm = () => {
 
     return (
         <div className="address-form-page">
+            {/* Map Picker Modal */}
+            {showMapPicker && (
+                <MapPicker
+                    initialLat={formData.latitude || 13.6288}
+                    initialLng={formData.longitude || 79.4192}
+                    onConfirm={(lat, lng, addressText) => {
+                        setFormData(prev => ({
+                            ...prev,
+                            latitude: lat,
+                            longitude: lng,
+                            street: addressText ? (prev.street || addressText) : prev.street,
+                        }));
+                        setShowMapPicker(false);
+                    }}
+                    onClose={() => setShowMapPicker(false)}
+                />
+            )}
+
             {/* Header */}
             <div className="form-header">
                 <button className="back-button" onClick={() => navigate('/addresses')}>
@@ -141,8 +162,8 @@ const AddressForm = () => {
 
             {/* Form */}
             <form className="address-form" onSubmit={handleSubmit}>
-                {/* Auto-detect Location */}
-                <div className="form-group">
+                {/* Location Buttons */}
+                <div className="form-group location-btn-group">
                     <button
                         type="button"
                         className="detect-location-btn"
@@ -173,9 +194,24 @@ const AddressForm = () => {
                         }}
                         disabled={detectingLocation}
                     >
-                        {detectingLocation ? '⏳ Detecting...' : '📍 Auto-detect My Location'}
+                        {detectingLocation ? '⏳ Detecting...' : '📡 Auto-detect My Location'}
                     </button>
+
+                    <button
+                        type="button"
+                        className="map-pin-btn"
+                        onClick={() => setShowMapPicker(true)}
+                    >
+                        🗺️ Place Pin on Map
+                    </button>
+
+                    {formData.latitude && formData.longitude && (
+                        <div className="location-saved-badge">
+                            ✅ Location pinned: {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
+                        </div>
+                    )}
                 </div>
+
 
                 {/* Full Name */}
                 <div className="form-group">

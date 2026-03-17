@@ -87,10 +87,25 @@ router.post('/', protect, async (req, res) => {
 
         const total = subtotal + deliveryFee;
 
+        // Fetch seller details for snapshot
+        const Seller = (await import('../models/Seller.js')).default;
+        const sellerObj = await Seller.findById(orderSeller);
+
+        let sellerLocation = null;
+        if (sellerObj && sellerObj.location && sellerObj.location.coordinates) {
+            sellerLocation = {
+                lng: sellerObj.location.coordinates[0],
+                lat: sellerObj.location.coordinates[1]
+            };
+        }
+
         // Create order
         const order = await Order.create({
             user: req.user._id,
             seller: orderSeller,
+            sellerShopName: sellerObj ? sellerObj.shopName : 'Shop',
+            sellerShopAddress: sellerObj ? sellerObj.shopAddress : '',
+            sellerLocation,
             items: orderItems,
             shippingAddress,
             contactInfo,

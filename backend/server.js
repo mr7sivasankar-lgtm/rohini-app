@@ -26,8 +26,7 @@ import geocodeRoutes from './routes/geocode.js';
 import deliveryRoutes from './routes/delivery.js';
 import sellerRoutes from './routes/sellers.js';
 import favoritesRoutes from './routes/favorites.js';
-
-
+import adminRoutes from './routes/admin.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -97,8 +96,7 @@ app.use('/api/geocode', geocodeRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/favorites', favoritesRoutes);
-
-
+app.use('/api/admin', adminRoutes);
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({

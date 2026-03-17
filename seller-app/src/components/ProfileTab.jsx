@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
+import MapPicker from './MapPicker/MapPicker';
 
 const ProfileTab = ({ seller }) => {
     const [formData, setFormData] = useState({
@@ -24,6 +25,7 @@ const ProfileTab = ({ seller }) => {
     const [logoPreview, setLogoPreview] = useState(null);
     const [uploadingBanner, setUploadingBanner] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [showMapPicker, setShowMapPicker] = useState(false);
 
     useEffect(() => {
         if (seller) {
@@ -136,6 +138,25 @@ const ProfileTab = ({ seller }) => {
 
     return (
         <div className="profile-tab">
+            {showMapPicker && (
+                <MapPicker
+                    initialLat={formData.location?.coordinates[1] || 13.6288}
+                    initialLng={formData.location?.coordinates[0] || 79.4192}
+                    onConfirm={(lat, lng, addressText) => {
+                        setFormData(prev => ({
+                            ...prev,
+                            location: {
+                                type: 'Point',
+                                coordinates: [lng, lat]
+                            },
+                            shopAddress: addressText ? (prev.shopAddress || addressText) : prev.shopAddress,
+                        }));
+                        setShowMapPicker(false);
+                    }}
+                    onClose={() => setShowMapPicker(false)}
+                />
+            )}
+
             <div className="section-header">
                 <h2>Shop Profile Settings</h2>
                 <p>Update your shop details and operational settings</p>
@@ -224,20 +245,29 @@ const ProfileTab = ({ seller }) => {
                     <div style={{ marginTop: '12px', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                         <div>
                             <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>GPS Coordinates</div>
-                            <div style={{ fontSize: '13px', color: '#64748b' }}>
-                                {formData.location?.coordinates[0] !== 0 && formData.location?.coordinates[1] !== 0 
-                                    ? `Lat: ${formData.location.coordinates[1].toFixed(6)}, Lng: ${formData.location.coordinates[0].toFixed(6)}` 
+                            <div style={{ fontSize: '13px', color: '#065f46', fontWeight: 600, background: '#f0fdf4', padding: '4px 8px', borderRadius: '6px', border: '1px solid #bbf7d0', display: 'inline-block' }}>
+                                {formData.location?.coordinates[0] !== 0 && formData.location?.coordinates[1] !== 0
+                                    ? `Lat: ${formData.location.coordinates[1].toFixed(6)}, Lng: ${formData.location.coordinates[0].toFixed(6)}`
                                     : 'Coordinates needed for delivery partner navigation.'}
                             </div>
                         </div>
-                        <button 
-                            type="button" 
-                            onClick={detectLocation}
-                            disabled={locationLoading}
-                            style={{ padding: '8px 16px', background: 'white', border: '1px solid #4f46e5', color: '#4f46e5', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                        >
-                            {locationLoading ? 'Detecting...' : '📍 Auto-Detect'}
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                                type="button"
+                                onClick={detectLocation}
+                                disabled={locationLoading}
+                                style={{ padding: '8px 16px', background: 'white', border: '1px solid #cbd5e1', color: '#475569', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                            >
+                                {locationLoading ? 'Detecting...' : '📡 Auto-Detect'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowMapPicker(true)}
+                                style={{ padding: '8px 16px', background: '#f0fdf4', border: '1px solid #10b981', color: '#059669', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                            >
+                                🗺️ Place Pin on Map
+                            </button>
+                        </div>
                     </div>
                 </div>
 

@@ -2,15 +2,29 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useFavorites } from '../../contexts/FavoritesContext';
+import { useLocation as useLocCtx } from '../../contexts/LocationContext';
 import api, { getImageUrl } from '../../utils/api';
 import FilterSortBar from '../../components/FilterSortBar/FilterSortBar';
 import './ShopProfile.css';
+
+// Haversine distance in km
+const haversineKm = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
 
 const ShopProfile = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { isInFavorites, toggleFavorite } = useFavorites();
+    const { latitude: custLat, longitude: custLng } = useLocCtx();
     const isFav = isInFavorites(id);
+
     
     const [shop, setShop] = useState(null);
     const [products, setProducts] = useState([]);
@@ -122,13 +136,16 @@ const ShopProfile = () => {
         displayProducts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
-    // Calculate delivery time based on distance (roughly 4 mins per km + 20 mins base prep)
+    // Compute distance and delivery time from customer location → shop coordinates
+    let distKm = null;
     let deliveryTimeStr = '~35 mins';
-    if (shop.distance) {
-        const distKm = shop.distance / 1000;
-        const mins = Math.round(20 + (distKm * 4));
-        deliveryTimeStr = `~${mins} mins`;
-        if (shop.distanceText) deliveryTimeStr = `~${shop.durationText || mins + ' mins'}`;
+    if (shop && shop.location && shop.location.coordinates && custLat && custLng) {
+        const [shopLng, shopLat] = shop.location.coordinates;
+        distKm = Math.round(haversineKm(custLat, custLng, shopLat, shopLng) * 10) / 10;
+        const mins = Math.ceil((distKm / 20) * 60);
+        const lo = Math.max(5, mins - 5);
+        const hi = mins + 5;
+        deliveryTimeStr = `~${lo}–${hi} mins`;
     }
 
     return (
@@ -163,6 +180,15 @@ const ShopProfile = () => {
                             <span className="stat-value">🛵 {deliveryTimeStr}</span>
                             <span className="stat-label">Delivery Time</span>
                         </div>
+                        {distKm != null && (
+                            <>
+                                <div className="stat-divider"></div>
+                                <div className="stat-item">
+                                    <span className="stat-value">📍 {distKm} km</span>
+                                    <span className="stat-label">Distance</span>
+                                </div>
+                            </>
+                        )}
                         <div className="stat-divider"></div>
                         <div className="stat-item">
                             <span className="stat-value">{products.length}</span>

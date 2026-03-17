@@ -4,8 +4,8 @@ import api from '../utils/api';
 import './OrderDetail.css';
 
 const NEXT_STATUS_NORMAL = {
-    'Assigned':        'Picked Up',
-    'Picked Up':       'Out for Delivery',
+    'Assigned':         'Picked Up',
+    'Picked Up':        'Out for Delivery',
     'Out for Delivery': 'Delivered',
 };
 
@@ -38,6 +38,11 @@ export default function OrderDetail() {
 
     useEffect(() => { fetchOrder(); }, [id]);
 
+    const isReturnPickup = order?.deliveryType === 'Return Pickup';
+    const NEXT_STATUS = isReturnPickup ? NEXT_STATUS_RETURN : NEXT_STATUS_NORMAL;
+    const STATUS_STEPS = isReturnPickup ? STATUS_STEPS_RETURN : STATUS_STEPS_NORMAL;
+    const currentStepIndex = STATUS_STEPS.indexOf(order?.deliveryStatus);
+
     const updateStatus = async () => {
         const next = NEXT_STATUS[order.deliveryStatus];
         if (!next) return;
@@ -62,7 +67,21 @@ export default function OrderDetail() {
         if (phone) window.open(`tel:${phone}`);
     };
 
-    const openMap = () => {
+    // Navigate to seller pickup location
+    const navigateToPickup = () => {
+        const sel = order.sellerLocation;
+        if (sel && sel.lat && sel.lng) {
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${sel.lat},${sel.lng}`);
+        } else if (order.sellerShopAddress) {
+            const addr = encodeURIComponent(order.sellerShopAddress);
+            window.open(`https://www.google.com/maps/search/?api=1&query=${addr}`);
+        } else {
+            alert('Seller location not available.');
+        }
+    };
+
+    // Navigate to customer delivery location
+    const navigateToCustomer = () => {
         const { latitude, longitude, fullAddress, city } = order.shippingAddress || {};
         if (latitude && longitude) {
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`);
@@ -71,11 +90,6 @@ export default function OrderDetail() {
             window.open(`https://www.google.com/maps/search/?api=1&query=${addr}`);
         }
     };
-
-    const isReturnPickup = order?.deliveryType === 'Return Pickup';
-    const NEXT_STATUS = isReturnPickup ? NEXT_STATUS_RETURN : NEXT_STATUS_NORMAL;
-    const STATUS_STEPS = isReturnPickup ? STATUS_STEPS_RETURN : STATUS_STEPS_NORMAL;
-    const currentStepIndex = STATUS_STEPS.indexOf(order?.deliveryStatus);
 
     if (loading) return <div className="loading-page"><div className="spinner"></div></div>;
     if (!order) return <div className="loading-page"><p>Order not found</p></div>;
@@ -102,17 +116,58 @@ export default function OrderDetail() {
                 ))}
             </div>
 
+            {/* Pickup Location */}
+            <div className="detail-card location-card">
+                <h3>🏪 Pickup From</h3>
+                <div className="detail-row">
+                    <span>Shop</span>
+                    <strong>{order.sellerShopName || order.items?.[0]?.sellerShopName || 'Seller Shop'}</strong>
+                </div>
+                {order.sellerShopAddress && (
+                    <div className="detail-row">
+                        <span>Address</span>
+                        <strong>📍 {order.sellerShopAddress}</strong>
+                    </div>
+                )}
+                {order.sellerLocation?.lat && order.sellerLocation?.lng && (
+                    <div className="detail-row">
+                        <span>Coords</span>
+                        <strong>{order.sellerLocation.lat.toFixed(4)}, {order.sellerLocation.lng.toFixed(4)}</strong>
+                    </div>
+                )}
+                <button className="map-nav-btn pickup-nav-btn" onClick={navigateToPickup}>
+                    🗺️ Navigate to Pickup
+                </button>
+            </div>
+
             {/* Customer Info */}
-            <div className="detail-card">
-                <h3>👤 Customer Details</h3>
+            <div className="detail-card location-card">
+                <h3>📦 Deliver To</h3>
                 <div className="detail-row"><span>Name</span><strong>{order.shippingAddress?.fullName || order.user?.name || 'Customer'}</strong></div>
                 <div className="detail-row"><span>Phone</span><strong>{order.contactInfo?.phone || order.user?.phone}</strong></div>
-                <div className="detail-row"><span>Address</span><strong>{order.shippingAddress?.fullAddress}, {order.shippingAddress?.city}, {order.shippingAddress?.pincode}</strong></div>
+                <div className="detail-row">
+                    <span>Address</span>
+                    <strong>📍 {order.shippingAddress?.fullAddress}, {order.shippingAddress?.city}, {order.shippingAddress?.pincode}</strong>
+                </div>
+                {order.shippingAddress?.latitude && order.shippingAddress?.longitude && (
+                    <div className="detail-row">
+                        <span>Coords</span>
+                        <strong>{order.shippingAddress.latitude.toFixed(4)}, {order.shippingAddress.longitude.toFixed(4)}</strong>
+                    </div>
+                )}
+                <div className="nav-buttons-row">
+                    <button className="action-btn call-btn" onClick={callCustomer}>
+                        <span>📞</span> Call Customer
+                    </button>
+                    <button className="map-nav-btn customer-nav-btn" onClick={navigateToCustomer}>
+                        🗺️ Navigate to Customer
+                    </button>
+                </div>
             </div>
 
             {/* Items */}
             <div className="detail-card">
-                <h3>📦 Items</h3>
+                <h3>🛍️ Items</h3>
                 {order.items?.map((item, idx) => (
                     <div key={idx} className="item-row">
                         <div className="item-img-wrap">
@@ -130,16 +185,6 @@ export default function OrderDetail() {
                     </div>
                 ))}
                 <div className="total-row"><span>Total</span><strong>₹{order.total?.toFixed(2)}</strong></div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="action-buttons-grid">
-                <button className="action-btn call-btn" onClick={callCustomer}>
-                    <span>📞</span> Call Customer
-                </button>
-                <button className="action-btn map-btn" onClick={openMap}>
-                    <span>🗺️</span> Navigate
-                </button>
             </div>
 
             {/* Status Update */}

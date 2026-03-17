@@ -369,6 +369,9 @@ function App() {
         <div className={`menu-item ${activeTab === 'sellers' ? 'active' : ''}`} onClick={() => handleTabChange('sellers')}>
           🏪 Sellers
         </div>
+        <div className={`menu-item ${activeTab === 'locations' ? 'active' : ''}`} onClick={() => handleTabChange('locations')}>
+          🗺️ Locations Map
+        </div>
         <div className={`menu-item ${activeTab === 'delivery-partners' ? 'active' : ''}`} onClick={() => handleTabChange('delivery-partners')}>
           🚴 Delivery Partners
         </div>
@@ -703,6 +706,10 @@ function App() {
               <Users />
             </div>
           </div>
+        )}
+
+        {activeTab === 'locations' && (
+          <LocationsTab />
         )}
       </div>
     </div>
@@ -1365,6 +1372,175 @@ const DeliveryPartnersTab = () => {
     </div>
   );
 };
+
+const LocationsTab = () => {
+    const [locations, setLocations] = useState({ customers: [], sellers: [] });
+    const [loading, setLoading] = useState(true);
+    const mapRef = useRef(null);
+    const LRef = useRef(null);
+    const markersRef = useRef([]);
+
+    useEffect(() => {
+        const fetchLocations = async () => {
+            try {
+                const response = await api.get('/admin/locations');
+                if (response.data.success) {
+                    setLocations(response.data.data);
+                }
+            } catch (error) {
+                console.error('Error fetching locations:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchLocations();
+    }, []);
+
+    // Load leaflet dynamically
+    useEffect(() => {
+        if (loading || mapRef.current) return;
+
+        // Add leaflet CSS dynamically
+        if (!document.getElementById('leaflet-css')) {
+            const link = document.createElement('link');
+            link.id = 'leaflet-css';
+            link.rel = 'stylesheet';
+            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+            document.head.appendChild(link);
+        }
+
+        const initMap = async () => {
+             if (window.L) {
+                 LRef.current = window.L;
+                 setupMap();
+             } else {
+                 const script = document.createElement('script');
+                 script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                 script.onload = () => {
+                     LRef.current = window.L;
+                     setupMap();
+                 };
+                 document.body.appendChild(script);
+             }
+        };
+
+        const setupMap = () => {
+            const L = LRef.current;
+            const container = document.getElementById('admin-locations-map');
+            if (!container || mapRef.current) return;
+
+            mapRef.current = L.map(container).setView([20.5937, 78.9629], 5); // Center on India
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(mapRef.current);
+
+            // Calculate bounds
+            const bounds = [];
+
+            // Add Seller Markers (Blue)
+            locations.sellers.forEach(seller => {
+                if(seller.lat && seller.lng) {
+                     const marker = L.circleMarker([seller.lat, seller.lng], {
+                        color: '#2563eb', // Blue border
+                        fillColor: '#3b82f6', // Lighter blue fill
+                        fillOpacity: 0.8,
+                        radius: 8
+                    }).addTo(mapRef.current);
+
+                    marker.bindPopup(`
+                        <div style="font-family: Arial, sans-serif;">
+                            <strong style="color: #1e3a8a; font-size: 14px;">🏪 ${seller.name}</strong><br/>
+                            <span style="color: #4b5563; font-size: 12px;">👤 ${seller.ownerName}</span><br/>
+                            <span style="color: #4b5563; font-size: 12px;">📞 ${seller.phone}</span><br/>
+                            <hr style="margin: 5px 0; border: 0; border-top: 1px solid #e5e7eb;"/>
+                            <div style="color: #6b7280; font-size: 11px;">${seller.addressText || 'No address text'}</div>
+                            <div style="margin-top: 5px;">
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=${seller.lat},${seller.lng}" target="_blank" style="color: #2563eb; text-decoration: none; font-size: 12px; font-weight: bold;">🗺️ View on Maps</a>
+                            </div>
+                        </div>
+                    `);
+                    bounds.push([seller.lat, seller.lng]);
+                    markersRef.current.push(marker);
+                }
+            });
+
+            // Add Customer Markers (Green)
+            locations.customers.forEach(customer => {
+                if(customer.lat && customer.lng) {
+                     const marker = L.circleMarker([customer.lat, customer.lng], {
+                        color: '#16a34a', // Green border
+                        fillColor: '#22c55e', // Lighter green fill
+                        fillOpacity: 0.8,
+                        radius: 6
+                    }).addTo(mapRef.current);
+
+                    marker.bindPopup(`
+                        <div style="font-family: Arial, sans-serif;">
+                            <strong style="color: #14532d; font-size: 14px;">👤 ${customer.name || 'User'}</strong><br/>
+                            <span style="color: #4b5563; font-size: 12px;">📞 ${customer.phone || 'N/A'}</span><br/>
+                            <hr style="margin: 5px 0; border: 0; border-top: 1px solid #e5e7eb;"/>
+                            <div style="color: #6b7280; font-size: 11px;">${customer.addressText || 'No address text'}</div>
+                        </div>
+                    `);
+                    bounds.push([customer.lat, customer.lng]);
+                    markersRef.current.push(marker);
+                }
+            });
+
+            // Fit bounds to show all markers
+            if (bounds.length > 0) {
+                mapRef.current.fitBounds(L.latLngBounds(bounds), { padding: [50, 50], maxZoom: 15 });
+            }
+        };
+
+        initMap();
+
+        return () => {
+            if (mapRef.current) {
+                mapRef.current.remove();
+                mapRef.current = null;
+            }
+        }
+    }, [loading, locations]);
+
+
+    return (
+        <div>
+            <div className="page-header">
+                <h1>🗺️ Entities Locations Map</h1>
+                <p>View all customer and seller locations placed on the map</p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
+                <div style={{ background: 'white', padding: '15px 20px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flex: 1 }}>
+                     <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#3b82f6', border: '2px solid #2563eb' }}></div>
+                     <div>
+                         <div style={{ fontSize: '14px', color: '#64748b', fontWeight: 600 }}>Total Sellers</div>
+                         <div style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b' }}>{locations.sellers.length}</div>
+                     </div>
+                </div>
+                <div style={{ background: 'white', padding: '15px 20px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flex: 1 }}>
+                     <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#22c55e', border: '2px solid #16a34a' }}></div>
+                     <div>
+                         <div style={{ fontSize: '14px', color: '#64748b', fontWeight: 600 }}>Total Customer Pins</div>
+                         <div style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b' }}>{locations.customers.length}</div>
+                     </div>
+                </div>
+            </div>
+
+            <div className="card" style={{ padding: '0', overflow: 'hidden', height: '70vh', minHeight: '500px', display: 'flex', flexDirection: 'column' }}>
+                {loading ? (
+                    <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '16px' }}>
+                        Loading map data...
+                    </div>
+                ) : (
+                    <div id="admin-locations-map" style={{ flex: 1, width: '100%', zIndex: 1 }}></div>
+                )}
+            </div>
+        </div>
+    );
+}
 
 export default App;
 

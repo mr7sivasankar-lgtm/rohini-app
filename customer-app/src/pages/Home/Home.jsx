@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useLocation } from '../../contexts/LocationContext';
 import { useFavorites } from '../../contexts/FavoritesContext';
+import { useAuth } from '../../contexts/AuthContext';
 import api, { getImageUrl } from '../../utils/api';
 import './Home.css';
 
@@ -393,17 +394,48 @@ const ShopSlideshow = ({ shops, navigate }) => {
 /* ---- Compact Shop Card ---- */
 const ShopCard = ({ shop, onClick, nearby }) => {
     const { isInFavorites, toggleFavorite } = useFavorites();
+    const { isAuthenticated } = useAuth();
+    const navigate = useNavigate();
     const isFav = isInFavorites(shop._id);
     const tags = getShopTags(shop);
-    const addr = shop.shopAddress ? shop.shopAddress.substring(0, 28) + (shop.shopAddress.length > 28 ? '…' : '') : 'Local Market';
+    const [favToast, setFavToast] = useState(false);
+
+    // Compute display values
+    const distKm = shop.distance_km != null
+        ? shop.distance_km
+        : (shop.distance ? shop.distance / 1000 : null);
+
+    let deliveryLabel = '~35 mins';
+    if (shop.delivery_mins != null) {
+        const lo = Math.max(5, shop.delivery_mins - 5);
+        const hi = shop.delivery_mins + 5;
+        deliveryLabel = `~${lo}–${hi} mins`;
+    } else if (distKm != null) {
+        const mins = Math.ceil((distKm / 20) * 60);
+        const lo = Math.max(5, mins - 5);
+        const hi = mins + 5;
+        deliveryLabel = `~${lo}–${hi} mins`;
+    }
 
     const handleFavClick = (e) => {
         e.stopPropagation();
+        if (!isAuthenticated) {
+            setFavToast(true);
+            setTimeout(() => setFavToast(false), 2500);
+            return;
+        }
         toggleFavorite(shop._id);
     };
 
     return (
-        <div className="shop-card-compact" onClick={onClick}>
+        <div className="shop-card-compact" onClick={onClick} style={{ position: 'relative' }}>
+            {/* Login toast */}
+            {favToast && (
+                <div className="fav-login-toast" onClick={(e) => { e.stopPropagation(); navigate('/auth'); }}>
+                    🔒 Log in to save favourites
+                </div>
+            )}
+
             {/* Banner */}
             <div className="scc-banner">
                 {shop.bannerImage
@@ -420,29 +452,32 @@ const ShopCard = ({ shop, onClick, nearby }) => {
                     )}
                 </div>
 
-                <button className={`scc-fav-btn ${isFav ? 'active' : ''}`} onClick={handleFavClick} aria-label="Favorite Shop">
+                <button
+                    className={`scc-fav-btn ${isFav ? 'active' : ''}`}
+                    onClick={handleFavClick}
+                    aria-label="Favourite Shop"
+                    style={{ pointerEvents: 'all' }}
+                >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill={isFav ? '#ef4444' : 'none'} stroke={isFav ? '#ef4444' : '#fff'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                     </svg>
                 </button>
 
-                {/* Slideshow dots overlay (if it was a single image carousel, not relevant here) */}
                 <div className="scc-bottom-gradient"></div>
             </div>
 
             {/* Body */}
             <div className="scc-body">
-                {/* Delivery Time & Distance block (like the second screenshot) */}
                 <div className="scc-delivery-info">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
                     </svg>
-                    <span>~34 mins</span>
-                    {nearby && shop.distance && (
+                    <span>{deliveryLabel}</span>
+                    {distKm != null && (
                         <>
                             <span className="scc-dot">•</span>
-                            <span>{(shop.distance / 1000).toFixed(1)} km</span>
+                            <span>📍 {distKm.toFixed(1)} km</span>
                         </>
                     )}
                 </div>
@@ -451,7 +486,7 @@ const ShopCard = ({ shop, onClick, nearby }) => {
                     <span className="scc-name">{shop.shopName}</span>
                     <span className="scc-rating-square">⭐ {shop.rating > 0 ? shop.rating.toFixed(1) : 'New'}</span>
                 </div>
-                
+
                 <p className="scc-addr">
                     {tags.join(' • ')} • ₹150 for one
                 </p>

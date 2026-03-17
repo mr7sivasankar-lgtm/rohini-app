@@ -76,7 +76,7 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    margin-bottom: 24px;
+    margin-bottom: 12px;
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
 }
 
@@ -95,6 +95,54 @@
     color: #94a3b8;
     box-shadow: none;
 }
+
+/* Map Pin Button */
+.location-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.location-btn-group .detect-location-btn {
+    margin-bottom: 0;
+}
+
+.map-pin-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    border: 2px dashed #10b981;
+    border-radius: 16px;
+    color: #059669;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+}
+
+.map-pin-btn:hover {
+    background: #ecfdf5;
+    border-style: solid;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.18);
+}
+
+.location-saved-badge {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #065f46;
+}
+
 
 /* Form Groups */
 .form-group {

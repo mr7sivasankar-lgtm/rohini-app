@@ -324,32 +324,58 @@ router.put('/profile', sellerProtect, async (req, res) => {
 // PUBLIC DISCOVERY APIS FOR CUSTOMER APP
 // -------------------------------------------------------------
 
+// Haversine distance in km
+const haversineKm = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
 // @desc    Get nearby shops
 // @route   GET /api/sellers/nearby?lat=&lng=&radius=
 // @access  Public
 router.get('/nearby', async (req, res) => {
     try {
-        const { lat, lng, radius = 10000, limit = 20 } = req.query; // Default 10km radius
+        const { lat, lng, radius = 10000, limit = 20 } = req.query;
 
         if (!lat || !lng) {
             return res.status(400).json({ success: false, message: 'Please provide latitude and longitude' });
         }
 
+        const customerLat = parseFloat(lat);
+        const customerLng = parseFloat(lng);
+
         const shops = await Seller.find({
             status: 'Approved',
-            isOpen: true,
             location: {
                 $near: {
                     $geometry: {
                         type: 'Point',
-                        coordinates: [parseFloat(lng), parseFloat(lat)]
+                        coordinates: [customerLng, customerLat]
                     },
                     $maxDistance: parseInt(radius)
                 }
             }
         }).limit(parseInt(limit));
 
-        res.json({ success: true, data: shops });
+        // Annotate each shop with distance_km and delivery_mins
+        const DELIVERY_SPEED_KMPH = 20;
+        const annotated = shops.map(shop => {
+            const obj = shop.toObject();
+            if (shop.location && shop.location.coordinates && shop.location.coordinates.length === 2) {
+                const [shopLng, shopLat] = shop.location.coordinates;
+                const km = haversineKm(customerLat, customerLng, shopLat, shopLng);
+                obj.distance_km = Math.round(km * 10) / 10;
+                obj.delivery_mins = Math.ceil((km / DELIVERY_SPEED_KMPH) * 60);
+            }
+            return obj;
+        });
+
+        res.json({ success: true, data: annotated });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

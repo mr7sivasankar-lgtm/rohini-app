@@ -1323,4 +1323,25 @@
 .nearby-shops-list {
     display: flex; flex-direction: column; gap: 12px;
     padding: 0 20px 8px;
+}
+
+/* Favourite login toast */
+.fav-login-toast {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(15,23,42,0.9);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 12px;
+    white-space: nowrap;
+    z-index: 20;
+    pointer-events: all;
+    cursor: pointer;
+    animation: fadeIn 0.2s ease;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
