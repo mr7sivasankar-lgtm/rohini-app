@@ -878,7 +878,6 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
           <th>Total</th>
           <th>Status</th>
           <th>Date</th>
-          <th>Action</th>
           <th>Item Logistics</th>
           <th>User Comments</th>
         </tr>
@@ -1034,37 +1033,6 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
             <td>
               <div>{new Date(order.createdAt).toLocaleDateString('en-IN')}</div>
               <div style={{ fontSize: '0.85em', color: '#666' }}>{new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
-            </td>
-            <td>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <select
-                  className="input"
-                  style={{ padding: '6px 24px 6px 8px', fontSize: 13, minWidth: '130px', cursor: 'pointer' }}
-                  value={order.status}
-                  onChange={(e) => updateStatus(order._id, e.target.value)}
-                >
-                  {statusOptions.map(status => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-                {deleteOrder && (
-                  <button
-                    onClick={() => deleteOrder(order._id)}
-                    style={{
-                      padding: '4px 8px',
-                      background: '#fee2e2',
-                      color: '#dc2626',
-                      border: 'none',
-                      borderRadius: 4,
-                      cursor: 'pointer',
-                      fontSize: 11,
-                      fontWeight: 600
-                    }}
-                  >
-                    🗑
-                  </button>
-                )}
-              </div>
             </td>
             <td>
               <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '200px' }}>
