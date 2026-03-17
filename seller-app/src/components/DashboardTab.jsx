@@ -1,4 +1,6 @@
-import { useAuth } from '../../contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import api, { getImageUrl } from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const DashboardTab = () => {
     const { seller } = useAuth();
