@@ -72,10 +72,10 @@ const TopRatedShops = () => {
                         <thead>
                             <tr>
                                 <th>Shop Name</th>
-                                <th>Category</th>
                                 <th>Rating</th>
-                                <th>Status / Quality</th>
-                                <th>Action (Feature Shop)</th>
+                                <th>Total Reviews</th>
+                                <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -86,25 +86,26 @@ const TopRatedShops = () => {
                                         <div style={{ fontWeight: 600, color: '#166534' }}>{shop.shopName}</div>
                                         <div style={{ fontSize: '12px', color: '#6b7280' }}>{shop.ownerName} • {shop.phone}</div>
                                     </td>
-                                    <td>{shop.shopCategory}</td>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                             <span style={{ color: '#fbbf24' }}>★</span>
                                             <span style={{ fontWeight: 600 }}>{shop.rating?.toFixed(1) || '0.0'}</span>
-                                            <span style={{ color: '#9ca3af', fontSize: '12px' }}>({shop.numReviews || 0})</span>
                                         </div>
                                     </td>
                                     <td>
+                                        <span style={{ fontWeight: 500, color: '#475569' }}>{shop.numReviews || 0}</span>
+                                    </td>
+                                    <td>
                                         <span style={{ display: 'inline-block', padding: '4px 10px', background: '#dcfce7', color: '#166534', borderRadius: '20px', fontSize: '12px', fontWeight: 600 }}>
-                                            ⭐ MANUALLY FEATURED
+                                            Top Rated (Featured)
                                         </span>
                                     </td>
                                     <td>
                                         <button 
                                             onClick={() => toggleFeatured(shop._id, shop.is_featured)}
-                                            style={{ background: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '13px' }}
+                                            style={{ background: '#ef4444', color: 'white', border: 'none', padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '13px' }}
                                         >
-                                            Remove Feature
+                                            Remove
                                         </button>
                                     </td>
                                 </tr>
@@ -120,31 +121,32 @@ const TopRatedShops = () => {
                                         <div style={{ fontWeight: 500 }}>{shop.shopName}</div>
                                         <div style={{ fontSize: '12px', color: '#6b7280' }}>{shop.ownerName} • {shop.phone}</div>
                                     </td>
-                                    <td>{shop.shopCategory || '-'}</td>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                             <span style={{ color: '#fbbf24' }}>★</span>
                                             <span style={{ fontWeight: 600, color: shop.rating >= 4.0 ? '#16a34a' : '#374151' }}>{shop.rating?.toFixed(1) || '0.0'}</span>
-                                            <span style={{ color: '#9ca3af', fontSize: '12px' }}>({shop.numReviews || 0})</span>
                                         </div>
+                                    </td>
+                                    <td>
+                                        <span style={{ fontWeight: 500, color: '#475569' }}>{shop.numReviews || 0}</span>
                                     </td>
                                     <td>
                                         {isEligibleAuto ? (
                                              <span style={{ display: 'inline-block', padding: '4px 10px', background: '#f3f4f6', color: '#4b5563', borderRadius: '20px', fontSize: '12px', fontWeight: 500 }}>
-                                                ✔️ Auto-Qualifies
+                                                Top Rated (Auto)
                                              </span>
                                         ) : (
                                             <span style={{ display: 'inline-block', padding: '4px 10px', color: '#9ca3af', fontSize: '12px' }}>
-                                                Below Threshold
+                                                Normal
                                             </span>
                                         )}
                                     </td>
                                     <td>
                                         <button 
                                             onClick={() => toggleFeatured(shop._id, shop.is_featured)}
-                                            style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '13px' }}
+                                            style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '13px' }}
                                         >
-                                            ⭐ Promote to Priority
+                                            Add to Top Rated
                                         </button>
                                     </td>
                                 </tr>
