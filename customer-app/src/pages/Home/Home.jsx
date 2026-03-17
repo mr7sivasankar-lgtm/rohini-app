@@ -229,39 +229,19 @@ const Home = () => {
                 />
             )}
 
-            {/* Banner Section */}
-            {banners.length > 0 ? (
-                <div className="banner-section">
-                    <div className="banner-slider" style={{ transform: `translateX(-${currentBanner * 100}%)` }}>
-                        {banners.map((banner, index) => (
-                            <div key={banner._id || index} className="banner-slide">
-                                <img src={getImageUrl(banner.image)} alt={banner.title} />
-                            </div>
-                        ))}
-                    </div>
-                    <div className="banner-dots">
-                        {banners.map((_, index) => (
-                            <span
-                                key={index}
-                                className={`dot ${index === currentBanner ? 'active' : ''}`}
-                                onClick={() => setCurrentBanner(index)}
-                            />
-                        ))}
-                    </div>
+            {/* Top Discovery Section (Replaces generic banner) */}
+            <div className="discovery-block" style={{ marginTop: '16px' }}>
+                <div className="section-header" style={{ padding: '0 20px', marginBottom: '12px' }}>
+                    <h2 style={{ fontSize: '20px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        ⭐ Top Picks
+                    </h2>
                 </div>
-            ) : (
-                <div className="banner-section">
-                    <div className="banner-placeholder">
-                        <div className="placeholder-content">
-                            <h2>Welcome</h2>
-                            <p>Your Style, Delivered Instantly</p>
-                        </div>
-                    </div>
-                    <div className="banner-dots">
-                        <span className="dot active" />
-                    </div>
-                </div>
-            )}
+                {loading ? (
+                    <div className="loading-state">Loading amazing shops...</div>
+                ) : (
+                    <HeroSlideshow shops={topRatedShops} banners={banners} navigate={navigate} />
+                )}
+            </div>
 
             <div className="categories-section">
                 <div className="section-header">
@@ -331,20 +311,6 @@ const Home = () => {
             {/* Shop Discovery Section */}
             <div className="shops-section">
 
-                {/* Top Rated Shops — Auto Slideshow */}
-                <div className="discovery-block">
-                    <div className="section-header">
-                        <h2>⭐ Top Rated Shops</h2>
-                    </div>
-                    {loading ? (
-                        <div className="loading-state">Finding best shops...</div>
-                    ) : topRatedShops.length > 0 ? (
-                        <ShopSlideshow shops={topRatedShops} navigate={navigate} />
-                    ) : (
-                        <div className="empty-state"><p>No shops available at the moment</p></div>
-                    )}
-                </div>
-
                 {/* Nearby Shops — Vertical list */}
                 {latitude && longitude && nearbyShops.length > 0 && (
                     <div className="discovery-block">
@@ -383,31 +349,69 @@ const getShopTags = (shop) => {
     return ['Ethnic Wear', 'Tops', 'Kurtas'];
 };
 
-/* ---- Auto Slideshow for Top Rated ---- */
-const ShopSlideshow = ({ shops, navigate }) => {
+/* ---- Auto Slideshow for Top Rated + Banners (Hero) ---- */
+const HeroSlideshow = ({ shops, banners, navigate }) => {
+    // 1. Build slides array
+    const slides = [];
+
+    // Banners go first
+    if (banners && banners.length > 0) {
+        banners.forEach(b => slides.push({ type: 'banner', data: b }));
+    } else {
+        slides.push({ type: 'welcome' });
+    }
+
+    // Top rated shops go next
+    if (shops && shops.length > 0) {
+        shops.forEach(s => slides.push({ type: 'shop', data: s }));
+    }
+
     const [active, setActive] = useState(0);
     const timerRef = useRef(null);
 
-    const goTo = (idx) => setActive((idx + shops.length) % shops.length);
+    const goTo = (idx) => setActive((idx + slides.length) % slides.length);
 
     useEffect(() => {
-        timerRef.current = setInterval(() => setActive(prev => (prev + 1) % shops.length), 3200);
+        timerRef.current = setInterval(() => setActive(prev => (prev + 1) % slides.length), 3500);
         return () => clearInterval(timerRef.current);
-    }, [shops.length]);
+    }, [slides.length]);
+
+    if (slides.length === 0) return null;
 
     return (
         <div className="slideshow-wrapper">
-            <div className="slideshow-track" style={{ transform: `translateX(-${active * 100}%)` }}>
-                {shops.map((shop) => (
-                    <div className="slideshow-slide" key={shop._id}>
-                        <ShopCard shop={shop} onClick={() => navigate(`/shop/${shop._id}`)} />
+            <div className="slideshow-track" style={{ transform: `translateX(-${active * 100}%)`, alignItems: 'stretch' }}>
+                {slides.map((slide, index) => (
+                    <div className="slideshow-slide" key={slide.type === 'shop' ? slide.data._id : slide.type === 'banner' ? slide.data._id : `welcome-${index}`} style={{ display: 'flex', flexDirection: 'column' }}>
+                        
+                        {slide.type === 'welcome' && (
+                            <div className="banner-placeholder" style={{ margin: '0 20px', minHeight: '260px', flex: 1, borderRadius: '16px', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
+                                <div className="placeholder-content">
+                                    <h2 style={{ fontSize: '28px', marginBottom: '8px' }}>Welcome</h2>
+                                    <p style={{ fontSize: '14px', color: '#a0aec0' }}>Your Style, Delivered Instantly</p>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {slide.type === 'banner' && (
+                            <div className="banner-slide" style={{ margin: '0 20px', minHeight: '260px', flex: 1, borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
+                                <img src={getImageUrl(slide.data.image)} alt={slide.data.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                        )}
+                        
+                        {slide.type === 'shop' && (
+                            <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                <ShopCard shop={slide.data} onClick={() => navigate(`/shop/${slide.data._id}`)} />
+                            </div>
+                        )}
+                        
                     </div>
                 ))}
             </div>
 
             {/* Dot nav */}
-            <div className="slideshow-dots">
-                {shops.map((_, i) => (
+            <div className="slideshow-dots" style={{ bottom: '-6px' }}>
+                {slides.map((_, i) => (
                     <button key={i} className={`slideshow-dot${i === active ? ' active' : ''}`} onClick={() => goTo(i)} />
                 ))}
             </div>
