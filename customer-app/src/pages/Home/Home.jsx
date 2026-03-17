@@ -379,30 +379,28 @@ const HeroSlideshow = ({ shops, banners, navigate }) => {
     if (slides.length === 0) return null;
 
     return (
-        <div className="slideshow-wrapper">
-            <div className="slideshow-track" style={{ transform: `translateX(-${active * 100}%)`, alignItems: 'stretch' }}>
+        <div className="slideshow-wrapper" style={{ margin: '0', padding: '0 20px', overflow: 'hidden' }}>
+            <div className="slideshow-track" style={{ transform: `translateX(-${active * 100}%)`, display: 'flex', alignItems: 'stretch' }}>
                 {slides.map((slide, index) => (
-                    <div className="slideshow-slide" key={slide.type === 'shop' ? slide.data._id : slide.type === 'banner' ? slide.data._id : `welcome-${index}`} style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div className="slideshow-slide" key={slide.type === 'shop' ? slide.data._id : slide.type === 'banner' ? slide.data._id : `welcome-${index}`} style={{ minWidth: '100%', padding: '0 4px', boxSizing: 'border-box' }}>
                         
                         {slide.type === 'welcome' && (
-                            <div className="banner-placeholder" style={{ margin: '0 20px', minHeight: '260px', flex: 1, borderRadius: '16px', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
-                                <div className="placeholder-content">
-                                    <h2 style={{ fontSize: '28px', marginBottom: '8px' }}>Welcome</h2>
+                            <div className="banner-placeholder" style={{ borderRadius: '16px', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', minHeight: '220px', overflow: 'hidden', position: 'relative' }}>
+                                <div className="placeholder-content" style={{ zIndex: 2, padding: '24px' }}>
+                                    <h2 style={{ fontSize: '26px', marginBottom: '8px' }}>Welcome</h2>
                                     <p style={{ fontSize: '14px', color: '#a0aec0' }}>Your Style, Delivered Instantly</p>
                                 </div>
                             </div>
                         )}
                         
                         {slide.type === 'banner' && (
-                            <div className="banner-slide" style={{ margin: '0 20px', minHeight: '260px', flex: 1, borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
+                            <div className="banner-slide" style={{ borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', minHeight: '220px' }}>
                                 <img src={getImageUrl(slide.data.image)} alt={slide.data.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                         )}
                         
                         {slide.type === 'shop' && (
-                            <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                <ShopCard shop={slide.data} onClick={() => navigate(`/shop/${slide.data._id}`)} />
-                            </div>
+                            <ShopCard shop={slide.data} onClick={() => navigate(`/shop/${slide.data._id}`)} />
                         )}
                         
                     </div>
@@ -410,15 +408,15 @@ const HeroSlideshow = ({ shops, banners, navigate }) => {
             </div>
 
             {/* Dot nav */}
-            <div className="slideshow-dots" style={{ bottom: '-6px' }}>
+            <div className="slideshow-dots" style={{ padding: '12px 0 0 0' }}>
                 {slides.map((_, i) => (
                     <button key={i} className={`slideshow-dot${i === active ? ' active' : ''}`} onClick={() => goTo(i)} />
                 ))}
             </div>
 
             {/* Prev / Next arrows */}
-            <button className="slide-arrow left" onClick={() => goTo(active - 1)}>‹</button>
-            <button className="slide-arrow right" onClick={() => goTo(active + 1)}>›</button>
+            <button className="slide-arrow left" style={{ left: '16px', top: '40%' }} onClick={() => goTo(active - 1)}>‹</button>
+            <button className="slide-arrow right" style={{ right: '16px', top: '40%' }} onClick={() => goTo(active + 1)}>›</button>
         </div>
     );
 };
