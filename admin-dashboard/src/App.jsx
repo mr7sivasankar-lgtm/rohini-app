@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import api, { getImageUrl } from './utils/api';
+import { isFuzzyMatch } from './utils/fuzzySearch';
 import ProductForm from './components/ProductForm';
 import ServiceAreas from './components/ServiceAreas';
 import { DashboardCharts } from './components/DashboardCharts';
@@ -619,10 +620,10 @@ function App() {
             }
 
             if (productSearchQuery.trim()) {
-              const q = productSearchQuery.toLowerCase();
-              const nameMatch = p.name?.toLowerCase().includes(q);
-              const idMatch = p._id?.toLowerCase().includes(q);
-              const sellerMatch = p.seller?.shopName?.toLowerCase().includes(q) || (!p.seller && 'admin'.includes(q));
+              const q = productSearchQuery;
+              const nameMatch = isFuzzyMatch(q, p.name);
+              const idMatch = p._id?.toLowerCase().includes(q.toLowerCase().trim());
+              const sellerMatch = isFuzzyMatch(q, p.seller?.shopName) || (!p.seller && isFuzzyMatch(q, 'admin'));
               matchSearch = nameMatch || idMatch || sellerMatch;
             }
 

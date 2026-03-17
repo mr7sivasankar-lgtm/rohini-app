@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api, { getImageUrl } from '../utils/api';
+import { isFuzzyMatch } from '../utils/fuzzySearch';
 
 const Sellers = () => {
   const [sellers, setSellers] = useState([]);
@@ -62,11 +63,11 @@ const Sellers = () => {
 
   const filteredSellers = sellers.filter(seller => {
     if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    const matchShop = seller.shopName?.toLowerCase().includes(q);
-    const matchOwner = seller.ownerName?.toLowerCase().includes(q);
-    const matchPhone = seller.phone?.toLowerCase().includes(q);
-    const matchEmail = seller.email?.toLowerCase().includes(q);
+    const q = searchQuery;
+    const matchShop = isFuzzyMatch(q, seller.shopName);
+    const matchOwner = isFuzzyMatch(q, seller.ownerName);
+    const matchPhone = seller.phone?.toLowerCase().includes(q.toLowerCase().trim());
+    const matchEmail = isFuzzyMatch(q, seller.email);
     return matchShop || matchOwner || matchPhone || matchEmail;
   });
 
