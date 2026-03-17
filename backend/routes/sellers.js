@@ -267,6 +267,31 @@ router.get('/profile', sellerProtect, async (req, res) => {
     }
 });
 
+// @desc    Get all reviews for seller's products
+// @route   GET /api/sellers/my/reviews
+// @access  Private (Seller)
+router.get('/my/reviews', sellerProtect, async (req, res) => {
+    try {
+        // Find all products owned by this seller
+        const mongoose = await import('mongoose');
+        const Product = mongoose.models.Product || mongoose.model('Product');
+        const Review = mongoose.models.Review || (await import('../models/Review.js')).default;
+
+        const products = await Product.find({ seller: req.seller._id }).select('_id name');
+        const productIds = products.map(p => p._id);
+
+        // Find all reviews for those products
+        const reviews = await Review.find({ product: { $in: productIds } })
+            .populate('user', 'name')
+            .populate('product', 'name')
+            .sort({ createdAt: -1 });
+
+        res.json({ success: true, data: reviews });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // @desc    Update seller profile
 // @route   PUT /api/sellers/profile
 // @access  Private (Seller)
@@ -381,26 +406,49 @@ router.get('/nearby', async (req, res) => {
     }
 });
 
-// @desc    Get top rated shops
+// @desc    Get top rated shops (Admin Featured + Auto Qualifying)
 // @route   GET /api/sellers/top-rated
 // @access  Public
 router.get('/top-rated', async (req, res) => {
     try {
-        const shops = await Seller.find({ status: 'Approved', isOpen: true })
+        // 1. Get all manually featured shops
+        const featuredShops = await Seller.find({
+            status: 'Approved',
+            isOpen: true,
+            is_featured: true
+        }).lean();
+
+        // 2. Get auto-qualifying shops (Rating >= 4.0 and at least 5 reviews)
+        const autoShops = await Seller.find({
+            status: 'Approved',
+            isOpen: true,
+            is_featured: { $ne: true }, // Don't pull duplicates
+            rating: { $gte: 4.0 },
+            numReviews: { $gte: 5 }
+        })
             .sort({ rating: -1, numReviews: -1 })
-            .limit(10);
-        res.json({ success: true, data: shops });
+            .lean();
+
+        // 3. Merge and limit to 6
+        const mergedShops = [...featuredShops, ...autoShops].slice(0, 6);
+
+        res.json({ success: true, data: mergedShops });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// @desc    Get single shop profile
+// @desc    Get single shop profile & increment profile views
 // @route   GET /api/sellers/:id
 // @access  Public
 router.get('/:id', async (req, res) => {
     try {
-        const shop = await Seller.findById(req.params.id);
+        const shop = await Seller.findByIdAndUpdate(
+            req.params.id,
+            { $inc: { profileViews: 1 } },
+            { new: true }
+        );
+        
         if (!shop || shop.status !== 'Approved') {
             return res.status(404).json({ success: false, message: 'Shop not found' });
         }

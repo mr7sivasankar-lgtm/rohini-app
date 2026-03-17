@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import api, { getImageUrl } from '../utils/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 const DashboardTab = () => {
+    const { seller } = useAuth();
     const [stats, setStats] = useState({
         ordersToday: 0,
         pendingOrders: 0,
@@ -33,6 +33,7 @@ const DashboardTab = () => {
     if (loading) return <div className="loading"><div className="spinner" style={{borderTopColor: '#4f46e5'}}></div></div>;
 
     const statCards = [
+        { title: 'Profile Views', value: seller?.profileViews || 0, icon: '👁️', color: '#fdf4ff', textColor: '#d946ef' },
         { title: 'Orders Today', value: stats.ordersToday, icon: '📦', color: '#eff6ff', textColor: '#3b82f6' },
         { title: 'Pending Orders', value: stats.pendingOrders, icon: '⏳', color: '#fef3c7', textColor: '#d97706' },
         { title: 'Revenue Today', value: `₹${stats.revenueToday.toLocaleString('en-IN')}`, icon: '₹', color: '#dcfce7', textColor: '#16a34a' },

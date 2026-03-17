@@ -5,6 +5,7 @@ import OrdersTab from '../../components/OrdersTab';
 import ProductsTab from '../../components/ProductsTab';
 import ProfileTab from '../../components/ProfileTab';
 import SalesTab from '../../components/SalesTab';
+import ReviewsTab from '../../components/ReviewsTab';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -49,6 +50,12 @@ const Dashboard = () => {
                         📈 Sales & Revenue
                     </button>
                     <button 
+                        className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('reviews')}
+                    >
+                        ⭐ Reviews
+                    </button>
+                    <button 
                         className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
                         onClick={() => setActiveTab('profile')}
                     >
@@ -68,7 +75,8 @@ const Dashboard = () => {
                         {activeTab === 'dashboard' ? 'Overview' :
                          activeTab === 'orders' ? 'Order Management' : 
                          activeTab === 'products' ? 'Product Catalog' : 
-                         activeTab === 'sales' ? 'Sales Analytics' : 'Shop Profile'}
+                         activeTab === 'sales' ? 'Sales Analytics' : 
+                         activeTab === 'reviews' ? 'Customer Reviews' : 'Shop Profile'}
                     </h1>
                     <div className="mobile-header-actions">
                         <button className="mobile-logout-btn" onClick={logout} title="Logout">🚪</button>
@@ -80,6 +88,7 @@ const Dashboard = () => {
                     {activeTab === 'orders' && <OrdersTab />}
                     {activeTab === 'products' && <ProductsTab />}
                     {activeTab === 'sales' && <SalesTab />}
+                    {activeTab === 'reviews' && <ReviewsTab />}
                     {activeTab === 'profile' && <ProfileTab seller={seller} />}
                 </div>
             </main>

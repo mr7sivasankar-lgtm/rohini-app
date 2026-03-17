@@ -82,6 +82,14 @@ const sellerSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    is_featured: {
+        type: Boolean,
+        default: false
+    },
+    profileViews: {
+        type: Number,
+        default: 0
+    },
     bannerImage: {
         type: String,
         default: ''

@@ -63,4 +63,28 @@ router.get('/locations', protect, adminOnly, async (req, res) => {
     }
 });
 
+// @route   PUT /api/admin/sellers/:id/featured
+// @desc    Toggle whether a shop is manually featured in the Top Rated list
+// @access  Private/Admin
+router.put('/sellers/:id/featured', protect, adminOnly, async (req, res) => {
+    try {
+        const { is_featured } = req.body;
+        
+        const seller = await Seller.findByIdAndUpdate(
+            req.params.id,
+            { is_featured },
+            { new: true, runValidators: true }
+        ).select('shopName is_featured rating numReviews');
+
+        if (!seller) {
+            return res.status(404).json({ success: false, message: 'Seller not found' });
+        }
+
+        res.json({ success: true, data: seller });
+    } catch (error) {
+        console.error('Toggle featured shop error:', error);
+        res.status(500).json({ success: false, message: 'Error updating shop featured status' });
+    }
+});
+
 export default router;

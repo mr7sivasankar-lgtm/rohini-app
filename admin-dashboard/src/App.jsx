@@ -5,6 +5,7 @@ import ServiceAreas from './components/ServiceAreas';
 import { DashboardCharts } from './components/DashboardCharts';
 import Users from './components/Users';
 import Sellers from './components/Sellers';
+import TopRatedShops from './components/TopRatedShops';
 import './index.css';
 
 function App() {
@@ -369,6 +370,9 @@ function App() {
         <div className={`menu-item ${activeTab === 'sellers' ? 'active' : ''}`} onClick={() => handleTabChange('sellers')}>
           🏪 Sellers
         </div>
+        <div className={`menu-item ${activeTab === 'top-rated' ? 'active' : ''}`} onClick={() => handleTabChange('top-rated')}>
+          ⭐ Top Rated Shops
+        </div>
         <div className={`menu-item ${activeTab === 'locations' ? 'active' : ''}`} onClick={() => handleTabChange('locations')}>
           🗺️ Locations Map
         </div>
@@ -593,6 +597,10 @@ function App() {
 
         {activeTab === 'sellers' && (
           <Sellers />
+        )}
+
+        {activeTab === 'top-rated' && (
+          <TopRatedShops />
         )}
 
         {activeTab === 'products' && (
