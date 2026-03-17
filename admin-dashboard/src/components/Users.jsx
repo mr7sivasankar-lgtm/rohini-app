@@ -127,6 +127,7 @@ const Users = () => {
                             <tr style={{ background: '#f1f5f9' }}>
                                 <th style={thStyle}>Name</th>
                                 <th style={thStyle}>Phone</th>
+                                <th style={thStyle}>Address</th>
                                 <th style={thStyle}>Orders</th>
                                 <th style={thStyle}>Status</th>
                                 <th style={thStyle}>Last Login</th>
@@ -142,6 +143,24 @@ const Users = () => {
                                         {user.email && <div style={{ fontSize: 11, color: '#94a3b8' }}>{user.email}</div>}
                                     </td>
                                     <td style={tdStyle}>{user.phone}</td>
+                                    <td style={tdStyle}>
+                                        {(() => {
+                                            if (!user.addresses || user.addresses.length === 0) {
+                                                return <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '13px' }}>No Address</span>;
+                                            }
+                                            const primaryAdd = user.addresses.find(a => a.isDefault) || user.addresses[0];
+                                            return (
+                                                <div style={{ fontSize: 13, color: '#334155', maxWidth: '200px' }}>
+                                                    <div style={{ fontWeight: 500, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                        {primaryAdd.fullAddress || 'N/A'}
+                                                    </div>
+                                                    <div style={{ color: '#64748b', fontSize: '12px' }}>
+                                                        {primaryAdd.city ? `${primaryAdd.city}, ` : ''}{primaryAdd.pincode || ''}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+                                    </td>
                                     <td style={tdStyle}>
                                         <span style={{
                                             background: '#dbeafe',
