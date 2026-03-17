@@ -470,6 +470,7 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
     try {
         const mongoose = await import('mongoose');
         const Order = mongoose.models.Order || (await import('../models/Order.js')).default;
+        const Product = mongoose.models.Product || (await import('../models/Product.js')).default;
 
         const sellers = await Seller.find({}).sort({ createdAt: -1 }).lean();
         
@@ -486,12 +487,44 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
             return acc;
         }, {});
 
-        const sellersWithSales = sellers.map(seller => ({
-            ...seller,
-            productsSold: salesMap[seller._id.toString()] || 0
-        }));
+        // Aggregate total products added and distinct categories per seller
+        const catalogStats = await Product.aggregate([
+            {
+                $lookup: {
+                    from: 'categories',
+                    localField: 'category',
+                    foreignField: '_id',
+                    as: 'categoryDoc'
+                }
+            },
+            {
+                $unwind: { path: '$categoryDoc', preserveNullAndEmptyArrays: true }
+            },
+            {
+                $group: {
+                    _id: '$seller',
+                    productsAdded: { $sum: 1 },
+                    categories: { $addToSet: '$categoryDoc.name' }
+                }
+            }
+        ]);
 
-        res.json({ success: true, data: sellersWithSales });
+        const catalogMap = catalogStats.reduce((acc, stat) => {
+            if (stat._id) acc[stat._id.toString()] = stat;
+            return acc;
+        }, {});
+
+        const enhancedSellers = sellers.map(seller => {
+            const catalog = catalogMap[seller._id.toString()] || { productsAdded: 0, categories: [] };
+            return {
+                ...seller,
+                productsSold: salesMap[seller._id.toString()] || 0,
+                productsAdded: catalog.productsAdded,
+                categories: catalog.categories.filter(Boolean)
+            };
+        });
+
+        res.json({ success: true, data: enhancedSellers });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

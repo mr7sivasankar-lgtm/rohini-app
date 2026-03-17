@@ -50,6 +50,7 @@ const Sellers = () => {
               <tr>
                 <th>Shop Info</th>
                 <th>Owner Details</th>
+                <th>Catalog Data</th>
                 <th>Location</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -57,21 +58,29 @@ const Sellers = () => {
             </thead>
             <tbody>
               {sellers.length === 0 ? (
-                <tr><td colSpan="5" style={{ textAlign: 'center' }}>No sellers found</td></tr>
+                <tr><td colSpan="6" style={{ textAlign: 'center' }}>No sellers found</td></tr>
               ) : (
                 sellers.map((seller) => (
                   <tr key={seller._id}>
                     <td>
                       <div style={{ fontWeight: '600' }}>{seller.shopName}</div>
                       <div style={{ fontSize: '12px', color: '#64748b' }}>{seller.gstin ? `GST: ${seller.gstin}` : 'No GST'}</div>
-                      <div style={{ fontSize: '12px', color: '#047857', fontWeight: 'bold', marginTop: '4px', background: '#ecfdf5', display: 'inline-block', padding: '2px 6px', borderRadius: '4px' }}>
-                        Products Sold: {seller.productsSold || 0}
-                      </div>
                     </td>
                     <td>
                       <div>{seller.ownerName}</div>
                       <div style={{ fontSize: '12px', color: '#64748b' }}>{seller.email}</div>
                       <div style={{ fontSize: '12px', color: '#64748b' }}>{seller.phone}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontSize: '12px', color: '#334155', marginBottom: '4px' }}>
+                        <span style={{ fontWeight: '600' }}>Added:</span> {seller.productsAdded || 0}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#334155', marginBottom: '4px', maxWidth: '150px' }}>
+                        <span style={{ fontWeight: '600' }}>Categories:</span> {seller.categories?.length > 0 ? seller.categories.join(', ') : 'None'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#047857', fontWeight: 'bold', display: 'inline-block', padding: '2px 6px', borderRadius: '4px', background: '#ecfdf5' }}>
+                        Sold: {seller.productsSold || 0}
+                      </div>
                     </td>
                     <td>
                       <div style={{ fontSize: '13px', maxWidth: '200px' }}>{seller.shopAddress}</div>

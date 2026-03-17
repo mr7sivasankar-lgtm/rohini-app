@@ -314,6 +314,13 @@ body {
   background: var(--widget-red);
 }
 
+.status-pending { background: var(--widget-orange); }
+.status-approved { background: var(--status-success); }
+.status-rejected { background: var(--status-danger); }
+.status-suspended { background: var(--widget-indigo); }
+.status-deactivated { background: var(--text-gray); }
+.status-paused { background: var(--widget-teal); }
+
 /* Exchange Status Badges */
 .status-exchange-requested {
   background: var(--status-warning);
