@@ -137,12 +137,15 @@ const AddressForm = () => {
                 <MapPicker
                     initialLat={formData.latitude || 13.6288}
                     initialLng={formData.longitude || 79.4192}
-                    onConfirm={(lat, lng, addressText) => {
+                    onConfirm={(lat, lng, addressText, details) => {
                         setFormData(prev => ({
                             ...prev,
                             latitude: lat,
                             longitude: lng,
-                            street: addressText ? (prev.street || addressText) : prev.street,
+                            street: (details?.displayName || details?.locality) ? (details.displayName || addressText) : (addressText || prev.street),
+                            city: details?.city || prev.city,
+                            state: details?.state || prev.state,
+                            pincode: details?.pincode || prev.pincode
                         }));
                         setShowMapPicker(false);
                     }}

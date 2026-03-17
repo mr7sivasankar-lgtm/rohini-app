@@ -105,14 +105,16 @@ const Home = () => {
         setShowLocationPicker(false);
     };
 
-    const handleMapConfirm = async (lat, lng, addressText) => {
+    const handleMapConfirm = async (lat, lng, addressText, details) => {
         setShowMapPicker(false);
         setShowLocationPicker(false);
         await selectLocation({
-            lat,
-            lng,
-            city: addressText, // fallback for header display
-            address: addressText 
+            latitude: lat,
+            longitude: lng,
+            locality: details?.locality || addressText,
+            city: details?.city || addressText,
+            state: details?.state || '',
+            pincode: details?.pincode || ''
         });
     };
 

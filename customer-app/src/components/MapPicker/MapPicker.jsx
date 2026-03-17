@@ -18,6 +18,7 @@ const MapPicker = ({ initialLat, initialLng, onConfirm, onClose }) => {
     });
     const [detecting, setDetecting] = useState(false);
     const [addressText, setAddressText] = useState('');
+    const [addrDetails, setAddrDetails] = useState(null);
     const [loadingAddr, setLoadingAddr] = useState(false);
 
     // Reverse geocode via backend
@@ -29,11 +30,14 @@ const MapPicker = ({ initialLat, initialLng, onConfirm, onClose }) => {
                 const d = res.data.data;
                 const parts = [d.displayName || d.locality || d.city].filter(Boolean);
                 setAddressText(parts.join(', '));
+                setAddrDetails(d);
             } else {
                 setAddressText(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+                setAddrDetails(null);
             }
         } catch {
             setAddressText(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+            setAddrDetails(null);
         } finally {
             setLoadingAddr(false);
         }
@@ -59,9 +63,9 @@ const MapPicker = ({ initialLat, initialLng, onConfirm, onClose }) => {
                 zoomControl: true
             });
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19
+            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                attribution: '© Google',
+                maxZoom: 20
             }).addTo(map);
 
             // Custom red pin icon
@@ -139,7 +143,7 @@ const MapPicker = ({ initialLat, initialLng, onConfirm, onClose }) => {
     };
 
     const handleConfirm = () => {
-        onConfirm(pos.lat, pos.lng, addressText);
+        onConfirm(pos.lat, pos.lng, addressText, addrDetails);
     };
 
     return (
@@ -154,7 +158,7 @@ const MapPicker = ({ initialLat, initialLng, onConfirm, onClose }) => {
                     <button className="map-picker-close" onClick={onClose}>✕</button>
                 </div>
 
-                <div className="map-picker-body" style={{ display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto' }}>
+                <div className="map-picker-body" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                     {/* Use My Location */}
                     <button className="map-use-location-btn" onClick={useMyLocation} disabled={detecting}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
