@@ -381,14 +381,13 @@ const HeroSlideshow = ({ shops, banners, navigate }) => {
     return (
         <div className="slideshow-wrapper" style={{ margin: '0', padding: '0 20px', overflow: 'hidden' }}>
             <div className="slideshow-track" style={{ 
-                transform: `translateX(-${active * (100 / slides.length)}%)`, 
-                width: `${slides.length * 100}%`,
+                transform: `translateX(-${active * 100}%)`, 
                 display: 'flex', 
                 alignItems: 'stretch',
                 transition: 'transform 0.5s cubic-bezier(0.77, 0, 0.175, 1)'
             }}>
                 {slides.map((slide, index) => (
-                    <div className="slideshow-slide" key={slide.type === 'shop' ? slide.data._id : slide.type === 'banner' ? slide.data._id : `welcome-${index}`} style={{ width: `${100 / slides.length}%`, padding: '0 4px', boxSizing: 'border-box', flexShrink: 0 }}>
+                    <div className="slideshow-slide" key={slide.type === 'shop' ? slide.data._id : slide.type === 'banner' ? slide.data._id : `welcome-${index}`} style={{ minWidth: '100%', flexBasis: '100%', padding: '0 4px', boxSizing: 'border-box', flexShrink: 0 }}>
                         
                         {slide.type === 'welcome' && (
                             <div className="banner-placeholder" style={{ borderRadius: '16px', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', minHeight: '220px', overflow: 'hidden', position: 'relative' }}>
@@ -406,7 +405,7 @@ const HeroSlideshow = ({ shops, banners, navigate }) => {
                         )}
                         
                         {slide.type === 'shop' && (
-                            <div style={{ padding: '0 4px', height: '100%' }}>
+                            <div style={{ height: '100%' }}>
                                 <ShopCard shop={slide.data} onClick={() => navigate(`/shop/${slide.data._id}`)} />
                             </div>
                         )}
