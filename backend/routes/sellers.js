@@ -468,8 +468,30 @@ router.get('/:id', async (req, res) => {
 // @access  Private (Admin)
 router.get('/admin/all', protect, adminOnly, async (req, res) => {
     try {
-        const sellers = await Seller.find({}).sort({ createdAt: -1 });
-        res.json({ success: true, data: sellers });
+        const mongoose = await import('mongoose');
+        const Order = mongoose.models.Order || (await import('../models/Order.js')).default;
+
+        const sellers = await Seller.find({}).sort({ createdAt: -1 }).lean();
+        
+        // Aggregate total products successfully delivered per seller
+        const sales = await Order.aggregate([
+            { $match: { status: 'Delivered' } },
+            { $unwind: '$items' },
+            { $match: { 'items.status': { $nin: ['Cancelled', 'Return Approved', 'Return Completed', 'Return Requested'] } } },
+            { $group: { _id: '$seller', totalSold: { $sum: '$items.quantity' } } }
+        ]);
+
+        const salesMap = sales.reduce((acc, sale) => {
+            if (sale._id) acc[sale._id.toString()] = sale.totalSold;
+            return acc;
+        }, {});
+
+        const sellersWithSales = sellers.map(seller => ({
+            ...seller,
+            productsSold: salesMap[seller._id.toString()] || 0
+        }));
+
+        res.json({ success: true, data: sellersWithSales });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

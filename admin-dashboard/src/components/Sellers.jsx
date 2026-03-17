@@ -64,6 +64,9 @@ const Sellers = () => {
                     <td>
                       <div style={{ fontWeight: '600' }}>{seller.shopName}</div>
                       <div style={{ fontSize: '12px', color: '#64748b' }}>{seller.gstin ? `GST: ${seller.gstin}` : 'No GST'}</div>
+                      <div style={{ fontSize: '12px', color: '#047857', fontWeight: 'bold', marginTop: '4px', background: '#ecfdf5', display: 'inline-block', padding: '2px 6px', borderRadius: '4px' }}>
+                        Products Sold: {seller.productsSold || 0}
+                      </div>
                     </td>
                     <td>
                       <div>{seller.ownerName}</div>
@@ -79,44 +82,23 @@ const Sellers = () => {
                       </span>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        {seller.status === 'Pending' && (
-                          <>
-                            <button
-                              className="btn btn-primary"
-                              style={{ padding: '4px 8px', fontSize: '12px', background: '#22c55e', borderColor: '#22c55e' }}
-                              onClick={() => updateSellerStatus(seller._id, 'Approved')}
-                            >
-                              Approve
-                            </button>
-                            <button
-                              className="btn btn-primary"
-                              style={{ padding: '4px 8px', fontSize: '12px', background: '#ef4444', borderColor: '#ef4444' }}
-                              onClick={() => updateSellerStatus(seller._id, 'Rejected')}
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                        {seller.status === 'Approved' && (
-                          <button
-                            className="btn btn-primary"
-                            style={{ padding: '4px 8px', fontSize: '12px', background: '#eab308', borderColor: '#eab308' }}
-                            onClick={() => updateSellerStatus(seller._id, 'Suspended')}
-                          >
-                            Suspend
-                          </button>
-                        )}
-                        {seller.status === 'Suspended' && (
-                          <button
-                            className="btn btn-primary"
-                            style={{ padding: '4px 8px', fontSize: '12px', background: '#22c55e', borderColor: '#22c55e' }}
-                            onClick={() => updateSellerStatus(seller._id, 'Approved')}
-                          >
-                            Reactivate
-                          </button>
-                        )}
-                      </div>
+                      <select 
+                        value="Select Action"
+                        onChange={(e) => {
+                            if (e.target.value !== 'Select Action') {
+                                updateSellerStatus(seller._id, e.target.value);
+                            }
+                            e.target.value = "Select Action";
+                        }}
+                        style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none', background: 'white', fontWeight: 500, fontSize: '13px', color: '#334155', width: '100%' }}
+                      >
+                        <option value="Select Action" disabled hidden>Select Action</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Deactivated">Deactivated</option>
+                        <option value="Paused">Pause</option>
+                        <option value="Suspended">Suspended</option>
+                      </select>
                     </td>
                   </tr>
                 ))
