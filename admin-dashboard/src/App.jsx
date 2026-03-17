@@ -522,57 +522,55 @@ function App() {
                       <div>
                         <SectionLabel icon="📅" label="Today's Snapshot" />
                         <div className="stats-grid">
-                          <Card label="Orders Today" value={stats.ordersToday || 0} color="#1d4ed8" borderColor="#3b82f6" />
-                          <Card label="Revenue Today" value={`₹${(stats.revenueToday || 0).toFixed(0)}`} color="#047857" borderColor="#10b981" />
-                          <Card label="Pending Orders" value={stats.pending || 0} color="#b45309" borderColor="#f59e0b" />
-                          <Card label="Out for Delivery" value={stats.outForDelivery || 0} color="#0e7490" borderColor="#06b6d4" />
-                          <Card label="Delivered Today" value={stats.deliveredToday || 0} color="#16a34a" borderColor="#22c55e" />
-                          <Card label="Cancelled Today" value={stats.cancelledToday || 0} color="#dc2626" borderColor="#ef4444" />
-                          <Card label="Return Requests" value={stats.returnRequests || 0} color="#c2410c" borderColor="#f97316" />
-                          <Card label="Exchange Requests" value={stats.exchangeRequests || 0} color="#6d28d9" borderColor="#8b5cf6" />
+                          <Card label="Orders Today" value={stats.today?.ordersToday || 0} color="#1d4ed8" borderColor="#3b82f6" />
+                          <Card label="Delivered Orders" value={stats.today?.deliveredToday || 0} color="#16a34a" borderColor="#22c55e" />
+                          <Card label="Cancelled Orders" value={stats.today?.cancelledToday || 0} color="#dc2626" borderColor="#ef4444" />
+                          <Card label="Total Returns" value={stats.today?.returnsToday || 0} color="#c2410c" borderColor="#f97316" />
+                          <Card label="Total exchanged" value={stats.today?.exchangedToday || 0} color="#6d28d9" borderColor="#8b5cf6" />
+                          <Card label="Products added today by sellers" value={stats.today?.productsAddedToday || 0} color="#0e7490" borderColor="#06b6d4" />
                         </div>
                       </div>
 
-                      {/* Totals Overview */}
+                      {/* Orders Totals */}
                       <div>
-                        <SectionLabel icon="📦" label="Order Totals" />
+                        <SectionLabel icon="📦" label="Orders Totals" />
                         <div className="stats-grid">
-                          <Card label="Total Orders" value={stats.total || 0} color="#1e293b" borderColor="#64748b" />
-                          <Card label="Total Cancelled" value={stats.totalCancelled || 0} color="#dc2626" borderColor="#ef4444" />
-                          <Card label="Total Returned" value={stats.totalReturned || 0} color="#92400e" borderColor="#f97316" />
-                          <Card label="Total Exchanged" value={stats.totalExchanged || 0} color="#4c1d95" borderColor="#8b5cf6" />
+                          <Card label="Total products added by sellers" value={stats.totals?.totalProductsAdded || 0} color="#1e293b" borderColor="#64748b" />
+                          <Card label="Total orders" value={stats.totals?.totalOrders || 0} color="#1d4ed8" borderColor="#3b82f6" />
+                          <Card label="Total Delivered" value={stats.totals?.totalDelivered || 0} color="#16a34a" borderColor="#22c55e" />
+                          <Card label="Total Cancelled" value={stats.totals?.totalCancelled || 0} color="#dc2626" borderColor="#ef4444" />
+                          <Card label="Total Returns" value={stats.totals?.totalReturns || 0} color="#c2410c" borderColor="#f97316" />
+                          <Card label="Total exchanged" value={stats.totals?.totalExchanged || 0} color="#6d28d9" borderColor="#8b5cf6" />
                         </div>
                       </div>
 
-                      {/* Business Performance */}
+                      {/* Users Registered */}
                       <div>
-                        <SectionLabel icon="💰" label="Business Performance" />
-                        <div className="stats-grid">
-                          <Card label="Today's Revenue" value={`₹${(stats.revenueToday || 0).toFixed(0)}`} color="#047857" borderColor="#10b981" />
-                          <Card label="This Week's Revenue" value={`₹${(stats.revenueThisWeek || 0).toFixed(0)}`} color="#1d4ed8" borderColor="#3b82f6" />
-                          <Card label="Total Revenue" value={`₹${(stats.totalRevenue || 0).toFixed(0)}`} color="#7c3aed" borderColor="#a78bfa" />
-                          <Card label="Avg Order Value" value={`₹${(stats.avgOrderValue || 0).toFixed(0)}`} color="#0e7490" borderColor="#06b6d4" />
+                        <SectionLabel icon="👥" label="Users Registered - count" />
+                        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                          <Card label="Total Count" value={stats.users?.totalUsers || 0} color="#1e293b" borderColor="#64748b" />
+                          <Card label="New users" value={stats.users?.newUsersToday || 0} color="#047857" borderColor="#10b981" />
+                          <Card label="Active users" value={stats.users?.activeUsersCount || 0} color="#1d4ed8" borderColor="#3b82f6" />
                         </div>
                       </div>
 
-                      {/* Product Insights */}
+                      {/* Sellers registered */}
                       <div>
-                        <SectionLabel icon="🏷️" label="Product Insights" />
-                        <div className="stats-grid">
-                          <Card label="Total Products" value={stats.totalProducts || 0} color="#1e293b" borderColor="#64748b" />
-                          <Card label="Active Products" value={stats.activeProducts || 0} color="#16a34a" borderColor="#22c55e" />
-                          <Card label="Low Stock (≤5)" value={stats.lowStock || 0} color="#b45309" borderColor="#f59e0b" />
-                          <Card label="Out of Stock" value={stats.outOfStock || 0} color="#dc2626" borderColor="#ef4444" />
+                        <SectionLabel icon="🏪" label="Sellers registered - Count" />
+                        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                          <Card label="Total Count" value={stats.sellers?.totalSellers || 0} color="#1e293b" borderColor="#64748b" />
+                          <Card label="New sellers" value={stats.sellers?.newSellersToday || 0} color="#047857" borderColor="#10b981" />
+                          <Card label="Active sellers" value={stats.sellers?.activeSellersCount || 0} color="#1d4ed8" borderColor="#3b82f6" />
                         </div>
                       </div>
 
-                      {/* Customer Insights */}
+                      {/* Delivery Boys registered */}
                       <div>
-                        <SectionLabel icon="👥" label="Customer Insights" />
-                        <div className="stats-grid">
-                          <Card label="Total Users" value={stats.totalUsers || 0} color="#1e293b" borderColor="#64748b" />
-                          <Card label="New Users Today" value={stats.newUsersToday || 0} color="#047857" borderColor="#10b981" />
-                          <Card label="Repeat Customers" value={stats.repeatCustomers || 0} color="#1d4ed8" borderColor="#3b82f6" />
+                        <SectionLabel icon="🚚" label="Delivery Boys registered - count" />
+                        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                          <Card label="Total Count" value={stats.delivery?.totalDeliveryPartners || 0} color="#1e293b" borderColor="#64748b" />
+                          <Card label="New delivery partners" value={stats.delivery?.newDeliveryPartnersToday || 0} color="#047857" borderColor="#10b981" />
+                          <Card label="Active partners" value={stats.delivery?.activeDeliveryPartnersCount || 0} color="#1d4ed8" borderColor="#3b82f6" />
                         </div>
                       </div>
                     </>

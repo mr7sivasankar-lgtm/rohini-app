@@ -88,48 +88,88 @@ export const DashboardCharts = ({ chartsData }) => {
 
       </div>
 
-      {/* Bottom Row: Top Selling Products */}
-      <div className="card" style={{ marginBottom: 0 }}>
-        <h3 style={{ fontSize: '16px', color: '#475569', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          🏆 Top Selling Products
-        </h3>
+      {/* Bottom Row: Top Sellers & Products */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
         
-        {chartsData.topProducts && chartsData.topProducts.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="table" style={{ width: '100%', minWidth: '600px' }}>
-              <thead>
-                <tr>
-                  <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Rank</th>
-                  <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Product Code</th>
-                  <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Name</th>
-                  <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Units Sold</th>
-                  <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Revenue Generated</th>
-                </tr>
-              </thead>
-              <tbody>
-                {chartsData.topProducts.map((prod, index) => (
-                  <tr key={prod._id || index} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px 16px', fontWeight: 600, color: index < 3 ? '#f97316' : '#64748b' }}>
-                      #{index + 1} {index === 0 ? '👑' : ''}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{ background: '#e0e7ff', color: '#3730a3', padding: '4px 8px', borderRadius: '4px', fontSize: '13px', fontWeight: 500 }}>
-                        {prod._id}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: 500 }}>{prod.name}</td>
-                    <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 600 }}>{prod.totalSold}</td>
-                    <td style={{ padding: '12px 16px', color: '#16a34a', fontWeight: 600 }}>₹{prod.revenue?.toFixed(2) || '0.00'}</td>
+        {/* Top Sellers */}
+        <div className="card" style={{ marginBottom: 0 }}>
+          <h3 style={{ fontSize: '16px', color: '#475569', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            🏪 Top Sellers
+          </h3>
+          
+          {chartsData.topSellers && chartsData.topSellers.length > 0 ? (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table" style={{ width: '100%', minWidth: '400px' }}>
+                <thead>
+                  <tr>
+                    <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Rank</th>
+                    <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Shop Name</th>
+                    <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Items Sold</th>
+                    <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Revenue</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-            No completed sales data available yet for top products.
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {chartsData.topSellers.map((seller, index) => (
+                    <tr key={seller._id || index} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '12px 16px', fontWeight: 600, color: index < 3 ? '#1d4ed8' : '#64748b' }}>
+                        #{index + 1}
+                      </td>
+                      <td style={{ padding: '12px 16px', color: '#334155', fontWeight: 600 }}>{seller.shopName || 'Unknown Shop'}</td>
+                      <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 500 }}>{seller.totalSold}</td>
+                      <td style={{ padding: '12px 16px', color: '#16a34a', fontWeight: 600 }}>₹{seller.revenue?.toFixed(2) || '0.00'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+              No completed sales data available yet for top sellers.
+            </div>
+          )}
+        </div>
+
+        {/* Top Products */}
+        <div className="card" style={{ marginBottom: 0 }}>
+          <h3 style={{ fontSize: '16px', color: '#475569', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            🏆 Top Selling Products
+          </h3>
+          
+          {chartsData.topProducts && chartsData.topProducts.length > 0 ? (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table" style={{ width: '100%', minWidth: '400px' }}>
+                <thead>
+                  <tr>
+                    <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Rank</th>
+                    <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Name</th>
+                    <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Units Sold</th>
+                    <th style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {chartsData.topProducts.map((prod, index) => (
+                    <tr key={prod._id || index} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '12px 16px', fontWeight: 600, color: index < 3 ? '#f97316' : '#64748b' }}>
+                        #{index + 1}
+                      </td>
+                      <td style={{ padding: '12px 16px', color: '#334155', fontWeight: 500 }}>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>{prod._id}</div>
+                        <div>{prod.name}</div>
+                      </td>
+                      <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 600 }}>{prod.totalSold}</td>
+                      <td style={{ padding: '12px 16px', color: '#16a34a', fontWeight: 600 }}>₹{prod.revenue?.toFixed(2) || '0.00'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+              No completed sales data available yet for top products.
+            </div>
+          )}
+        </div>
+
       </div>
 
     </div>

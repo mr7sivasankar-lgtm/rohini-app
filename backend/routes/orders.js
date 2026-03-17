@@ -397,30 +397,9 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 
-        // Calculate "Today" stats
-        const ordersTodayCount = await Order.countDocuments({ createdAt: { $gte: today } });
-        
-        // Revenue Today (Count only delivered or placed/accepted orders that aren't cancelled/returned)
-        const revenueTodayRecords = await Order.aggregate([
-            { $match: { 
-                createdAt: { $gte: today },
-                status: { $nin: ['Cancelled', 'Returned', 'Return Picked Up', 'Return Accepted'] }
-            }},
-            { $group: { _id: null, totalRevenue: { $sum: "$total" } } }
-        ]);
-        const revenueToday = revenueTodayRecords.length > 0 ? revenueTodayRecords[0].totalRevenue : 0;
-
-        const deliveredToday = await Order.countDocuments({ 
-            status: 'Delivered', 
-            updatedAt: { $gte: today } 
-        });
-
-        const cancelledTodayCount = await Order.countDocuments({ 
-            status: 'Cancelled', 
-            updatedAt: { $gte: today } 
-        });
-
-        const pendingCount = await Order.countDocuments({ status: { $in: ['Placed', 'Accepted'] } });
+        // Required Models
+        const Seller = (await import('../models/Seller.js')).default;
+        const DeliveryPartner = (await import('../models/DeliveryPartner.js')).default;
 
         // Calculate Chart Data (Last 7 Days)
         const dailyStats = await Order.aggregate([
@@ -436,7 +415,23 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
             { $sort: { _id: 1 } }
         ]);
 
-        // Top Selling Products (Lifetime or Recent)
+        // --- 1. Today's Snapshot ---
+        const ordersToday = await Order.countDocuments({ createdAt: { $gte: today } });
+        const deliveredToday = await Order.countDocuments({ status: 'Delivered', updatedAt: { $gte: today } });
+        const cancelledToday = await Order.countDocuments({ status: 'Cancelled', updatedAt: { $gte: today } });
+        const returnsToday = await Order.countDocuments({ 'items.status': { $in: ['Return Requested', 'Return Approved', 'Return Completed', 'Return Rejected'] }, updatedAt: { $gte: today } });
+        const exchangedToday = await Order.countDocuments({ 'items.status': { $in: ['Exchange Requested', 'Exchange Approved', 'Exchange Completed', 'Exchange Rejected'] }, updatedAt: { $gte: today } });
+        const productsAddedToday = await Product.countDocuments({ createdAt: { $gte: today } });
+
+        // --- 2. Orders Totals ---
+        const totalProductsAdded = await Product.countDocuments();
+        const totalOrders = await Order.countDocuments();
+        const totalDelivered = await Order.countDocuments({ status: 'Delivered' });
+        const totalCancelled = await Order.countDocuments({ status: 'Cancelled' });
+        const totalReturns = await Order.countDocuments({ 'items.status': { $in: ['Return Requested', 'Return Approved', 'Return Completed', 'Return Rejected'] } });
+        const totalExchanged = await Order.countDocuments({ 'items.status': { $in: ['Exchange Requested', 'Exchange Approved', 'Exchange Completed', 'Exchange Rejected'] } });
+
+        // --- 3. Top Products and Sellers ---
         const topProducts = await Order.aggregate([
             { $match: { status: { $nin: ['Cancelled', 'Returned'] } } },
             { $unwind: "$items" },
@@ -450,78 +445,46 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
             { $limit: 5 }
         ]);
 
-        // This Week timeframe
-        const weekStart = new Date(today);
-        weekStart.setDate(weekStart.getDate() - 6);
-
-        // --- Business Performance: Revenue Stats ---
-        const revenueExcluded = ['Cancelled', 'Returned', 'Return Picked Up', 'Return Accepted'];
-
-        const revenueThisWeekRecords = await Order.aggregate([
-            { $match: { createdAt: { $gte: weekStart }, status: { $nin: revenueExcluded } } },
-            { $group: { _id: null, totalRevenue: { $sum: "$total" } } }
+        const topSellers = await Order.aggregate([
+            { $match: { status: { $nin: ['Cancelled', 'Returned'] } } },
+            { $unwind: "$items" },
+            { $group: {
+                _id: "$seller",
+                shopName: { $first: "$sellerShopName" },
+                totalSold: { $sum: "$items.quantity" },
+                revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
+            }},
+            { $sort: { revenue: -1 } },
+            { $limit: 5 }
         ]);
-        const revenueThisWeek = revenueThisWeekRecords[0]?.totalRevenue || 0;
 
-        const totalRevenueRecords = await Order.aggregate([
-            { $match: { status: { $nin: revenueExcluded } } },
-            { $group: { _id: null, totalRevenue: { $sum: "$total" }, orderCount: { $sum: 1 } } }
-        ]);
-        const totalRevenue = totalRevenueRecords[0]?.totalRevenue || 0;
-        const totalRevenueOrders = totalRevenueRecords[0]?.orderCount || 1;
-        const avgOrderValue = totalRevenue / totalRevenueOrders;
-
-        // --- Product Insights ---
-        const totalProducts = await Product.countDocuments();
-        const outOfStock = await Product.countDocuments({ stock: 0 });
-        const lowStock = await Product.countDocuments({ stock: { $gt: 0, $lte: 5 } });
-        const activeProducts = totalProducts - outOfStock;
-
-        // --- Customer Insights ---
+        // --- 4. Users Registered ---
         const totalUsers = await User.countDocuments({ role: { $ne: 'admin' } });
         const newUsersToday = await User.countDocuments({ createdAt: { $gte: today }, role: { $ne: 'admin' } });
+        const activeUsersCount = await User.countDocuments({ role: { $ne: 'admin' }, isBlocked: false });
 
-        // Repeat customers = users with more than 1 order
-        const repeatCustomersPipeline = await Order.aggregate([
-            { $group: { _id: "$user", count: { $sum: 1 } } },
-            { $match: { count: { $gt: 1 } } },
-            { $count: "repeatCustomers" }
-        ]);
-        const repeatCustomers = repeatCustomersPipeline[0]?.repeatCustomers || 0;
+        // --- 5. Sellers Registered ---
+        const totalSellers = await Seller.countDocuments();
+        const newSellersToday = await Seller.countDocuments({ createdAt: { $gte: today } });
+        const activeSellersCount = await Seller.countDocuments({ status: 'Approved' });
+
+        // --- 6. Delivery Partners ---
+        const totalDeliveryPartners = await DeliveryPartner.countDocuments();
+        const newDeliveryPartnersToday = await DeliveryPartner.countDocuments({ createdAt: { $gte: today } });
+        const activeDeliveryPartnersCount = await DeliveryPartner.countDocuments({ isActive: true });
 
         const stats = {
-            // Today snapshot
-            total: await Order.countDocuments(),
-            ordersToday: ordersTodayCount,
-            revenueToday: revenueToday,
-            pending: pendingCount,
-            outForDelivery: await Order.countDocuments({ status: 'Out for Delivery' }),
-            deliveredToday: deliveredToday,
-            cancelledToday: cancelledTodayCount,
-            returnRequests: await Order.countDocuments({ 'items.status': 'Return Requested' }),
-            exchangeRequests: await Order.countDocuments({ 'items.status': 'Exchange Requested' }),
-            // Totals
-            totalCancelled: await Order.countDocuments({ status: 'Cancelled' }),
-            totalReturned: await Order.countDocuments({ 'items.status': 'Returned' }),
-            totalExchanged: await Order.countDocuments({ 'items.status': 'Exchanged' }),
-            // Business Performance
-            revenueThisWeek,
-            totalRevenue,
-            avgOrderValue,
-            // Product Insights
-            totalProducts,
-            activeProducts,
-            lowStock,
-            outOfStock,
-            // Customer Insights
-            totalUsers,
-            newUsersToday,
-            repeatCustomers
+            today: { ordersToday, deliveredToday, cancelledToday, returnsToday, exchangedToday, productsAddedToday },
+            totals: { totalProductsAdded, totalOrders, totalDelivered, totalCancelled, totalReturns, totalExchanged },
+            users: { totalUsers, newUsersToday, activeUsersCount },
+            sellers: { totalSellers, newSellersToday, activeSellersCount },
+            delivery: { totalDeliveryPartners, newDeliveryPartnersToday, activeDeliveryPartnersCount }
         };
 
         const charts = {
             daily: dailyStats,
-            topProducts: topProducts.filter(p => p._id)
+            topProducts: topProducts.filter(p => p._id && p.name),
+            topSellers: topSellers.filter(s => s._id && s.shopName)
         };
 
         res.status(200).json({
