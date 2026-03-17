@@ -30,6 +30,7 @@ function App() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [productCategoryFilter, setProductCategoryFilter] = useState('');
   const [productSellerFilter, setProductSellerFilter] = useState('');
+  const [productSearchQuery, setProductSearchQuery] = useState('');
 
   // Notification state
   const [newOrderCount, setNewOrderCount] = useState(0);
@@ -608,12 +609,24 @@ function App() {
           const filteredProducts = products.filter(p => {
             let matchCat = true;
             let matchSel = true;
+            let matchSearch = true;
+
             if (productCategoryFilter) matchCat = p.category?._id === productCategoryFilter;
+            
             if (productSellerFilter) {
               if (productSellerFilter === 'admin') matchSel = !p.seller;
               else matchSel = p.seller?._id === productSellerFilter;
             }
-            return matchCat && matchSel;
+
+            if (productSearchQuery.trim()) {
+              const q = productSearchQuery.toLowerCase();
+              const nameMatch = p.name?.toLowerCase().includes(q);
+              const idMatch = p._id?.toLowerCase().includes(q);
+              const sellerMatch = p.seller?.shopName?.toLowerCase().includes(q) || (!p.seller && 'admin'.includes(q));
+              matchSearch = nameMatch || idMatch || sellerMatch;
+            }
+
+            return matchCat && matchSel && matchSearch;
           });
 
           const totalProductsCount = filteredProducts.length;
@@ -654,6 +667,35 @@ function App() {
               </div>
 
               <div className="card">
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ position: 'relative', maxWidth: '480px', width: '100%' }}>
+                    <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', color: '#94a3b8' }}>🔍</span>
+                    <input
+                      type="text"
+                      placeholder="Search by Product ID, Name, or Supplier Name…"
+                      value={productSearchQuery}
+                      onChange={e => setProductSearchQuery(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 16px 10px 42px',
+                        border: '1.5px solid #e2e8f0',
+                        borderRadius: '10px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        background: '#fff',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    {productSearchQuery && (
+                      <button
+                        onClick={() => setProductSearchQuery('')}
+                        style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '16px' }}
+                      >✕</button>
+                    )}
+                  </div>
+                </div>
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: '10px' }}>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                     {/* Category Filter */}
