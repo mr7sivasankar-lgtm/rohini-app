@@ -155,24 +155,50 @@ router.get('/geocode/reverse', async (req, res) => {
 
         let addr = null;
 
-        // Try 1: BigDataCloud free client-side reverse geocode
+        // Try 1: Photon API (Osm-based, high rate limits, includes street/suburb)
         try {
-            const url1 = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`;
-            const response1 = await fetch(url1);
+            const url1 = `https://photon.komoot.io/reverse?lon=${lon}&lat=${lat}`;
+            const response1 = await fetch(url1, { headers: { 'User-Agent': 'RohiniApp/1.0' } });
             if (response1.ok) {
-                const data1 = await response1.json();
-                if (data1.city || data1.locality) {
-                    addr = {
-                        displayName: [data1.locality, data1.city, data1.principalSubdivision].filter(Boolean).join(', '),
-                        locality: data1.locality || '',
-                        city: data1.city || data1.principalSubdivision || '',
-                        state: data1.principalSubdivision || '',
-                        pincode: data1.postcode || ''
-                    };
+                const photonData = await response1.json();
+                if (photonData.features && photonData.features.length > 0) {
+                    const props = photonData.features[0].properties;
+                    if (props.name || props.city || props.street) {
+                        const parts = [props.name, props.street, props.district, props.city].filter(Boolean);
+                        addr = {
+                            displayName: parts.join(', ') || 'Selected Location',
+                            locality: props.district || props.name || '',
+                            city: props.city || props.county || props.state || '',
+                            state: props.state || '',
+                            pincode: props.postcode || ''
+                        };
+                    }
                 }
             }
         } catch (e) {
-            console.error('BigDataCloud failed:', e.message);
+            console.error('Photon reverse failed:', e.message);
+        }
+
+        // Try 2: BigDataCloud free client-side reverse geocode
+        if (!addr) {
+            try {
+                const url2 = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`;
+                const response2 = await fetch(url2);
+                if (response2.ok) {
+                    const data2 = await response2.json();
+                    if (data2.city || data2.locality) {
+                        addr = {
+                            displayName: [data2.locality, data2.city, data2.principalSubdivision].filter(Boolean).join(', '),
+                            locality: data2.locality || '',
+                            city: data2.city || data2.principalSubdivision || '',
+                            state: data2.principalSubdivision || '',
+                            pincode: data2.postcode || ''
+                        };
+                    }
+                }
+            } catch (e) {
+                console.error('BigDataCloud failed:', e.message);
+            }
         }
 
         // Try 2: Nominatim OSM

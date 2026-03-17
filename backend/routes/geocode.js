@@ -17,22 +17,48 @@ router.get('/reverse', async (req, res) => {
 
         let mappedAddress = null;
 
-        // Try 1: BigDataCloud free client-side reverse geocoding API
+        // Try 1: Photon API (Osm-based, high rate limits, includes street/suburb)
         try {
-            const url1 = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
-            const response1 = await axios.get(url1, { timeout: 6000 });
+            const url1 = `https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}`;
+            const response1 = await axios.get(url1, { 
+                timeout: 6000,
+                headers: { 'User-Agent': 'RohiniApp/1.0' }
+            });
             
-            if (response1.data && (response1.data.city || response1.data.locality)) {
-                const data = response1.data;
-                mappedAddress = {
-                    city: data.city || data.locality || data.principalSubdivision || '',
-                    state: data.principalSubdivision || '',
-                    pincode: data.postcode || '',
-                    address: [data.locality, data.city, data.principalSubdivision].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ')
-                };
+            if (response1.data && response1.data.features && response1.data.features.length > 0) {
+                const props = response1.data.features[0].properties;
+                if (props.name || props.city || props.street) {
+                    const parts = [props.name, props.street, props.district, props.city].filter(Boolean);
+                    mappedAddress = {
+                        city: props.city || props.county || props.state || '',
+                        state: props.state || '',
+                        pincode: props.postcode || '',
+                        address: parts.join(', ') || 'Selected Location'
+                    };
+                }
             }
         } catch (e) {
-            console.error('BigDataCloud API failed:', e.message);
+            console.error('Photon API failed:', e.message);
+        }
+
+        // Try 2: BigDataCloud free client-side reverse geocoding API
+        if (!mappedAddress) {
+            try {
+                const url2 = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
+                const response2 = await axios.get(url2, { timeout: 6000 });
+                
+                if (response2.data && (response2.data.city || response2.data.locality)) {
+                    const data = response2.data;
+                    mappedAddress = {
+                        city: data.city || data.locality || data.principalSubdivision || '',
+                        state: data.principalSubdivision || '',
+                        pincode: data.postcode || '',
+                        address: [data.locality, data.city, data.principalSubdivision].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ')
+                    };
+                }
+            } catch (e) {
+                console.error('BigDataCloud API failed:', e.message);
+            }
         }
 
         // Try 2: Fallback to nominatim (with custom user agent) if first failed

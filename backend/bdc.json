@@ -1,0 +1,98 @@
+{
+  "latitude": 13.63937,
+  "lookupSource": "coordinates",
+  "longitude": 79.43372,
+  "localityLanguageRequested": "en",
+  "continent": "Asia",
+  "continentCode": "AS",
+  "countryName": "India",
+  "countryCode": "IN",
+  "principalSubdivision": "Andhra Pradesh",
+  "principalSubdivisionCode": "IN-AP",
+  "city": "Tirupati",
+  "locality": "Tirupati",
+  "postcode": "",
+  "plusCode": "7J5XJCQM+PF",
+  "localityInfo": {
+    "administrative": [
+      {
+        "name": "India",
+        "description": "country in South Asia",
+        "isoName": "India",
+        "order": 3,
+        "adminLevel": 2,
+        "isoCode": "IN",
+        "wikidataId": "Q668",
+        "geonameId": 1269750
+      },
+      {
+        "name": "Andhra Pradesh",
+        "description": "state in South India, India",
+        "isoName": "Andhra Pradesh",
+        "order": 8,
+        "adminLevel": 4,
+        "isoCode": "IN-AP",
+        "wikidataId": "Q1159",
+        "geonameId": 1278629
+      },
+      {
+        "name": "Tirupati district",
+        "description": "district in Andhra Pradesh, India",
+        "order": 9,
+        "adminLevel": 5,
+        "wikidataId": "Q110714853",
+        "geonameId": 12680264
+      },
+      {
+        "name": "Tirupati",
+        "description": "city in Tirupati district, Andhra Pradesh, India",
+        "order": 10,
+        "adminLevel": 6,
+        "wikidataId": "Q1436816",
+        "geonameId": 1254360
+      },
+      {
+        "name": "Tirupati (Urban) mandal",
+        "description": "mandal in Tirupati district, Andhra Pradesh, India",
+        "order": 11,
+        "adminLevel": 6,
+        "wikidataId": "Q7809385"
+      }
+    ],
+    "informative": [
+      {
+        "name": "Asia",
+        "description": "terrestrial continent, mainly in the northeastern quadrant",
+        "isoName": "Asia",
+        "order": 1,
+        "isoCode": "AS",
+        "wikidataId": "Q48",
+        "geonameId": 6255147
+      },
+      {
+        "name": "Asia/Kolkata",
+        "description": "time zone",
+        "order": 2
+      },
+      {
+        "name": "Indian subcontinent",
+        "description": "physiographical region in South Asia",
+        "order": 4,
+        "wikidataId": "Q60140",
+        "geonameId": 6269134
+      },
+      {
+        "name": "Mainland India",
+        "order": 5
+      },
+      {
+        "name": "Southern Zonal Council",
+        "order": 6
+      },
+      {
+        "name": "South Central Railway",
+        "order": 7
+      }
+    ]
+  }
+}
