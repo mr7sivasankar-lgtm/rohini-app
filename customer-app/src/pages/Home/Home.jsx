@@ -4,6 +4,7 @@ import { useWishlist } from '../../contexts/WishlistContext';
 import { useLocation } from '../../contexts/LocationContext';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import { useAuth } from '../../contexts/AuthContext';
+import MapPicker from '../../components/MapPicker/MapPicker';
 import api, { getImageUrl } from '../../utils/api';
 import './Home.css';
 
@@ -21,6 +22,7 @@ const Home = () => {
     const [locSearch, setLocSearch] = useState('');
     const [locSuggestions, setLocSuggestions] = useState([]);
     const [locSearching, setLocSearching] = useState(false);
+    const [showMapPicker, setShowMapPicker] = useState(false);
     const searchTimerRef = useRef(null);
 
     useEffect(() => {
@@ -103,6 +105,17 @@ const Home = () => {
         setShowLocationPicker(false);
     };
 
+    const handleMapConfirm = async (lat, lng, addressText) => {
+        setShowMapPicker(false);
+        setShowLocationPicker(false);
+        await selectLocation({
+            lat,
+            lng,
+            city: addressText, // fallback for header display
+            address: addressText 
+        });
+    };
+
     const locationLabel = locLoading
         ? 'Detecting...'
         : (fullAddress || pincode || 'Set Location');
@@ -135,7 +148,7 @@ const Home = () => {
                             <button className="location-picker-close" onClick={() => { setShowLocationPicker(false); setLocSearch(''); setLocSuggestions([]); }}>✕</button>
                         </div>
 
-                        <button className="location-auto-btn" onClick={handleAutoDetect}>
+                        <button className="location-auto-btn" onClick={handleAutoDetect} style={{ marginBottom: '10px' }}>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <circle cx="12" cy="12" r="10" />
                                 <circle cx="12" cy="12" r="3" />
@@ -145,6 +158,10 @@ const Home = () => {
                                 <line x1="18" y1="12" x2="22" y2="12" />
                             </svg>
                             Use Current Location
+                        </button>
+
+                        <button className="location-auto-btn" style={{ background: 'white', color: '#10b981', border: '1.5px dashed #10b981', marginBottom: '10px' }} onClick={() => setShowMapPicker(true)}>
+                            📍 Place Pin on Map
                         </button>
 
                         <div className="location-divider">
@@ -199,6 +216,15 @@ const Home = () => {
                         )}
                     </div>
                 </div>
+            )}
+
+            {showMapPicker && (
+                <MapPicker
+                    initialLat={latitude}
+                    initialLng={longitude}
+                    onConfirm={handleMapConfirm}
+                    onClose={() => setShowMapPicker(false)}
+                />
             )}
 
             {/* Banner Section */}

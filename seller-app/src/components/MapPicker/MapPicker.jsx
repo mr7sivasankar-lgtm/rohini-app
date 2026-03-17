@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import api from '../../utils/api';
 import './MapPicker.css';
 
 // Leaflet loaded via CDN (index.html) to avoid bundler issues
@@ -23,11 +24,10 @@ const MapPicker = ({ initialLat, initialLng, onConfirm, onClose }) => {
     const reverseGeocode = async (lat, lng) => {
         setLoadingAddr(true);
         try {
-            const res = await fetch(`/api/geocode/reverse?lat=${lat}&lng=${lng}`);
-            const data = await res.json();
-            if (data.success && data.data) {
-                const d = data.data;
-                const parts = [d.address, d.city, d.state, d.pincode].filter(Boolean);
+            const res = await api.get(`/serviceability/geocode/reverse?lat=${lat}&lon=${lng}`);
+            if (res.data.success && res.data.data) {
+                const d = res.data.data;
+                const parts = [d.displayName || d.locality || d.city].filter(Boolean);
                 setAddressText(parts.join(', '));
             } else {
                 setAddressText(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
@@ -154,35 +154,37 @@ const MapPicker = ({ initialLat, initialLng, onConfirm, onClose }) => {
                     <button className="map-picker-close" onClick={onClose}>✕</button>
                 </div>
 
-                {/* Use My Location */}
-                <button className="map-use-location-btn" onClick={useMyLocation} disabled={detecting}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <circle cx="12" cy="12" r="3" />
-                        <line x1="12" y1="2" x2="12" y2="6" />
-                        <line x1="12" y1="18" x2="12" y2="22" />
-                        <line x1="2" y1="12" x2="6" y2="12" />
-                        <line x1="18" y1="12" x2="22" y2="12" />
-                    </svg>
-                    {detecting ? 'Detecting…' : 'Use My Current Location'}
-                </button>
+                <div className="map-picker-body" style={{ display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto' }}>
+                    {/* Use My Location */}
+                    <button className="map-use-location-btn" onClick={useMyLocation} disabled={detecting}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <circle cx="12" cy="12" r="3" />
+                            <line x1="12" y1="2" x2="12" y2="6" />
+                            <line x1="12" y1="18" x2="12" y2="22" />
+                            <line x1="2" y1="12" x2="6" y2="12" />
+                            <line x1="18" y1="12" x2="22" y2="12" />
+                        </svg>
+                        {detecting ? 'Detecting…' : 'Use My Current Location'}
+                    </button>
 
-                {/* Map Container */}
-                <div ref={mapRef} className="map-picker-map" />
+                    {/* Map Container */}
+                    <div ref={mapRef} className="map-picker-map" />
 
-                {/* Address preview */}
-                <div className="map-picker-address">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#667eea" strokeWidth="2">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                        <circle cx="12" cy="10" r="3" />
-                    </svg>
-                    <span>{loadingAddr ? 'Getting address…' : (addressText || `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`)}</span>
+                    {/* Address preview */}
+                    <div className="map-picker-address">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#667eea" strokeWidth="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        <span>{loadingAddr ? 'Getting address…' : (addressText || `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`)}</span>
+                    </div>
+
+                    {/* Confirm */}
+                    <button className="map-picker-confirm-btn" onClick={handleConfirm}>
+                        ✓ Confirm Location
+                    </button>
                 </div>
-
-                {/* Confirm */}
-                <button className="map-picker-confirm-btn" onClick={handleConfirm}>
-                    ✓ Confirm Location
-                </button>
             </div>
         </div>
     );

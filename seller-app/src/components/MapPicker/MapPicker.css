@@ -93,10 +93,10 @@
 
 .map-picker-map {
     flex: 1;
-    min-height: 300px;
-    max-height: 380px;
+    min-height: 250px;
     width: 100%;
     background: #e5e7eb;
+    z-index: 1;
 }
 
 .map-picker-address {
