@@ -406,7 +406,9 @@ const HeroSlideshow = ({ shops, banners, navigate }) => {
                         )}
                         
                         {slide.type === 'shop' && (
-                            <ShopCard shop={slide.data} onClick={() => navigate(`/shop/${slide.data._id}`)} />
+                            <div style={{ padding: '0 4px', height: '100%' }}>
+                                <ShopCard shop={slide.data} onClick={() => navigate(`/shop/${slide.data._id}`)} />
+                            </div>
                         )}
                         
                     </div>
