@@ -880,6 +880,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
           <th>Date</th>
           <th>Item Logistics</th>
           <th>User Comments</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
@@ -1075,17 +1076,9 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                       ) : nextStates.length > 0 ? (
                         <>
                           <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>
-                            Current: <span style={{ color: '#f97316' }}>{item.status}</span>
+                            Status: <span style={{ color: '#f97316' }}>{item.status}</span>
                           </div>
                           {inProgressTs && <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '4px' }}>🕐 {fmt(inProgressTs)}</div>}
-                          <select
-                            defaultValue=""
-                            onChange={(e) => { if (e.target.value) handleUpdateItemStatus(order._id, item._id, e.target.value); }}
-                            style={{ padding: '5px 8px', fontSize: '12px', borderRadius: '6px', border: '1.5px solid #e2e8f0', cursor: 'pointer', background: '#f8fafc', fontWeight: 600, color: '#1e293b', width: '100%' }}
-                          >
-                            <option value="">— Move to… —</option>
-                            {nextStates.map(s => <option key={s} value={s}>{s}</option>)}
-                          </select>
                         </>
                       ) : item.status === 'Active' ? (
                         <span style={{ fontSize: '12px', color: '#94a3b8' }}>— No action —</span>
@@ -1115,11 +1108,30 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                 })}
               </div>
             </td>
+            <td>
+              {deleteOrder && (
+                <button
+                  onClick={() => deleteOrder(order._id)}
+                  title="Delete Order"
+                  style={{
+                    padding: '6px 10px',
+                    background: '#fee2e2',
+                    color: '#dc2626',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                  }}
+                >
+                  🗑️
+                </button>
+              )}
+            </td>
           </tr>
           {/* Expandable History Row */}
           {expandedOrders[order._id] && (
             <tr key={`hist-${order._id}`}>
-              <td colSpan={12} style={{ background: '#f8fafc', padding: '0 12px 12px 40px', borderBottom: '2px solid #e2e8f0' }}>
+              <td colSpan={13} style={{ background: '#f8fafc', padding: '0 12px 12px 40px', borderBottom: '2px solid #e2e8f0' }}>
                 <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', paddingTop: '12px' }}>
                   {/* Order Status Timeline */}
                   <div style={{ minWidth: '220px' }}>
