@@ -28,6 +28,8 @@ function App() {
   // Product Form State
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [productCategoryFilter, setProductCategoryFilter] = useState('');
+  const [productSellerFilter, setProductSellerFilter] = useState('');
 
   // Notification state
   const [newOrderCount, setNewOrderCount] = useState(0);
@@ -601,88 +603,174 @@ function App() {
           <TopRatedShops />
         )}
 
-        {activeTab === 'products' && (
-          <div>
-            <div className="page-header">
-              <h1>Product Management</h1>
-              <p>Manage your product catalog</p>
-            </div>
+        {activeTab === 'products' && (() => {
+          // Derived calculations
+          const filteredProducts = products.filter(p => {
+            let matchCat = true;
+            let matchSel = true;
+            if (productCategoryFilter) matchCat = p.category?._id === productCategoryFilter;
+            if (productSellerFilter) {
+              if (productSellerFilter === 'admin') matchSel = !p.seller;
+              else matchSel = p.seller?._id === productSellerFilter;
+            }
+            return matchCat && matchSel;
+          });
 
-            <div className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h3>Products ({products.length})</h3>
-                <button className="btn btn-primary" onClick={handleAddNewProduct}>+ Add Product</button>
+          const totalProductsCount = filteredProducts.length;
+          const activeProductsCount = filteredProducts.filter(p => p.stock > 0).length; // Assuming stock > 0 means active
+          const lowStockCount = filteredProducts.filter(p => p.stock > 0 && p.stock <= 5).length;
+          const outOfStockCount = filteredProducts.filter(p => p.stock <= 0).length;
+
+          // Unique sellers from products for the filter
+          const uniqueSellers = Array.from(new Set(products.map(p => p.seller?._id))).filter(Boolean).map(id => {
+            return products.find(prod => prod.seller?._id === id)?.seller;
+          });
+
+          return (
+            <div>
+              <div className="page-header">
+                <h1>Product Management</h1>
+                <p>Manage your product catalog</p>
               </div>
 
-              <div className="table-responsive">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Image</th>
-                      <th>Name</th>
-                      <th>Brand</th>
-                      <th>Gender</th>
-                      <th>Seller</th>
-                      <th>Price</th>
-                      <th>Stock</th>
-                      <th>Category</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map(product => (
-                      <tr key={product._id}>
-                        <td>
-                          <img
-                            src={getImageUrl(product.images[0])}
-                            alt={product.name}
-                            style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8 }}
-                            onError={(e) => e.target.style.display = 'none'}
-                          />
-                        </td>
-                        <td>
-                          <div style={{ fontWeight: 500 }}>{product.name}</div>
-                          <div style={{ fontSize: 12, color: '#666' }}>{product.description?.substring(0, 30)}...</div>
-                        </td>
-                        <td>{product.brand || '-'}</td>
-                        <td>{product.gender || '-'}</td>
-                        <td>
-                          {product.seller ? (
-                            <span style={{ fontWeight: 500, color: '#3b82f6' }}>{product.seller.shopName}</span>
-                          ) : (
-                            <span style={{ color: '#64748b' }}>Admin</span>
-                          )}
-                        </td>
-                        <td>₹{product.price}</td>
-                        <td>
-                          <span style={{ color: product.stock < 10 ? 'red' : 'green' }}>
-                            {product.stock}
-                          </span>
-                        </td>
-                        <td>{product.category?.name || 'N/A'}</td>
-                        <td>
-                          <div className="action-buttons">
-                            <button className="btn btn-secondary" style={{ marginRight: 8, padding: '4px 8px', fontSize: 12 }} onClick={() => handleEditProduct(product)}>Edit</button>
-                            <button className="btn btn-danger" style={{ padding: '4px 8px', fontSize: 12, backgroundColor: '#ff4444', color: 'white', border: 'none', borderRadius: 4 }} onClick={() => handleDeleteProduct(product._id)}>Delete</button>
-                          </div>
-                        </td>
+              {/* Summary Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+                <div className="stat-card" style={{ borderTop: `4px solid #3b82f6` }}>
+                  <h3 style={{ fontSize: '13px', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Total Products</h3>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b' }}>{totalProductsCount}</div>
+                </div>
+                <div className="stat-card" style={{ borderTop: `4px solid #10b981` }}>
+                  <h3 style={{ fontSize: '13px', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Active (In Stock)</h3>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#047857' }}>{activeProductsCount}</div>
+                </div>
+                <div className="stat-card" style={{ borderTop: `4px solid #f59e0b` }}>
+                  <h3 style={{ fontSize: '13px', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Low Stock (≤5)</h3>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#b45309' }}>{lowStockCount}</div>
+                </div>
+                <div className="stat-card" style={{ borderTop: `4px solid #ef4444` }}>
+                  <h3 style={{ fontSize: '13px', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Out of Stock</h3>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#dc2626' }}>{outOfStockCount}</div>
+                </div>
+              </div>
+
+              <div className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {/* Category Filter */}
+                    <select
+                      value={productCategoryFilter}
+                      onChange={(e) => setProductCategoryFilter(e.target.value)}
+                      style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', color: '#334155', fontWeight: 500 }}
+                    >
+                      <option value="">All Categories</option>
+                      {categories.map(cat => (
+                        <option key={cat._id} value={cat._id}>{cat.name}</option>
+                      ))}
+                    </select>
+
+                    {/* Seller Filter */}
+                    <select
+                      value={productSellerFilter}
+                      onChange={(e) => setProductSellerFilter(e.target.value)}
+                      style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', color: '#334155', fontWeight: 500 }}
+                    >
+                      <option value="">All Uploaders (Admin & Sellers)</option>
+                      <option value="admin">Admin Only</option>
+                      {uniqueSellers.map(seller => (
+                        <option key={seller._id} value={seller._id}>{seller.shopName}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button className="btn btn-primary" onClick={handleAddNewProduct}>+ Add Product</button>
+                </div>
+
+                <div className="table-responsive">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Brand</th>
+                        <th>Gender</th>
+                        <th>Seller</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Category</th>
+                        <th>Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                    </thead>
+                    <tbody>
+                      {filteredProducts.map(product => {
+                        let stockColor = '#16a34a';
+                        if (product.stock <= 0) stockColor = '#dc2626';
+                        else if (product.stock <= 5) stockColor = '#d97706';
 
-            {showProductForm && (
-              <ProductForm
-                product={editingProduct}
-                categories={categories}
-                onClose={() => setShowProductForm(false)}
-                onSave={handleProductSaved}
-              />
-            )}
-          </div>
-        )}
+                        return (
+                          <tr key={product._id}>
+                            <td>
+                              <img
+                                src={getImageUrl(product.images[0])}
+                                alt={product.name}
+                                style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8 }}
+                                onError={(e) => e.target.style.display = 'none'}
+                              />
+                            </td>
+                            <td>
+                              <div style={{ fontWeight: 500 }}>{product.name}</div>
+                              <div style={{ fontSize: 12, color: '#666' }}>{product.description?.substring(0, 30)}...</div>
+                            </td>
+                            <td>{product.brand || '-'}</td>
+                            <td>{product.gender || '-'}</td>
+                            <td>
+                              {product.seller ? (
+                                <span style={{ fontWeight: 600, color: '#3b82f6', background: '#eff6ff', padding: '2px 8px', borderRadius: '12px', fontSize: '13px' }}>
+                                  {product.seller.shopName}
+                                </span>
+                              ) : (
+                                <span style={{ fontWeight: 600, color: '#64748b', background: '#f8fafc', padding: '2px 8px', borderRadius: '12px', fontSize: '13px' }}>
+                                  Admin
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ fontWeight: 600 }}>₹{product.price}</td>
+                            <td>
+                              <span style={{ color: stockColor, fontWeight: 700, fontSize: '14px' }}>
+                                {product.stock}
+                              </span>
+                            </td>
+                            <td>{product.category?.name || 'N/A'}</td>
+                            <td>
+                              <div className="action-buttons">
+                                <button className="btn btn-secondary" style={{ marginRight: 8, padding: '4px 8px', fontSize: 12 }} onClick={() => handleEditProduct(product)}>Edit</button>
+                                <button className="btn btn-danger" style={{ padding: '4px 8px', fontSize: 12, backgroundColor: '#ff4444', color: 'white', border: 'none', borderRadius: 4 }} onClick={() => handleDeleteProduct(product._id)}>Delete</button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  
+                  {filteredProducts.length === 0 && (
+                    <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+                      No products found matching the selected filters.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {showProductForm && (
+                <ProductForm
+                  product={editingProduct}
+                  categories={categories}
+                  onClose={() => setShowProductForm(false)}
+                  onSave={handleProductSaved}
+                />
+              )}
+            </div>
+          );
+        })()}
 
         {activeTab === 'service-areas' && (
           <div>
