@@ -89,6 +89,20 @@ const Sellers = () => {
         }
     };
 
+    const handleDeleteSeller = async (e, sellerId) => {
+        e.stopPropagation();
+        if (!window.confirm('⚠️ DANGER: Are you sure you want to permanently delete this seller? This action cannot be undone.')) return;
+
+        try {
+            const res = await api.delete(`/sellers/admin/${sellerId}`);
+            if (res.data.success) {
+                fetchSellers();
+            }
+        } catch (error) {
+            alert(error.response?.data?.message || 'Failed to delete seller');
+        }
+    };
+
     const handleSellerClick = async (seller) => {
         setSelectedSeller(seller);
         setLoadingProducts(true);
@@ -262,20 +276,36 @@ const Sellers = () => {
                                             <StatusBadge status={seller.status} />
                                         </td>
                                         <td style={td}>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                                <button onClick={() => handleSellerClick(seller)} style={btn('#f1f5f9', '#475569')}>📄 View</button>
-                                                {seller.status !== 'Approved' && (
-                                                    <button onClick={(e) => updateSellerStatus(e, seller._id, 'Approved')} style={btn('#dcfce7', '#166534')}>✔ Approve</button>
-                                                )}
-                                                {seller.status === 'Pending' && (
-                                                    <button onClick={(e) => updateSellerStatus(e, seller._id, 'Rejected')} style={btn('#fee2e2', '#991b1b')}>✖ Reject</button>
-                                                )}
-                                                {seller.status !== 'On Hold' && seller.status !== 'Rejected' && seller.status !== 'Suspended' && seller.status !== 'Deactivated' && (
-                                                    <button onClick={(e) => updateSellerStatus(e, seller._id, 'On Hold')} style={btn('#e0e7ff', '#4338ca')}>⏸ Hold</button>
-                                                )}
-                                                {seller.status !== 'Suspended' && seller.status !== 'Deactivated' && (
-                                                    <button onClick={(e) => updateSellerStatus(e, seller._id, 'Suspended')} style={btn('#fef2f2', '#b91c1c')}>🗑️ Suspend</button>
-                                                )}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <button onClick={() => handleSellerClick(seller)} style={btn('#f1f5f9', '#475569')} title="View Profile">📄 View</button>
+                                                
+                                                <select
+                                                    defaultValue=""
+                                                    onChange={(e) => {
+                                                        if(e.target.value) updateSellerStatus(e, seller._id, e.target.value);
+                                                        e.target.value = ""; // reset dropdown text
+                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    style={{
+                                                        padding: '6px 12px', borderRadius: 6, border: '1px solid #cbd5e1', 
+                                                        fontSize: 13, fontWeight: 600, color: '#334155', background: 'white',
+                                                        cursor: 'pointer', outline: 'none', height: 32
+                                                    }}
+                                                >
+                                                    <option value="" disabled>Actions ▾</option>
+                                                    {seller.status !== 'Approved' && <option value="Approved">Activate</option>}
+                                                    {seller.status !== 'Suspended' && <option value="Suspended">Suspend</option>}
+                                                    {seller.status !== 'On Hold' && <option value="On Hold">Hold</option>}
+                                                    {seller.status !== 'Rejected' && <option value="Rejected">Reject</option>}
+                                                </select>
+
+                                                <button 
+                                                    onClick={(e) => handleDeleteSeller(e, seller._id)} 
+                                                    style={{...btn('#fee2e2', '#991b1b'), padding: '6px 10px', height: 32}} 
+                                                    title="Delete Seller"
+                                                >
+                                                    🗑️
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

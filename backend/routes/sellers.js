@@ -605,5 +605,22 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
     }
 });
 
+// @desc    Delete a seller (Admin Hard Delete)
+// @route   DELETE /api/sellers/admin/:id
+// @access  Private (Admin)
+router.delete('/admin/:id', protect, adminOnly, async (req, res) => {
+    try {
+        const seller = await Seller.findById(req.params.id);
+        if (!seller) {
+            return res.status(404).json({ success: false, message: 'Seller not found' });
+        }
+        
+        await Seller.findByIdAndDelete(req.params.id);
+        res.json({ success: true, message: 'Seller deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 export { sellerProtect };
 export default router;
