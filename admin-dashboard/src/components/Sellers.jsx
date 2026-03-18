@@ -125,6 +125,8 @@ const Sellers = () => {
         if (filterCategory === 'Approved' && seller.status !== 'Approved') return false;
         if (filterCategory === 'Rejected' && seller.status !== 'Rejected') return false;
         if (filterCategory === 'On Hold' && seller.status !== 'On Hold') return false;
+        if (filterCategory === 'Suspended' && seller.status !== 'Suspended') return false;
+        if (filterCategory === 'Deactivated' && seller.status !== 'Deactivated') return false;
         if (filterCategory === 'No Delivery Coverage' && seller.coverageStatus !== 'No Delivery Coverage') return false;
 
         // Search Query Check
@@ -170,7 +172,7 @@ const Sellers = () => {
                 </div>
 
                 <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-                    {['All', 'Pending', 'Approved', 'Rejected', 'On Hold', 'No Delivery Coverage'].map(filter => (
+                    {['All', 'Pending', 'Approved', 'Rejected', 'On Hold', 'Suspended', 'Deactivated', 'No Delivery Coverage'].map(filter => (
                         <button
                             key={filter}
                             onClick={() => setFilterCategory(filter)}
@@ -262,15 +264,17 @@ const Sellers = () => {
                                         <td style={td}>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                                 <button onClick={() => handleSellerClick(seller)} style={btn('#f1f5f9', '#475569')}>📄 View</button>
-                                                
                                                 {seller.status !== 'Approved' && (
                                                     <button onClick={(e) => updateSellerStatus(e, seller._id, 'Approved')} style={btn('#dcfce7', '#166534')}>✔ Approve</button>
                                                 )}
                                                 {seller.status === 'Pending' && (
                                                     <button onClick={(e) => updateSellerStatus(e, seller._id, 'Rejected')} style={btn('#fee2e2', '#991b1b')}>✖ Reject</button>
                                                 )}
-                                                {seller.status !== 'On Hold' && seller.status !== 'Rejected' && (
+                                                {seller.status !== 'On Hold' && seller.status !== 'Rejected' && seller.status !== 'Suspended' && seller.status !== 'Deactivated' && (
                                                     <button onClick={(e) => updateSellerStatus(e, seller._id, 'On Hold')} style={btn('#e0e7ff', '#4338ca')}>⏸ Hold</button>
+                                                )}
+                                                {seller.status !== 'Suspended' && seller.status !== 'Deactivated' && (
+                                                    <button onClick={(e) => updateSellerStatus(e, seller._id, 'Suspended')} style={btn('#fef2f2', '#b91c1c')}>🗑️ Suspend</button>
                                                 )}
                                             </div>
                                         </td>

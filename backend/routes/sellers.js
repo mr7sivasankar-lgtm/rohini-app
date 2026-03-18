@@ -178,6 +178,9 @@ router.post('/login', async (req, res) => {
         const seller = await Seller.findOne({ phone }).select('+password');
 
         if (seller && (await seller.matchPassword(password))) {
+            if (seller.status === 'Suspended' || seller.status === 'Deactivated') {
+                return res.status(403).json({ success: false, message: 'Your account has been deactivated or suspended by admin. Please contact support.' });
+            }
             res.json({
                 success: true,
                 data: {
@@ -210,6 +213,9 @@ router.post('/login-otp', async (req, res) => {
             if (!seller) {
                 return res.status(404).json({ success: false, message: 'No seller account found with this phone number.' });
             }
+            if (seller.status === 'Suspended' || seller.status === 'Deactivated') {
+                return res.status(403).json({ success: false, message: 'Your account has been deactivated or suspended by admin. Please contact support.' });
+            }
 
             const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
             const otpExpiry = new Date(Date.now() + 10 * 60000);
@@ -230,6 +236,9 @@ router.post('/login-otp', async (req, res) => {
         const seller = await Seller.findOne({ phone }).select('+otp +otpExpiry');
         if (!seller) {
             return res.status(404).json({ success: false, message: 'Seller not found' });
+        }
+        if (seller.status === 'Suspended' || seller.status === 'Deactivated') {
+            return res.status(403).json({ success: false, message: 'Your account has been deactivated or suspended by admin. Please contact support.' });
         }
         if (!seller.otp || seller.otp !== otp) {
             return res.status(400).json({ success: false, message: 'Invalid OTP' });
@@ -345,6 +354,30 @@ router.put('/profile', sellerProtect, async (req, res) => {
         } else {
             res.status(404).json({ success: false, message: 'Seller not found' });
         }
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+
+// @desc    Deactivate seller account (Self)
+// @route   PUT /api/sellers/my/deactivate
+// @access  Private (Seller)
+router.put('/my/deactivate', sellerProtect, async (req, res) => {
+    try {
+        const seller = await Seller.findById(req.seller._id);
+        if (!seller) {
+            return res.status(404).json({ success: false, message: 'Seller not found' });
+        }
+        
+        seller.status = 'Deactivated';
+        seller.isOpen = false;
+        await seller.save();
+        
+        // Note: we could also mark all their products as inactive here if desired
+        // For now, tracking their status as Deactivated prevents them from showing up.
+        
+        res.json({ success: true, message: 'Account deactivated successfully.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import MapPicker from './MapPicker/MapPicker';
+import { useAuth } from '../contexts/AuthContext';
 
 const ProfileTab = ({ seller }) => {
+    const { logout } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     
     const [formData, setFormData] = useState({
@@ -129,6 +131,23 @@ const ProfileTab = ({ seller }) => {
             setErrorMsg('Image upload failed: ' + (err.response?.data?.message || 'Please try again'));
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleDeactivate = async () => {
+        if (window.confirm('⚠️ DANGER: Are you sure you want to deactivate your seller account? Your shop will be hidden from customers. You will be logged out immediately.')) {
+            try {
+                const res = await api.put('/sellers/my/deactivate');
+                if (res.data.success) {
+                    alert('Your account has been deactivated.');
+                    logout();
+                } else {
+                    setErrorMsg('Failed to deactivate account.');
+                }
+            } catch (err) {
+                console.error(err);
+                setErrorMsg(err.response?.data?.message || 'Error deactivating account');
+            }
         }
     };
 
@@ -442,6 +461,24 @@ const ProfileTab = ({ seller }) => {
                     </form>
                 </div>
             )}
+
+            {/* DANGER ZONE */}
+            <div style={{ marginTop: '40px', borderTop: '1px solid #fee2e2', paddingTop: '32px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ef4444', marginBottom: '8px' }}>Danger Zone</h3>
+                <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '16px' }}>Permanently hide your shop and deactivate your seller account.</p>
+                <button 
+                    onClick={handleDeactivate}
+                    style={{ 
+                        padding: '12px 24px', background: '#fef2f2', color: '#dc2626', 
+                        border: '1px solid #f87171', borderRadius: '12px', fontSize: '14px', 
+                        fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' 
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                    onMouseOut={(e) => e.currentTarget.style.background = '#fef2f2'}
+                >
+                    🚨 Deactivate My Account
+                </button>
+            </div>
         </div>
     );
 };
