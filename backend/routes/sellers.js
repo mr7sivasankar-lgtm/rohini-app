@@ -4,6 +4,8 @@ import Seller from '../models/Seller.js';
 import { protect, adminOnly } from '../middleware/auth.js';
 import sendOTP from '../utils/sms.js';
 import { upload, uploadSingle } from '../middleware/upload.js';
+import Product from '../models/Product.js';
+import Order from '../models/Order.js';
 
 const router = express.Router();
 
@@ -468,9 +470,7 @@ router.get('/:id', async (req, res) => {
 // @access  Private (Admin)
 router.get('/admin/all', protect, adminOnly, async (req, res) => {
     try {
-        const mongoose = await import('mongoose');
-        const Order = mongoose.models.Order || (await import('../models/Order.js')).default;
-        const Product = mongoose.models.Product || (await import('../models/Product.js')).default;
+// Removed dynamic imports since they are now statically imported at the top
 
         const sellers = await Seller.find({}).sort({ createdAt: -1 }).lean();
         
