@@ -6,6 +6,7 @@ import sendOTP from '../utils/sms.js';
 import { upload, uploadSingle } from '../middleware/upload.js';
 import Product from '../models/Product.js';
 import Order from '../models/Order.js';
+import DeliveryPartner from '../models/DeliveryPartner.js';
 
 const router = express.Router();
 
@@ -517,13 +518,31 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
             return acc;
         }, {});
 
+        // Fetch all active delivery partners to compute coverage
+        const dps = await DeliveryPartner.find({ isActive: true }, { city: 1, pincode: 1 }).lean();
+
         const enhancedSellers = sellers.map(seller => {
             const catalog = catalogMap[seller._id.toString()] || { productsAdded: 0, categories: [] };
+            
+            // Calculate Delivery Partner coverage for this seller
+            let dpCount = 0;
+            const sellerCity = (seller.city || '').toLowerCase();
+            const sellerPincode = seller.pincode || '';
+            
+            if (sellerCity || sellerPincode) {
+                dpCount = dps.filter(d => 
+                    (sellerCity && (d.city || '').toLowerCase() === sellerCity) || 
+                    (sellerPincode && (d.pincode || '') === sellerPincode)
+                ).length;
+            }
+
             return {
                 ...seller,
                 productsSold: salesMap[seller._id.toString()] || 0,
                 productsAdded: catalog.productsAdded,
-                categories: catalog.categories.filter(Boolean)
+                categories: catalog.categories.filter(Boolean),
+                dpCount,
+                coverageStatus: dpCount > 0 ? 'Delivery Available' : 'No Delivery Coverage'
             };
         });
 
