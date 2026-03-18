@@ -10,6 +10,9 @@ const ProfileTab = ({ seller }) => {
         phone: '',
         shopName: '',
         shopAddress: '',
+        city: '',
+        state: '',
+        pincode: '',
         description: '',
         gstNumber: '',
         deliveryRadius: 5,
@@ -37,6 +40,9 @@ const ProfileTab = ({ seller }) => {
                 phone: seller.phone || '',
                 shopName: seller.shopName || '',
                 shopAddress: seller.shopAddress || '',
+                city: seller.city || '',
+                state: seller.state || '',
+                pincode: seller.pincode || '',
                 description: seller.description || '',
                 gstNumber: seller.gstNumber || '',
                 deliveryRadius: seller.deliveryRadius || 5,
@@ -64,14 +70,27 @@ const ProfileTab = ({ seller }) => {
 
         setLocationLoading(true);
         navigator.geolocation.getCurrentPosition(
-            (position) => {
+            async (position) => {
                 const { latitude, longitude } = position.coords;
                 setFormData(prev => ({
                     ...prev,
                     location: { type: 'Point', coordinates: [longitude, latitude] }
                 }));
+                // Also reverse geocode to fill city/state/pincode
+                try {
+                    const res = await api.get(`/serviceability/geocode/reverse?lat=${latitude}&lon=${longitude}`);
+                    if (res.data.success && res.data.data) {
+                        const d = res.data.data;
+                        setFormData(prev => ({
+                            ...prev,
+                            city: d.city || prev.city,
+                            state: d.state || prev.state,
+                            pincode: d.pincode || prev.pincode
+                        }));
+                    }
+                } catch (_) { /* silently ignore */ }
                 setLocationLoading(false);
-                setSuccessMsg('✅ GPS Coordinates captured!');
+                setSuccessMsg('✅ GPS & address details captured!');
                 setTimeout(() => setSuccessMsg(''), 3000);
             },
             (error) => {
@@ -140,11 +159,14 @@ const ProfileTab = ({ seller }) => {
                 <MapPicker
                     initialLat={formData.location?.coordinates[1] || 13.6288}
                     initialLng={formData.location?.coordinates[0] || 79.4192}
-                    onConfirm={(lat, lng, addressText) => {
+                    onConfirm={(lat, lng, addressText, addrDetails) => {
                         setFormData(prev => ({
                             ...prev,
                             location: { type: 'Point', coordinates: [lng, lat] },
                             shopAddress: addressText ? (prev.shopAddress || addressText) : prev.shopAddress,
+                            city: addrDetails?.city || prev.city,
+                            state: addrDetails?.state || prev.state,
+                            pincode: addrDetails?.pincode || prev.pincode,
                         }));
                         setShowMapPicker(false);
                     }}
@@ -225,7 +247,16 @@ const ProfileTab = ({ seller }) => {
                                     <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#eff6ff', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>📍</div>
                                     <div>
                                         <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Shop Address</div>
-                                        <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: 500, lineHeight: '1.5' }}>{formData.shopAddress || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Not provided</span>}</div>
+                                        <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: 500, lineHeight: '1.6' }}>
+                                            {formData.shopAddress || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Not provided</span>}
+                                            {(formData.city || formData.state || formData.pincode) && (
+                                                <div style={{ marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                    {formData.city && <span style={{ background: '#eff6ff', color: '#3b82f6', padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>🏙 {formData.city}</span>}
+                                                    {formData.state && <span style={{ background: '#f0fdf4', color: '#059669', padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>🗺 {formData.state}</span>}
+                                                    {formData.pincode && <span style={{ background: '#fef3c7', color: '#d97706', padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>📮 {formData.pincode}</span>}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
@@ -345,9 +376,27 @@ const ProfileTab = ({ seller }) => {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', gridColumn: '1 / -1' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Shop Address*</label>
-                            <textarea name="shopAddress" value={formData.shopAddress} onChange={handleChange} rows="2" required style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s', resize: 'vertical' }} onFocus={(e) => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; }} />
-                            
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Street / Area*</label>
+                            <textarea name="shopAddress" value={formData.shopAddress} onChange={handleChange} rows="2" required placeholder="Door no, street, landmark..." style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s', resize: 'vertical' }} onFocus={(e) => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; }} />
+                        </div>
+
+                        {/* City / State / Pincode row */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>City</label>
+                            <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="e.g. Tirupati" style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s' }} onFocus={(e) => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; }} />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>State</label>
+                            <input type="text" name="state" value={formData.state} onChange={handleChange} placeholder="e.g. Andhra Pradesh" style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s' }} onFocus={(e) => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; }} />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pincode</label>
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} placeholder="e.g. 517501" maxLength="6" style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s' }} onFocus={(e) => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; }} />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', gridColumn: '1 / -1' }}>
                             {/* GPS Section */}
                             <div style={{ marginTop: '8px', background: 'white', padding: '16px', borderRadius: '12px', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
                                 <div>

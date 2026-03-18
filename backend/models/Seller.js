@@ -24,6 +24,18 @@ const sellerSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please provide full shop address']
     },
+    city: {
+        type: String,
+        default: ''
+    },
+    state: {
+        type: String,
+        default: ''
+    },
+    pincode: {
+        type: String,
+        default: ''
+    },
     location: {
         type: {
             type: String,

@@ -305,6 +305,9 @@ router.put('/profile', sellerProtect, async (req, res) => {
             seller.shopName = req.body.shopName || seller.shopName;
             seller.ownerName = req.body.ownerName || seller.ownerName;
             seller.shopAddress = req.body.shopAddress || seller.shopAddress;
+            if (req.body.city !== undefined) seller.city = req.body.city;
+            if (req.body.state !== undefined) seller.state = req.body.state;
+            if (req.body.pincode !== undefined) seller.pincode = req.body.pincode;
             seller.bannerImage = req.body.bannerImage || seller.bannerImage;
             if (req.body.logoImage !== undefined) seller.logoImage = req.body.logoImage;
             // Handle both 'description' and 'shopDescription' field names
