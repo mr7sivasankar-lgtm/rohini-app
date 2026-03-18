@@ -229,7 +229,44 @@ const Home = () => {
                 />
             )}
 
-            {/* Top Discovery Section (Replaces generic banner) */}
+            {/* ── Service Not Available Banner ─────────────────────────── */}
+            {serviceable === false && !locLoading && (city || pincode) && (
+                <div style={{
+                    margin: '20px 16px',
+                    background: 'linear-gradient(135deg, #fff7ed, #fef3c7)',
+                    border: '1.5px solid #fed7aa',
+                    borderRadius: 20,
+                    padding: '32px 24px',
+                    textAlign: 'center',
+                    boxShadow: '0 4px 20px rgba(251,146,60,0.15)'
+                }}>
+                    <div style={{ fontSize: 52, marginBottom: 12 }}>😔</div>
+                    <h2 style={{ margin: '0 0 10px', fontSize: 20, fontWeight: 800, color: '#7c2d12' }}>
+                        Service Not Available Yet
+                    </h2>
+                    <p style={{ margin: '0 0 8px', fontSize: 14, color: '#9a3412', lineHeight: 1.6 }}>
+                        We haven't expanded to <strong>{city || pincode}</strong> yet.
+                    </p>
+                    <p style={{ margin: '0 0 20px', fontSize: 13, color: '#b45309' }}>
+                        We're growing fast! Try a nearby area or check back soon. 🚀
+                    </p>
+                    <button
+                        onClick={() => setShowLocationPicker(true)}
+                        style={{
+                            padding: '12px 24px',
+                            background: 'linear-gradient(135deg, #ea580c, #f97316)',
+                            color: 'white', border: 'none', borderRadius: 12,
+                            fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                            boxShadow: '0 4px 12px rgba(234,88,12,0.4)'
+                        }}
+                    >
+                        📍 Change My Location
+                    </button>
+                </div>
+            )}
+
+            {/* ── Main Content (only when serviceable or no area check) ── */}
+            {serviceable !== false && (
             <div className="discovery-block" style={{ marginTop: '16px' }}>
                 <div className="section-header" style={{ padding: '0 20px', marginBottom: '12px' }}>
                     <h2 style={{ fontSize: '20px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -242,6 +279,7 @@ const Home = () => {
                     <HeroSlideshow shops={topRatedShops} banners={banners} navigate={navigate} />
                 )}
             </div>
+            )}
 
             <div className="categories-section">
                 <div className="section-header">

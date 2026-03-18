@@ -1,6 +1,16 @@
 import express from 'express';
 import ServiceableArea from '../models/ServiceableArea.js';
 import { protect, adminOnly } from '../middleware/auth.js';
+import Seller from '../models/Seller.js';
+import DeliveryPartner from '../models/DeliveryPartner.js';
+
+// Helper: compute coverage status from counts
+function computeCoverageStatus(sellers, deliveryPartners) {
+    if (sellers === 0) return 'No Sellers';
+    if (deliveryPartners === 0) return 'No Delivery Partners';
+    if (sellers < 3 || deliveryPartners < 2) return 'Low Coverage';
+    return 'Active';
+}
 
 const router = express.Router();
 
@@ -264,14 +274,69 @@ router.get('/geocode/reverse', async (req, res) => {
 });
 
 // ============================================================
-// ADMIN: List all serviceable areas
+// ADMIN: Coverage summary (platform-wide stats)
+// GET /api/serviceability/areas/coverage-summary
+// ============================================================
+router.get('/areas/coverage-summary', protect, adminOnly, async (req, res) => {
+    try {
+        const areas = await ServiceableArea.find();
+        const totalAreas = areas.length;
+        const activeAreas = areas.filter(a => a.isActive).length;
+        const inactiveAreas = totalAreas - activeAreas;
+        const totalSellers = await Seller.countDocuments({});
+        const totalDPs = await DeliveryPartner.countDocuments({ isActive: true });
+        res.json({ success: true, data: { totalAreas, activeAreas, inactiveAreas, totalSellers, totalDPs } });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching coverage summary' });
+    }
+});
+
+// ============================================================
+// ADMIN: List all serviceable areas WITH coverage stats
 // GET /api/serviceability/areas
 // ============================================================
 router.get('/areas', protect, adminOnly, async (req, res) => {
     try {
         const areas = await ServiceableArea.find().sort({ createdAt: -1 });
-        res.json({ success: true, data: areas });
+
+        // Fetch all sellers and delivery partners for counting
+        const sellers = await Seller.find({}, { city: 1, pincode: 1, status: 1 }).lean();
+        const dps = await DeliveryPartner.find({ isActive: true }, { city: 1, pincode: 1 }).lean();
+
+        const enriched = areas.map(area => {
+            const obj = area.toObject();
+            let sellerCount = 0;
+            let dpCount = 0;
+
+            if (area.type === 'city') {
+                const areaCity = (area.city || '').toLowerCase();
+                const areaName = (area.name || '').toLowerCase();
+                sellerCount = sellers.filter(s =>
+                    (s.city || '').toLowerCase() === areaCity ||
+                    (s.city || '').toLowerCase() === areaName
+                ).length;
+                dpCount = dps.filter(d =>
+                    (d.city || '').toLowerCase() === areaCity ||
+                    (d.city || '').toLowerCase() === areaName
+                ).length;
+            } else if (area.type === 'pincode') {
+                sellerCount = sellers.filter(s => (s.pincode || '') === (area.pincode || '')).length;
+                dpCount = dps.filter(d => (d.pincode || '') === (area.pincode || '')).length;
+            } else {
+                // For radius type — count all (rough estimate)
+                sellerCount = sellers.length;
+                dpCount = dps.length;
+            }
+
+            obj.sellerCount = sellerCount;
+            obj.dpCount = dpCount;
+            obj.coverageStatus = computeCoverageStatus(sellerCount, dpCount);
+            return obj;
+        });
+
+        res.json({ success: true, data: enriched });
     } catch (error) {
+        console.error('Error fetching areas:', error);
         res.status(500).json({ success: false, message: 'Error fetching areas' });
     }
 });

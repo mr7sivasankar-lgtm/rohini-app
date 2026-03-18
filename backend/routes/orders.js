@@ -2,6 +2,8 @@ import express from 'express';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
 import Product from '../models/Product.js';
+import ServiceableArea from '../models/ServiceableArea.js';
+import DeliveryPartner from '../models/DeliveryPartner.js';
 import { protect, adminOnly, sellerOrAdmin } from '../middleware/auth.js';
 import { sellerProtect } from './sellers.js';
 import { autoAssignDeliveryPartner } from './delivery.js';
@@ -28,6 +30,43 @@ router.post('/', protect, async (req, res) => {
                 message: 'Please provide shipping address and contact information'
             });
         }
+
+        // === Service Area Validation ===
+        // Check if ANY active area covers the customer's city/pincode
+        const { city: customerCity, pincode: customerPincode } = shippingAddress || {};
+        const activeAreas = await ServiceableArea.find({ isActive: true });
+
+        if (activeAreas.length > 0 && (customerCity || customerPincode)) {
+            const inServiceArea = activeAreas.some(area => {
+                if (area.type === 'city' && customerCity) {
+                    return (area.city || '').toLowerCase() === customerCity.toLowerCase() ||
+                           (area.name || '').toLowerCase() === customerCity.toLowerCase();
+                }
+                if (area.type === 'pincode' && customerPincode) {
+                    return area.pincode === String(customerPincode);
+                }
+                return false;
+            });
+
+            if (!inServiceArea) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Sorry, our service is not available in your area yet. We are expanding soon!',
+                    code: 'AREA_NOT_SERVICEABLE'
+                });
+            }
+
+            // Check if delivery partners are available in area
+            const hasDP = await DeliveryPartner.exists({ isActive: true });
+            if (!hasDP) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Delivery is temporarily unavailable in your area. Please try again later.',
+                    code: 'NO_DELIVERY_PARTNERS'
+                });
+            }
+        }
+        // === End Service Area Validation ===
 
         // Verify stock and calculate total
         let subtotal = 0;
