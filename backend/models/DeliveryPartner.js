@@ -13,6 +13,20 @@ const deliveryPartnerSchema = new mongoose.Schema({
         unique: true,
         trim: true
     },
+    email: { type: String, trim: true, default: '' },
+    dob: { type: String, trim: true, default: '' },
+    gender: { type: String, enum: ['Male', 'Female', 'Other', ''], default: '' },
+    aadhaarNumber: { type: String, trim: true, default: '' },
+    panNumber: { type: String, trim: true, default: '' },
+    bankAccountName: { type: String, trim: true, default: '' },
+    bankAccountNumber: { type: String, trim: true, default: '' },
+    bankIfsc: { type: String, trim: true, default: '' },
+    bankName: { type: String, trim: true, default: '' },
+    status: { 
+        type: String, 
+        enum: ['Pending Approval', 'Approved', 'Rejected'], 
+        default: 'Pending Approval' 
+    },
     password: {
         type: String,
         required: [true, 'Please add a password'],

@@ -31,7 +31,12 @@ const protectDelivery = async (req, res, next) => {
 // POST /api/delivery/register
 router.post('/register', async (req, res) => {
     try {
-        const { name, phone, password, vehicleType, vehicleNumber, address, city, state, pincode, location } = req.body;
+        const { 
+            name, phone, password, vehicleType, vehicleNumber, 
+            address, city, state, pincode, location,
+            email, dob, gender, aadhaarNumber, panNumber,
+            bankAccountName, bankAccountNumber, bankIfsc, bankName
+        } = req.body;
         const exists = await DeliveryPartner.findOne({ phone });
         if (exists) return res.status(400).json({ success: false, message: 'Phone already registered' });
 
@@ -43,6 +48,15 @@ router.post('/register', async (req, res) => {
         if (location && location.coordinates && location.coordinates.length === 2 && location.coordinates[0] !== 0) {
             partnerData.location = { type: 'Point', coordinates: location.coordinates };
         }
+        if (email) partnerData.email = email.trim();
+        if (dob) partnerData.dob = dob;
+        if (gender) partnerData.gender = gender;
+        if (aadhaarNumber) partnerData.aadhaarNumber = aadhaarNumber.trim();
+        if (panNumber) partnerData.panNumber = panNumber.trim().toUpperCase();
+        if (bankAccountName) partnerData.bankAccountName = bankAccountName.trim();
+        if (bankAccountNumber) partnerData.bankAccountNumber = bankAccountNumber.trim();
+        if (bankIfsc) partnerData.bankIfsc = bankIfsc.trim().toUpperCase();
+        if (bankName) partnerData.bankName = bankName.trim();
 
         const partner = await DeliveryPartner.create(partnerData);
         const token = jwt.sign({ id: partner._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -94,10 +108,26 @@ router.get('/profile', protectDelivery, async (req, res) => {
 // PUT /api/delivery/profile
 router.put('/profile', protectDelivery, async (req, res) => {
     try {
-        const { name, vehicleType, vehicleNumber } = req.body;
+        const { 
+            name, vehicleType, vehicleNumber, 
+            email, dob, gender, aadhaarNumber, panNumber,
+            bankAccountName, bankAccountNumber, bankIfsc, bankName 
+        } = req.body;
+        
+        const updateData = { name, vehicleType, vehicleNumber };
+        if (email !== undefined) updateData.email = email.trim();
+        if (dob !== undefined) updateData.dob = dob;
+        if (gender !== undefined) updateData.gender = gender;
+        if (aadhaarNumber !== undefined) updateData.aadhaarNumber = aadhaarNumber.trim();
+        if (panNumber !== undefined) updateData.panNumber = panNumber.trim().toUpperCase();
+        if (bankAccountName !== undefined) updateData.bankAccountName = bankAccountName.trim();
+        if (bankAccountNumber !== undefined) updateData.bankAccountNumber = bankAccountNumber.trim();
+        if (bankIfsc !== undefined) updateData.bankIfsc = bankIfsc.trim().toUpperCase();
+        if (bankName !== undefined) updateData.bankName = bankName.trim();
+
         const partner = await DeliveryPartner.findByIdAndUpdate(
             req.partner._id,
-            { name, vehicleType, vehicleNumber },
+            updateData,
             { new: true }
         );
         res.json({ success: true, data: partner });
