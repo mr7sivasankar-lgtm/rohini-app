@@ -102,9 +102,24 @@ export default function Profile() {
                     <h3>Vehicle Details</h3>
                     <div className="info-row"><span>Type</span><strong>{p?.vehicleType || '—'}</strong></div>
                     <div className="info-row"><span>Number</span><strong>{p?.vehicleNumber || '—'}</strong></div>
+                    <div className="info-row"><span>Location</span><strong>{p?.city ? `${p.city} ${p.pincode ? `(${p.pincode})` : ''}` : '—'}</strong></div>
                     <div className="info-row"><span>Joined</span><strong>{p?.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</strong></div>
                 </div>
             )}
+
+            <div style={{ marginTop: '30px', textAlign: 'center' }}>
+                <button 
+                    onClick={logout} 
+                    style={{ 
+                        background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', 
+                        padding: '12px 24px', borderRadius: '12px', fontSize: '15px', fontWeight: 'bold', 
+                        width: '100%', cursor: 'pointer', display: 'flex', justifyContent: 'center', 
+                        alignItems: 'center', gap: '8px' 
+                    }}
+                >
+                    <span style={{ fontSize: '18px' }}>⏻</span> Logout securely
+                </button>
+            </div>
         </div>
     );
 }

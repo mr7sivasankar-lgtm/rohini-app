@@ -29,6 +29,21 @@ const deliveryPartnerSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    address: { type: String, trim: true, default: '' },
+    city: { type: String, trim: true, default: '' },
+    state: { type: String, trim: true, default: '' },
+    pincode: { type: String, trim: true, default: '' },
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number],
+            default: [0, 0]
+        }
+    },
     isOnline: {
         type: Boolean,
         default: false
@@ -61,6 +76,9 @@ deliveryPartnerSchema.pre('save', async function (next) {
 deliveryPartnerSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
+
+// Index for geo-spatial queries
+deliveryPartnerSchema.index({ location: '2dsphere' });
 
 const DeliveryPartner = mongoose.model('DeliveryPartner', deliveryPartnerSchema);
 export default DeliveryPartner;

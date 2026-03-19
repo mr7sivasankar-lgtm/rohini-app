@@ -5,8 +5,7 @@ import './BottomNav.css';
 export default function BottomNav() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { logout } = useAuth();
-    
+
     // Do not show bottom nav on login or specific full-screen pages if desired
     if (location.pathname === '/login') return null;
 
@@ -32,13 +31,6 @@ export default function BottomNav() {
             >
                 <div className="nav-icon">👤</div>
                 <span>Profile</span>
-            </button>
-            <button 
-                className="nav-item logout" 
-                onClick={logout}
-            >
-                <div className="nav-icon text-red">⏻</div>
-                <span>Logout</span>
             </button>
         </div>
     );

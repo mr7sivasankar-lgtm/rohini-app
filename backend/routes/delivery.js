@@ -31,14 +31,23 @@ const protectDelivery = async (req, res, next) => {
 // POST /api/delivery/register
 router.post('/register', async (req, res) => {
     try {
-        const { name, phone, password, vehicleType, vehicleNumber } = req.body;
+        const { name, phone, password, vehicleType, vehicleNumber, address, city, state, pincode, location } = req.body;
         const exists = await DeliveryPartner.findOne({ phone });
         if (exists) return res.status(400).json({ success: false, message: 'Phone already registered' });
 
-        const partner = await DeliveryPartner.create({ name, phone, password, vehicleType, vehicleNumber });
+        const partnerData = { name, phone, password, vehicleType, vehicleNumber };
+        if (address) partnerData.address = address;
+        if (city) partnerData.city = city.trim();
+        if (state) partnerData.state = state.trim();
+        if (pincode) partnerData.pincode = pincode.trim();
+        if (location && location.coordinates && location.coordinates.length === 2 && location.coordinates[0] !== 0) {
+            partnerData.location = { type: 'Point', coordinates: location.coordinates };
+        }
+
+        const partner = await DeliveryPartner.create(partnerData);
         const token = jwt.sign({ id: partner._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
-        res.status(201).json({ success: true, message: 'Registered successfully', data: { token, partner: { _id: partner._id, name: partner.name, phone: partner.phone, vehicleType: partner.vehicleType, vehicleNumber: partner.vehicleNumber, isOnline: partner.isOnline } } });
+        res.status(201).json({ success: true, message: 'Registered successfully', data: { token, partner: { _id: partner._id, name: partner.name, phone: partner.phone, vehicleType: partner.vehicleType, vehicleNumber: partner.vehicleNumber, isOnline: partner.isOnline, city: partner.city, pincode: partner.pincode } } });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -55,7 +64,7 @@ router.post('/login', async (req, res) => {
         if (!partner.isActive) return res.status(403).json({ success: false, message: 'Account deactivated. Contact admin.' });
 
         const token = jwt.sign({ id: partner._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
-        res.json({ success: true, data: { token, partner: { _id: partner._id, name: partner.name, phone: partner.phone, vehicleType: partner.vehicleType, vehicleNumber: partner.vehicleNumber, isOnline: partner.isOnline } } });
+        res.json({ success: true, data: { token, partner: { _id: partner._id, name: partner.name, phone: partner.phone, vehicleType: partner.vehicleType, vehicleNumber: partner.vehicleNumber, isOnline: partner.isOnline, city: partner.city, pincode: partner.pincode } } });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
