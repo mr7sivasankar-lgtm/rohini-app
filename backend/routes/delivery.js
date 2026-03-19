@@ -313,6 +313,30 @@ router.put('/admin/partners/:id', async (req, res) => {
     }
 });
 
+// PUT /api/delivery/admin/partners/:id/approve — admin explicitly approve or reject partner
+router.put('/admin/partners/:id/approve', async (req, res) => {
+    try {
+        const { status } = req.body; // 'Approved' or 'Rejected'
+        if (!['Approved', 'Rejected'].includes(status)) {
+            return res.status(400).json({ success: false, message: 'Invalid status' });
+        }
+        
+        const updateData = { status };
+        // If approved, technically they can start working. Admin can manually deactivate later.
+        if (status === 'Approved') updateData.isActive = true;
+        if (status === 'Rejected') updateData.isActive = false;
+
+        const partner = await DeliveryPartner.findByIdAndUpdate(
+            req.params.id, 
+            updateData, 
+            { new: true }
+        );
+        res.json({ success: true, data: partner });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // ── Utility: Auto-Assign ──────────────────────────────────────────────────────
 export const autoAssignDeliveryPartner = async (orderId, deliveryType = 'Normal') => {
     try {

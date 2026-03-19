@@ -1329,6 +1329,7 @@ const DeliveryPartnersTab = () => {
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [expandedPartner, setExpandedPartner] = useState(null);
 
   const fetchPartners = async () => {
     try {
@@ -1351,6 +1352,16 @@ const DeliveryPartnersTab = () => {
       fetchPartners();
     } catch {
       alert('Failed to update partner status');
+    }
+  };
+
+  const updateApprovalStatus = async (partner, status) => {
+    if (!window.confirm(`Are you sure you want to mark ${partner.name} as ${status}?`)) return;
+    try {
+      await api.put(`/delivery/admin/partners/${partner._id}/approve`, { status });
+      fetchPartners();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update partner approval status');
     }
   };
 
@@ -1420,66 +1431,132 @@ const DeliveryPartnersTab = () => {
               </thead>
               <tbody>
                 {filtered.map(partner => (
-                  <tr key={partner._id} style={{ opacity: partner.isActive ? 1 : 0.5 }}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #f97316, #fb923c)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚴</div>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: '14px' }}>{partner.name}</div>
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>ID: {partner._id?.slice(-6).toUpperCase()}</div>
+                  <React.Fragment key={partner._id}>
+                    <tr style={{ opacity: partner.isActive ? 1 : partner.status === 'Pending Approval' ? 1 : 0.6 }}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #f97316, #fb923c)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚴</div>
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '14px' }}>{partner.name}</div>
+                            <div style={{ fontSize: '11px', color: '#64748b' }}>ID: {partner._id?.slice(-6).toUpperCase()}</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td style={{ fontSize: '14px' }}>{partner.phone}</td>
-                    <td>
-                      <div style={{ fontSize: '13px', fontWeight: 600 }}>{partner.vehicleType}</div>
-                      {partner.vehicleNumber && <div style={{ fontSize: '12px', color: '#64748b' }}>{partner.vehicleNumber}</div>}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '5px',
-                          padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
-                          background: partner.isOnline ? '#dcfce7' : '#f1f5f9',
-                          color: partner.isOnline ? '#16a34a' : '#64748b'
-                        }}>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: partner.isOnline ? '#16a34a' : '#94a3b8', display: 'inline-block' }}></span>
-                          {partner.isOnline ? 'Online' : 'Offline'}
-                        </span>
-                        {!partner.isActive && (
-                          <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, background: '#fee2e2', color: '#dc2626' }}>
-                            Deactivated
+                      </td>
+                      <td style={{ fontSize: '14px' }}>{partner.phone}</td>
+                      <td>
+                        <div style={{ fontSize: '13px', fontWeight: 600 }}>{partner.vehicleType}</div>
+                        {partner.vehicleNumber && <div style={{ fontSize: '12px', color: '#64748b' }}>{partner.vehicleNumber}</div>}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{
+                            display: 'inline-block', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', width: 'fit-content',
+                            background: partner.status === 'Approved' ? '#ecfdf5' : partner.status === 'Rejected' ? '#fef2f2' : '#fffbeb',
+                            color: partner.status === 'Approved' ? '#059669' : partner.status === 'Rejected' ? '#dc2626' : '#d97706',
+                            border: `1px solid ${partner.status === 'Approved' ? '#34d399' : partner.status === 'Rejected' ? '#f87171' : '#fbbf24'}`
+                          }}>
+                            {partner.status || 'Pending Approval'}
                           </span>
-                        )}
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span style={{
-                        background: partner.activeOrdersCount > 0 ? '#fef3c7' : '#f0fdf4',
-                        color: partner.activeOrdersCount > 0 ? '#b45309' : '#16a34a',
-                        padding: '4px 10px', borderRadius: '20px', fontWeight: 700, fontSize: '13px'
-                      }}>
-                        {partner.activeOrdersCount || 0}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'center', fontWeight: 600 }}>{partner.totalDeliveries || 0}</td>
-                    <td style={{ fontSize: '13px', color: '#64748b' }}>
-                      {new Date(partner.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td>
-                      <button
-                        onClick={() => toggleActive(partner)}
-                        style={{
-                          padding: '5px 12px', border: 'none', borderRadius: '6px',
-                          fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                          background: partner.isActive ? '#fee2e2' : '#dcfce7',
-                          color: partner.isActive ? '#dc2626' : '#16a34a'
-                        }}
-                      >
-                        {partner.isActive ? 'Deactivate' : 'Reactivate'}
-                      </button>
-                    </td>
-                  </tr>
+                          {partner.status === 'Approved' && (
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '5px',
+                              padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: 700,
+                              background: partner.isOnline ? '#dcfce7' : '#f1f5f9',
+                              color: partner.isOnline ? '#16a34a' : '#64748b', width: 'fit-content'
+                            }}>
+                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: partner.isOnline ? '#16a34a' : '#94a3b8', display: 'inline-block' }}></span>
+                              {partner.isOnline ? 'Online' : 'Offline'}
+                            </span>
+                          )}
+                          {!partner.isActive && partner.status === 'Approved' && (
+                            <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, background: '#fee2e2', color: '#dc2626', width: 'fit-content' }}>
+                              Deactivated
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span style={{
+                          background: partner.activeOrdersCount > 0 ? '#fef3c7' : '#f0fdf4',
+                          color: partner.activeOrdersCount > 0 ? '#b45309' : '#16a34a',
+                          padding: '4px 10px', borderRadius: '20px', fontWeight: 700, fontSize: '13px'
+                        }}>
+                          {partner.activeOrdersCount || 0}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center', fontWeight: 600 }}>{partner.totalDeliveries || 0}</td>
+                      <td style={{ fontSize: '13px', color: '#64748b' }}>
+                        {new Date(partner.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <button
+                            onClick={() => setExpandedPartner(expandedPartner === partner._id ? null : partner._id)}
+                            style={{ padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', background: 'white', cursor: 'pointer' }}
+                          >
+                            {expandedPartner === partner._id ? 'Collapse' : 'View Docs'}
+                          </button>
+                          
+                          {(partner.status === 'Pending Approval' || !partner.status) ? (
+                            <>
+                              <button onClick={() => updateApprovalStatus(partner, 'Approved')} style={{ padding: '5px 10px', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: '#22c55e', color: 'white' }}>✓ Approve</button>
+                              <button onClick={() => updateApprovalStatus(partner, 'Rejected')} style={{ padding: '5px 10px', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: '#ef4444', color: 'white' }}>✕ Reject</button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => toggleActive(partner)}
+                              style={{
+                                padding: '5px 12px', border: 'none', borderRadius: '6px',
+                                fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                                background: partner.isActive ? '#fee2e2' : '#dcfce7',
+                                color: partner.isActive ? '#dc2626' : '#16a34a'
+                              }}
+                            >
+                              {partner.isActive ? 'Deactivate' : 'Reactivate'}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    
+                    {/* EXPANDED ROW FOR DOCS & KYC */}
+                    {expandedPartner === partner._id && (
+                      <tr style={{ background: '#f8fafc' }}>
+                        <td colSpan="8" style={{ padding: '20px', borderBottom: '2px solid #e2e8f0' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                            <div style={{ background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                              <h4 style={{ margin: '0 0 10px 0', color: '#334155', fontSize: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>Personal Info</h4>
+                              <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '8px', fontSize: '13px' }}>
+                                <span style={{ color: '#64748b' }}>Email:</span> <span style={{ fontWeight: 500 }}>{partner.email || '—'}</span>
+                                <span style={{ color: '#64748b' }}>DOB:</span> <span style={{ fontWeight: 500 }}>{partner.dob ? new Date(partner.dob).toLocaleDateString() : '—'}</span>
+                                <span style={{ color: '#64748b' }}>Gender:</span> <span style={{ fontWeight: 500 }}>{partner.gender || '—'}</span>
+                                <span style={{ color: '#64748b' }}>Location:</span> <span style={{ fontWeight: 500 }}>{partner.city ? `${partner.city} (${partner.pincode})` : '—'}</span>
+                                <span style={{ color: '#64748b' }}>Address:</span> <span style={{ fontWeight: 500 }}>{partner.address || '—'}</span>
+                              </div>
+                            </div>
+                            
+                            <div style={{ background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                              <h4 style={{ margin: '0 0 10px 0', color: '#334155', fontSize: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>Identity (KYC)</h4>
+                              <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '8px', fontSize: '13px' }}>
+                                <span style={{ color: '#64748b' }}>Aadhaar No:</span> <span style={{ fontWeight: 500 }}>{partner.aadhaarNumber || '—'}</span>
+                                <span style={{ color: '#64748b' }}>PAN No:</span> <span style={{ fontWeight: 500, textTransform: 'uppercase' }}>{partner.panNumber || '—'}</span>
+                              </div>
+                            </div>
+
+                            <div style={{ background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                              <h4 style={{ margin: '0 0 10px 0', color: '#334155', fontSize: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>Bank Details</h4>
+                              <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '8px', fontSize: '13px' }}>
+                                <span style={{ color: '#64748b' }}>Holder Name:</span> <span style={{ fontWeight: 500 }}>{partner.bankAccountName || '—'}</span>
+                                <span style={{ color: '#64748b' }}>Account No:</span> <span style={{ fontWeight: 500 }}>{partner.bankAccountNumber || '—'}</span>
+                                <span style={{ color: '#64748b' }}>IFSC Code:</span> <span style={{ fontWeight: 500, textTransform: 'uppercase' }}>{partner.bankIfsc || '—'}</span>
+                                <span style={{ color: '#64748b' }}>Bank Name:</span> <span style={{ fontWeight: 500 }}>{partner.bankName || '—'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

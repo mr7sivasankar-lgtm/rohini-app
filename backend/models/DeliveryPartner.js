@@ -64,7 +64,7 @@ const deliveryPartnerSchema = new mongoose.Schema({
     },
     isActive: {
         type: Boolean,
-        default: true
+        default: false
     },
     activeOrdersCount: {
         type: Number,
