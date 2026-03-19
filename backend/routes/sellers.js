@@ -127,9 +127,20 @@ router.post('/verify-otp', async (req, res) => {
 // @desc    Register a new seller
 // @route   POST /api/sellers/register
 // @access  Public
-router.post('/register', upload.single('shopLogo'), async (req, res) => {
+router.post('/register', upload.fields([
+    { name: 'shopLogo', maxCount: 1 },
+    { name: 'documentAadhaar', maxCount: 1 },
+    { name: 'documentPan', maxCount: 1 },
+    { name: 'documentShopPhoto', maxCount: 1 },
+    { name: 'documentCancelledCheque', maxCount: 1 }
+]), async (req, res) => {
     try {
-        const { shopName, ownerName, phone, password, shopAddress, latitude, longitude, shopCategory, gstNumber, openingTime, closingTime } = req.body;
+        const { 
+            shopName, ownerName, phone, password, shopAddress, latitude, longitude, 
+            shopCategory, gstNumber, openingTime, closingTime,
+            email, businessPan, bankAccountName, bankAccountNumber, bankIfsc, bankName, upiId,
+            commissionAgreementAccepted
+        } = req.body;
 
         const sellerExists = await Seller.findOne({ phone });
         if (sellerExists && sellerExists.password) return res.status(400).json({ success: false, message: 'Seller phone already registered' });
@@ -138,13 +149,23 @@ router.post('/register', upload.single('shopLogo'), async (req, res) => {
             ? { type: 'Point', coordinates: [parseFloat(longitude), parseFloat(latitude)] }
             : undefined;
 
+        const getFileUrl = (fieldName) => {
+            return req.files && req.files[fieldName] && req.files[fieldName][0] ? req.files[fieldName][0].path : undefined;
+        };
+
         const sellerData = {
             shopName, ownerName, phone, password, shopAddress,
             shopCategory: shopCategory || 'Mixed Fashion Store',
             gstNumber, openingTime, closingTime,
+            email, businessPan, bankAccountName, bankAccountNumber, bankIfsc, bankName, upiId,
+            commissionAgreementAccepted: commissionAgreementAccepted === 'true' || commissionAgreementAccepted === true,
             isPhoneVerified: true,
             ...(locationData && { location: locationData }),
-            ...(req.file && { shopLogo: req.file.path }), // req.file.path holds the Cloudinary URL
+            ...(getFileUrl('shopLogo') && { shopLogo: getFileUrl('shopLogo') }),
+            ...(getFileUrl('documentAadhaar') && { documentAadhaar: getFileUrl('documentAadhaar') }),
+            ...(getFileUrl('documentPan') && { documentPan: getFileUrl('documentPan') }),
+            ...(getFileUrl('documentShopPhoto') && { documentShopPhoto: getFileUrl('documentShopPhoto') }),
+            ...(getFileUrl('documentCancelledCheque') && { documentCancelledCheque: getFileUrl('documentCancelledCheque') })
         };
 
         let seller;

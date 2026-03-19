@@ -15,6 +15,11 @@ const sellerSchema = new mongoose.Schema({
         required: [true, 'Please provide phone number'],
         unique: true
     },
+    email: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     password: {
         type: String,
         required: [true, 'Please provide a password'],
@@ -65,6 +70,11 @@ const sellerSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    businessPan: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     shopLogo: {
         type: String,
         default: ''
@@ -73,6 +83,19 @@ const sellerSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    // Banking Details
+    bankAccountName: { type: String, trim: true, default: '' },
+    bankAccountNumber: { type: String, trim: true, default: '' },
+    bankIfsc: { type: String, trim: true, default: '' },
+    bankName: { type: String, trim: true, default: '' },
+    upiId: { type: String, trim: true, default: '' },
+    // Document Uploads
+    documentAadhaar: { type: String, default: '' },
+    documentPan: { type: String, default: '' },
+    documentShopPhoto: { type: String, default: '' },
+    documentCancelledCheque: { type: String, default: '' },
+    // Agreements
+    commissionAgreementAccepted: { type: Boolean, default: false },
     openingTime: {
         type: String,
         default: '10:00'
