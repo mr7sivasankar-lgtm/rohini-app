@@ -237,6 +237,7 @@ const Sellers = () => {
                                 <th style={th}>Delivery Coverage</th>
                                 <th style={th}>Location</th>
                                 <th style={th}>Status</th>
+                                <th style={th}>Wallet Balance</th>
                                 <th style={th}>Joined On</th>
                                 <th style={th}>Actions</th>
                             </tr>
@@ -297,6 +298,14 @@ const Sellers = () => {
                                                     <span style={{fontWeight: 600}}>Reason:</span> {seller.statusReason}
                                                 </div>
                                             )}
+                                        </td>
+                                        <td style={td}>
+                                            <div style={{ fontWeight: 800, color: '#047857', fontSize: 15 }}>
+                                                ₹{seller.walletBalance?.toFixed(2) || '0.00'}
+                                            </div>
+                                            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                                                Earnings
+                                            </div>
                                         </td>
                                         <td style={td}>
                                             <div style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>

@@ -1441,6 +1441,7 @@ const DeliveryPartnersTab = () => {
                   <th>Status</th>
                   <th>Active Orders</th>
                   <th>Total Deliveries</th>
+                  <th>Wallet Balance</th>
                   <th>Joined</th>
                   <th>Action</th>
                 </tr>
@@ -1501,6 +1502,14 @@ const DeliveryPartnersTab = () => {
                         </span>
                       </td>
                       <td style={{ textAlign: 'center', fontWeight: 600 }}>{partner.totalDeliveries || 0}</td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ fontWeight: 800, color: '#047857', fontSize: '14px' }}>
+                          ₹{partner.walletBalance?.toFixed(2) || '0.00'}
+                        </div>
+                        <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                          Earnings
+                        </div>
+                      </td>
                       <td style={{ fontSize: '13px', color: '#64748b' }}>
                         {new Date(partner.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
