@@ -33,15 +33,6 @@ export default function Profile() {
         }).catch(console.error);
     }, []);
 
-    const toggleStatus = async () => {
-        const newStatus = !isOnline;
-        setIsOnline(newStatus);
-        try {
-            await api.put('/delivery/profile/status', { isOnline: newStatus });
-            updatePartner({ isOnline: newStatus });
-        } catch { setIsOnline(!newStatus); }
-    };
-
     const saveProfile = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -79,15 +70,6 @@ export default function Profile() {
                 </div>
                 <div className="id-badge" style={{marginTop: '10px'}}>ID: {partner?._id?.slice(-8).toUpperCase()}</div>
 
-                {/* Online Toggle */}
-                <div className="status-toggle-wrap">
-                    <span className={`status-dot ${isOnline ? 'online' : 'offline'}`}></span>
-                    <span>{isOnline ? 'Online' : 'Offline'}</span>
-                    <label className="toggle">
-                        <input type="checkbox" checked={isOnline} onChange={toggleStatus} />
-                        <span className="slider"></span>
-                    </label>
-                </div>
             </div>
 
             {/* Stats */}

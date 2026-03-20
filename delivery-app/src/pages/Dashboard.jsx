@@ -8,8 +8,10 @@ const DELIVERY_TYPE_LABELS = { Normal: '🚚 Normal Delivery', 'Return Pickup': 
 const STATUS_COLORS = { Assigned: '#f59e0b', 'Picked Up': '#3b82f6', 'Out for Delivery': '#8b5cf6' };
 
 export default function Dashboard() {
-    const { partner, logout } = useAuth();
+    const { partner, logout, updatePartner } = useAuth();
     const navigate = useNavigate();
+
+    const [isOnline, setIsOnline] = useState(partner?.isOnline || false);
 
     const [stats, setStats] = useState({ assigned: 0, pending: 0, deliveredToday: 0, returnPickups: 0, exchangePickups: 0 });
     const [orders, setOrders] = useState([]);
@@ -36,6 +38,15 @@ export default function Dashboard() {
         return () => clearInterval(interval);
     }, [fetchData]);
 
+    const toggleStatus = async () => {
+        const newStatus = !isOnline;
+        setIsOnline(newStatus);
+        try {
+            await api.put('/delivery/profile/status', { isOnline: newStatus });
+            if (updatePartner) updatePartner({ isOnline: newStatus });
+        } catch { setIsOnline(!newStatus); }
+    };
+
     return (
         <div className="dashboard-page">
             {/* Header */}
@@ -46,6 +57,15 @@ export default function Dashboard() {
                         <h2>Hey, {partner?.name?.split(' ')[0]}!</h2>
                         <p>Ready to deliver?</p>
                     </div>
+                </div>
+
+                <div className="status-toggle-wrap-dashboard">
+                    <span className={`status-dot ${isOnline ? 'online' : 'offline'}`}></span>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>{isOnline ? 'Online' : 'Offline'}</span>
+                    <label className="toggle-dash">
+                        <input type="checkbox" checked={isOnline} onChange={toggleStatus} />
+                        <span className="slider-dash"></span>
+                    </label>
                 </div>
             </div>
 
