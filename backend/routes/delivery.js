@@ -4,13 +4,15 @@ import jwt from 'jsonwebtoken';
 import DeliveryPartner from '../models/DeliveryPartner.js';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
+import Seller from '../models/Seller.js';
+import WalletTransaction from '../models/WalletTransaction.js';
 
 const router = express.Router();
 
 
 
 // ── Middleware ──────────────────────────────────────────────────────────────
-const protectDelivery = async (req, res, next) => {
+export const protectDelivery = async (req, res, next) => {
     let token;
     if (req.headers.authorization?.startsWith('Bearer ')) {
         token = req.headers.authorization.split(' ')[1];
@@ -259,9 +261,54 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
 
             if (deliveryStatus === 'Delivered') {
                 order.deliveredAt = new Date();
-                await DeliveryPartner.findByIdAndUpdate(req.partner._id, {
-                    $inc: { activeOrdersCount: -1, totalDeliveries: 1 }
-                });
+                
+                // === CENTRAL PAYMENTS WALLET SETTLEMENT ===
+                if (order.walletSettlementStatus === 'Pending') {
+                    // 1. Credit Seller
+                    const seller = await Seller.findById(order.seller);
+                    if (seller) {
+                        seller.walletBalance += (order.sellerEarning || 0);
+                        await seller.save();
+                        
+                        await WalletTransaction.create({
+                            userType: 'Seller',
+                            userId: seller._id,
+                            amount: (order.sellerEarning || 0),
+                            type: 'Order Earning',
+                            status: 'Success',
+                            orderId: order._id,
+                            description: `Earnings credited for Order ${order.orderId}`,
+                            balanceAfter: seller.walletBalance
+                        });
+                    }
+
+                    // 2. Credit Delivery Partner
+                    const partnerToCredit = await DeliveryPartner.findById(req.partner._id);
+                    if (partnerToCredit) {
+                        partnerToCredit.walletBalance += (order.deliveryEarning || 0);
+                        partnerToCredit.activeOrdersCount = Math.max(0, partnerToCredit.activeOrdersCount - 1);
+                        partnerToCredit.totalDeliveries += 1;
+                        await partnerToCredit.save();
+
+                        await WalletTransaction.create({
+                            userType: 'DeliveryPartner',
+                            userId: partnerToCredit._id,
+                            amount: (order.deliveryEarning || 0),
+                            type: 'Delivery Earning',
+                            status: 'Success',
+                            orderId: order._id,
+                            description: `Delivery fee credited for Order ${order.orderId}`,
+                            balanceAfter: partnerToCredit.walletBalance
+                        });
+                    }
+
+                    order.walletSettlementStatus = 'Settled';
+                } else {
+                    // Fallback for edge cases (if settlement happened earlier/failed gracefully)
+                    await DeliveryPartner.findByIdAndUpdate(req.partner._id, {
+                        $inc: { activeOrdersCount: -1, totalDeliveries: 1 }
+                    });
+                }
             }
         }
 

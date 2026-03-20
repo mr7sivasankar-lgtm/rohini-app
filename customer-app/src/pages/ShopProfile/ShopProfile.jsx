@@ -90,7 +90,7 @@ const ShopProfile = () => {
     if (activeFilters.priceRange && PRICE_RANGES[activeFilters.priceRange]) {
         const { min, max } = PRICE_RANGES[activeFilters.priceRange];
         displayProducts = displayProducts.filter(p => {
-            const finalPrice = p.discount > 0 ? p.price * (1 - p.discount / 100) : p.price;
+            const finalPrice = p.sellingPrice || 0;
             if (max === null) return finalPrice >= min;
             return finalPrice >= min && finalPrice <= max;
         });
@@ -116,14 +116,14 @@ const ShopProfile = () => {
     // 6. Sorting
     if (activeSort === 'price_asc') {
         displayProducts.sort((a, b) => {
-            const pA = a.discount > 0 ? a.price * (1 - a.discount / 100) : a.price;
-            const pB = b.discount > 0 ? b.price * (1 - b.discount / 100) : b.price;
+            const pA = a.sellingPrice || 0;
+            const pB = b.sellingPrice || 0;
             return pA - pB;
         });
     } else if (activeSort === 'price_desc') {
         displayProducts.sort((a, b) => {
-            const pA = a.discount > 0 ? a.price * (1 - a.discount / 100) : a.price;
-            const pB = b.discount > 0 ? b.price * (1 - b.discount / 100) : b.price;
+            const pA = a.sellingPrice || 0;
+            const pB = b.sellingPrice || 0;
             return pB - pA;
         });
     } else if (activeSort === 'popularity' || activeSort === 'top_rated') {
@@ -243,9 +243,15 @@ const ShopProfile = () => {
 const ProductCard = ({ product, onClick }) => {
     const { isInWishlist, toggleWishlist } = useWishlist();
     const wishlisted = isInWishlist(product._id);
-    const finalPrice = product.discount > 0
-        ? product.price * (1 - product.discount / 100)
-        : product.price;
+    const getDiscount = (mrp, selling) => {
+        if (mrp > selling) {
+            return Math.round(((mrp - selling) / mrp) * 100);
+        }
+        return 0;
+    };
+
+    const finalPrice = product.sellingPrice || 0;
+    const discountPercent = getDiscount(product.mrpPrice, product.sellingPrice);
 
     const handleWishlist = (e) => {
         e.stopPropagation();
@@ -279,7 +285,12 @@ const ProductCard = ({ product, onClick }) => {
             </div>
             <div className="product-info">
                 <span className="product-title">{product.name}</span>
-                <p className="product-price">₹{finalPrice.toFixed(2)}</p>
+                <div className="product-price-row">
+                    <p className="product-price">₹{finalPrice.toFixed(0)}</p>
+                    {product.mrpPrice > finalPrice && (
+                        <p className="product-original-price">₹{(product.mrpPrice || finalPrice).toFixed(0)}</p>
+                    )}
+                </div>
             </div>
         </div>
     );

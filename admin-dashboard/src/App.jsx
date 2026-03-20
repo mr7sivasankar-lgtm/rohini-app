@@ -7,6 +7,8 @@ import { DashboardCharts } from './components/DashboardCharts';
 import Users from './components/Users';
 import Sellers from './components/Sellers';
 import TopRatedShops from './components/TopRatedShops';
+import SettingsTab from './components/SettingsTab';
+import PayoutsTab from './components/PayoutsTab';
 import './index.css';
 
 function App() {
@@ -382,6 +384,12 @@ function App() {
         </div>
         <div className={`menu-item ${activeTab === 'delivery-partners' ? 'active' : ''}`} onClick={() => handleTabChange('delivery-partners')}>
           🚴 Delivery Partners
+        </div>
+        <div className={`menu-item ${activeTab === 'payouts' ? 'active' : ''}`} onClick={() => handleTabChange('payouts')}>
+          💸 Payouts Center
+        </div>
+        <div className={`menu-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => handleTabChange('settings')}>
+          ⚙️ Global Settings
         </div>
         <div className="menu-item" onClick={handleLogout}>
           Logout
@@ -847,6 +855,14 @@ function App() {
 
         {activeTab === 'locations' && (
           <LocationsTab />
+        )}
+
+        {activeTab === 'payouts' && (
+          <PayoutsTab />
+        )}
+
+        {activeTab === 'settings' && (
+          <SettingsTab />
         )}
       </div>
     </div>

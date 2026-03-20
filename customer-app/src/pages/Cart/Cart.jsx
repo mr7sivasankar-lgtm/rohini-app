@@ -66,7 +66,7 @@ const Cart = () => {
     const getItemPrice = (item) => {
         const p = item.product;
         if (!p) return 0;
-        return p.discount > 0 ? p.price * (1 - p.discount / 100) : p.price;
+        return p.sellingPrice || 0;
     };
 
     const handleCheckout = () => {

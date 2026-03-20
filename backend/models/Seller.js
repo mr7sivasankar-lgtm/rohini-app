@@ -113,6 +113,10 @@ const sellerSchema = new mongoose.Schema({
         enum: ['Pending', 'Approved', 'Rejected', 'Suspended', 'Deactivated', 'Paused'],
         default: 'Pending'
     },
+    walletBalance: {
+        type: Number,
+        default: 0
+    },
     rating: {
         type: Number,
         default: 0

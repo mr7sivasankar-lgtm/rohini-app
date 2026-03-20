@@ -45,7 +45,7 @@ export default function History() {
                                 <div className="history-items">{order.items?.map(i => i.name).join(', ')}</div>
                             </div>
                             <div className="history-card-right">
-                                <div className="history-amount">₹{order.total?.toFixed(0)}</div>
+                                <div className="history-amount" style={{ color: '#10b981' }}>+₹{(order.deliveryEarning || 0).toFixed(0)}</div>
                                 <div className="history-date">
                                     {order.deliveredAt ? new Date(order.deliveredAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
                                 </div>

@@ -6,6 +6,7 @@ import ProductsTab from '../../components/ProductsTab';
 import ProfileTab from '../../components/ProfileTab';
 import SalesTab from '../../components/SalesTab';
 import ReviewsTab from '../../components/ReviewsTab';
+import WalletTab from '../../components/WalletTab';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -50,6 +51,12 @@ const Dashboard = () => {
                         📈 Sales & Revenue
                     </button>
                     <button 
+                        className={`nav-item ${activeTab === 'wallet' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('wallet')}
+                    >
+                        💰 Wallet & Payouts
+                    </button>
+                    <button 
                         className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`}
                         onClick={() => setActiveTab('reviews')}
                     >
@@ -76,6 +83,7 @@ const Dashboard = () => {
                          activeTab === 'orders' ? 'Order Management' : 
                          activeTab === 'products' ? 'Product Catalog' : 
                          activeTab === 'sales' ? 'Sales Analytics' : 
+                         activeTab === 'wallet' ? 'Wallet & Payouts' : 
                          activeTab === 'reviews' ? 'Customer Reviews' : 'Shop Profile'}
                     </h1>
                     <div className="mobile-header-actions">
@@ -88,6 +96,7 @@ const Dashboard = () => {
                     {activeTab === 'orders' && <OrdersTab />}
                     {activeTab === 'products' && <ProductsTab />}
                     {activeTab === 'sales' && <SalesTab />}
+                    {activeTab === 'wallet' && <WalletTab />}
                     {activeTab === 'reviews' && <ReviewsTab />}
                     {activeTab === 'profile' && <ProfileTab seller={seller} />}
                 </div>

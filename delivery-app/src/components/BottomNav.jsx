@@ -26,6 +26,13 @@ export default function BottomNav() {
                 <span>History</span>
             </button>
             <button 
+                className={`nav-item ${location.pathname === '/wallet' ? 'active' : ''}`} 
+                onClick={() => navigate('/wallet')}
+            >
+                <div className="nav-icon">💰</div>
+                <span>Earnings</span>
+            </button>
+            <button 
                 className={`nav-item ${location.pathname === '/profile' ? 'active' : ''}`} 
                 onClick={() => navigate('/profile')}
             >

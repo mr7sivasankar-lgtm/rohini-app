@@ -124,7 +124,7 @@ const OrdersTab = () => {
                                             <div style={{ fontSize: '14px', fontWeight: 500 }}>{item.name}</div>
                                             <div style={{ fontSize: '12px', color: '#64748b' }}>Qty: {item.quantity} | {item.size ? `Size: ${item.size}` : ''}</div>
                                         </div>
-                                        <div style={{ fontWeight: 600, fontSize: '14px' }}>₹{(item.price * item.quantity).toFixed(0)}</div>
+                                        <div style={{ fontWeight: 600, fontSize: '14px' }}>₹{((item.sellingPrice || 0) * item.quantity).toFixed(0)}</div>
                                     </div>
                                 ))}
                             </div>

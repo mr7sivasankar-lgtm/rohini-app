@@ -92,9 +92,7 @@ export const CartProvider = ({ children }) => {
 
     const cartTotal = cart.reduce((total, item) => {
         if (item.product) {
-            const price = item.product.discount > 0
-                ? item.product.price * (1 - item.product.discount / 100)
-                : item.product.price;
+            const price = item.product.sellingPrice || 0;
             return total + (price * item.quantity);
         }
         return total;

@@ -24,7 +24,8 @@ const orderSchema = new mongoose.Schema({
         name: String,
         productCode: String,
         image: String,
-        price: Number,
+        mrpPrice: Number,
+        sellingPrice: Number,
         quantity: {
             type: Number,
             required: true,
@@ -74,7 +75,11 @@ const orderSchema = new mongoose.Schema({
         phone: { type: String, required: true },
         email: String
     },
-    subtotal: {
+    mrpTotal: {
+        type: Number,
+        default: 0
+    },
+    sellingPriceTotal: {
         type: Number,
         required: true
     },
@@ -82,9 +87,30 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    total: {
+    platformFee: {
+        type: Number,
+        default: 0
+    },
+    commissionAmount: {
+        type: Number,
+        default: 0
+    },
+    sellerEarning: {
+        type: Number,
+        default: 0
+    },
+    deliveryEarning: {
+        type: Number,
+        default: 0
+    },
+    totalAmount: {
         type: Number,
         required: true
+    },
+    walletSettlementStatus: {
+        type: String,
+        enum: ['Pending', 'Settled', 'Refunded'],
+        default: 'Pending'
     },
     paymentMethod: {
         type: String,

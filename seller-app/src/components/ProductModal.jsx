@@ -10,7 +10,7 @@ const kidsSizes = [
 const ProductModal = ({ product, onClose, onSuccess }) => {
     const [formData, setFormData] = useState({
         name: '', productCode: '', brand: '', gender: '', description: '',
-        price: '', originalPrice: '', stock: '',
+        sellingPrice: '', mrpPrice: '', stock: '',
         sizes: [], colors: [],
         fabric: '', fit: '', pattern: '', sleeve: '', neck: '',
         returnPolicy: 'No Returns',
@@ -22,6 +22,7 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
     const [colorInput, setColorInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [commission, setCommission] = useState(5); // Fallback standard
 
     // Categories
     const [allCategories, setAllCategories] = useState([]);
@@ -35,6 +36,12 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
         api.get('/categories').then(res => {
             if (res.data.success) setAllCategories(res.data.data || []);
         }).catch(() => {});
+        
+        api.get('/adminConfig').then(res => {
+            if (res.data.success && res.data.data) {
+                setCommission(res.data.data.commissionPercentage || 5);
+            }
+        }).catch(() => {});
     }, []);
 
     // Populate form when editing
@@ -46,8 +53,8 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
                 brand: product.brand || '',
                 gender: product.gender || '',
                 description: product.description || '',
-                price: product.price || '',
-                originalPrice: product.originalPrice || '',
+                sellingPrice: product.sellingPrice || '',
+                mrpPrice: product.mrpPrice || '',
                 stock: product.stock || '',
                 sizes: product.sizes || [],
                 colors: product.colors || [],
@@ -256,11 +263,11 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
                         <div style={rowStyle}>
                             <div>
                                 <label style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>MRP (Original Price)</label>
-                                <input type="number" name="originalPrice" value={formData.originalPrice} onChange={handleChange} style={inputStyle} min="0" />
+                                <input type="number" name="mrpPrice" value={formData.mrpPrice} onChange={handleChange} style={inputStyle} min="0" />
                             </div>
                             <div>
                                 <label style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>Selling Price *</label>
-                                <input type="number" name="price" value={formData.price} onChange={handleChange} required style={inputStyle} min="0" />
+                                <input type="number" name="sellingPrice" value={formData.sellingPrice} onChange={handleChange} required style={inputStyle} min="0" />
                             </div>
                             <div>
                                 <label style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>Stock (Qty) *</label>
@@ -270,6 +277,12 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
                                 </small>
                             </div>
                         </div>
+                        {formData.sellingPrice && (
+                            <div style={{ marginTop: 14, padding: 12, background: '#f0fdfa', borderRadius: 8, border: '1px solid #ccfbf1', display: 'flex', justifyContent: 'space-between', fontSize: 13, flexWrap: 'wrap', gap: 8 }}>
+                                <span style={{ color: '#0f766e', fontWeight: 600 }}>Platform Commission ({commission}%): ₹{((formData.sellingPrice * commission) / 100).toFixed(2)}</span>
+                                <span style={{ color: '#047857', fontWeight: 800, background: '#d1fae5', padding: '4px 8px', borderRadius: 6 }}>You Earn: ₹{(formData.sellingPrice - (formData.sellingPrice * commission) / 100).toFixed(2)}</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* 3. Sizes & Colors */}

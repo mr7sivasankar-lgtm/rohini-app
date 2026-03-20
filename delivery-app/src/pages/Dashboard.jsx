@@ -111,7 +111,7 @@ export default function Dashboard() {
                                 </div>
                                 <div className="info-row">
                                     <span>💰</span>
-                                    <span className="amount">₹{order.total?.toFixed(2)}</span>
+                                    <span className="amount" style={{ color: '#10b981', fontWeight: 700 }}>+₹{(order.deliveryEarning || 0).toFixed(0)}</span>
                                 </div>
                             </div>
 

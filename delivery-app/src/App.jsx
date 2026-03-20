@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import OrderDetail from './pages/OrderDetail';
 import Profile from './pages/Profile';
 import History from './pages/History';
+import Wallet from './pages/Wallet';
 
 import BottomNav from './components/BottomNav';
 
@@ -28,6 +29,7 @@ export default function App() {
                 <Route path="/order/:id" element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
                 <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
                 <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
+                <Route path="/wallet" element={<PrivateRoute><Wallet /></PrivateRoute>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </BrowserRouter>

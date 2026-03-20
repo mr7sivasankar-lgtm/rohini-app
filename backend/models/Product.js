@@ -28,12 +28,12 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add a description']
     },
-    price: {
+    sellingPrice: {
         type: Number,
-        required: [true, 'Please add a price'],
+        required: [true, 'Please add a selling price'],
         min: 0
     },
-    originalPrice: {
+    mrpPrice: {
         type: Number,
         min: 0
     },

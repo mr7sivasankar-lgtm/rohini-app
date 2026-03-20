@@ -116,6 +116,14 @@ export default function OrderDetail() {
                 ))}
             </div>
 
+            {/* Delivery Earnings Banner */}
+            {order.deliveryEarning > 0 && (
+                <div style={{ margin: '0 16px 16px', background: '#ecfdf5', border: '1px solid #10b981', color: '#047857', padding: '12px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 600 }}>Delivery Earning</span>
+                    <span style={{ fontSize: '18px', fontWeight: 800 }}>+₹{order.deliveryEarning.toFixed(0)}</span>
+                </div>
+            )}
+
             {/* Pickup Location */}
             <div className="detail-card location-card">
                 <h3>🏪 Pickup From</h3>
@@ -181,10 +189,10 @@ export default function OrderDetail() {
                                 <span>Qty: {item.quantity}</span>
                             </div>
                         </div>
-                        <div className="item-price">₹{item.price}</div>
+                        <div className="item-price">₹{item.sellingPrice || item.price}</div>
                     </div>
                 ))}
-                <div className="total-row"><span>Total</span><strong>₹{order.total?.toFixed(2)}</strong></div>
+                <div className="total-row"><span>Total Order Value</span><strong>₹{order.total?.toFixed(2)}</strong></div>
             </div>
 
             {/* Status Update */}

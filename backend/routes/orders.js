@@ -4,9 +4,25 @@ import User from '../models/User.js';
 import Product from '../models/Product.js';
 import ServiceableArea from '../models/ServiceableArea.js';
 import DeliveryPartner from '../models/DeliveryPartner.js';
+import WalletTransaction from '../models/WalletTransaction.js';
 import { protect, adminOnly, sellerOrAdmin } from '../middleware/auth.js';
 import { sellerProtect } from './sellers.js';
 import { autoAssignDeliveryPartner } from './delivery.js';
+import AdminConfig from '../models/AdminConfig.js';
+
+// Haversine formula to calculate distance between two lat/lng pairs in kilometers
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 5; // Default 5km if missing coordinates
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+}
 
 const router = express.Router();
 
@@ -68,8 +84,14 @@ router.post('/', protect, async (req, res) => {
         }
         // === End Service Area Validation ===
 
+        // === Fetch Admin Configurations ===
+        const config = await AdminConfig.getConfig();
+        const platformFee = config.platformFee || 10;
+        const commissionPercentage = config.commissionPercentage || 20;
+
         // Verify stock and calculate total
-        let subtotal = 0;
+        let sellingPriceTotal = 0;
+        let mrpTotal = 0;
         const orderItems = [];
         let orderSeller = null;
 
@@ -100,11 +122,11 @@ router.post('/', protect, async (req, res) => {
                 });
             }
 
-            const itemPrice = product.discount > 0 ?
-                product.price * (1 - product.discount / 100) :
-                product.price;
+            const itemSellingPrice = product.sellingPrice || 0;
+            const itemMrpPrice = product.mrpPrice || itemSellingPrice;
 
-            subtotal += itemPrice * item.quantity;
+            sellingPriceTotal += itemSellingPrice * item.quantity;
+            mrpTotal += itemMrpPrice * item.quantity;
 
             console.log(`[Order Creation Debug] Extracted productCode: "${product.productCode}" for product "${product.name}"`);
 
@@ -113,7 +135,8 @@ router.post('/', protect, async (req, res) => {
                 name: product.name,
                 productCode: product.productCode || '',
                 image: product.images[0],
-                price: itemPrice,
+                sellingPrice: itemSellingPrice,
+                mrpPrice: itemMrpPrice,
                 quantity: item.quantity,
                 size: item.size,
                 color: item.color
@@ -124,9 +147,7 @@ router.post('/', protect, async (req, res) => {
             await product.save();
         }
 
-        const total = subtotal + deliveryFee;
-
-        // Fetch seller details for snapshot
+        // Fetch seller details for mapping locations
         const Seller = (await import('../models/Seller.js')).default;
         const sellerObj = await Seller.findById(orderSeller);
 
@@ -138,6 +159,38 @@ router.post('/', protect, async (req, res) => {
             };
         }
 
+        // === Delivery Fee Math ===
+        let calculatedDeliveryFee = config.baseDeliveryCharge || 20;
+        let distanceKms = 5; // Default 5km
+
+        if (shippingAddress.latitude && shippingAddress.longitude && sellerLocation) {
+            distanceKms = getDistanceFromLatLonInKm(
+                shippingAddress.latitude, shippingAddress.longitude,
+                sellerLocation.lat, sellerLocation.lng
+            );
+        }
+
+        if (distanceKms > (config.baseDeliveryDistance || 2)) {
+            const extraKms = distanceKms - (config.baseDeliveryDistance || 2);
+            calculatedDeliveryFee += Math.ceil(extraKms) * (config.deliveryChargePerKm || 5);
+        }
+
+        // Ensure we strictly adopt the backend calculation to mitigate client-side tampering
+        const finalDeliveryFee = Math.round(calculatedDeliveryFee);
+
+        // === Commission System & Payout Math ===
+        // Commission applies ONLY on the sellingPriceTotal (Admin receives this)
+        const commissionAmount = Math.round(sellingPriceTotal * (commissionPercentage / 100));
+        
+        // Seller gets selling price minus commission
+        const sellerEarning = sellingPriceTotal - commissionAmount;
+
+        // Delivery Partner natively earns the delivery fee
+        const deliveryEarning = finalDeliveryFee;
+
+        // Customer always pays sellingPrice + deliveryFee + platformFee
+        const totalAmount = sellingPriceTotal + finalDeliveryFee + platformFee;
+
         // Create order
         const order = await Order.create({
             user: req.user._id,
@@ -148,9 +201,15 @@ router.post('/', protect, async (req, res) => {
             items: orderItems,
             shippingAddress,
             contactInfo,
-            subtotal,
-            deliveryFee,
-            total,
+            mrpTotal,
+            sellingPriceTotal,
+            deliveryFee: finalDeliveryFee,
+            platformFee,
+            commissionAmount,
+            sellerEarning,
+            deliveryEarning,
+            totalAmount,
+            walletSettlementStatus: 'Pending',
             paymentMethod: 'COD'
         });
 
@@ -254,7 +313,7 @@ router.get('/seller/dashboard-stats', sellerProtect, async (req, res) => {
             if (order.status === 'Delivered') {
                 stats.delivered++;
                 if (isToday) {
-                    stats.revenueToday += order.total;
+                    stats.revenueToday += order.totalAmount;
                 }
             }
 
@@ -327,14 +386,14 @@ router.get('/seller/sales-analytics', sellerProtect, async (req, res) => {
 
             // Revenue & Top Products (Only for Delivered orders)
             if (isDelivered) {
-                if (orderDate >= startOfDay) stats.today.revenue += order.total;
-                if (orderDate >= startOfWeek) stats.week.revenue += order.total;
-                if (orderDate >= startOfMonth) stats.month.revenue += order.total;
-                stats.total.revenue += order.total;
+                if (orderDate >= startOfDay) stats.today.revenue += order.totalAmount;
+                if (orderDate >= startOfWeek) stats.week.revenue += order.totalAmount;
+                if (orderDate >= startOfMonth) stats.month.revenue += order.totalAmount;
+                stats.total.revenue += order.totalAmount;
 
                 // Daily Trend
                 if (trendMap[dateStr]) {
-                    trendMap[dateStr].revenue += order.total;
+                    trendMap[dateStr].revenue += order.totalAmount;
                 }
 
                 // Top Products calculation
@@ -344,7 +403,7 @@ router.get('/seller/sales-analytics', sellerProtect, async (req, res) => {
                         productSales[pid] = { name: item.name, image: item.image, orders: 0, revenue: 0 };
                     }
                     productSales[pid].orders += item.quantity;
-                    productSales[pid].revenue += (item.price * item.quantity);
+                    productSales[pid].revenue += (item.sellingPrice * item.quantity);
                 });
             }
         });
@@ -448,7 +507,7 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
             }},
             { $group: {
                 _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                revenue: { $sum: "$total" },
+                revenue: { $sum: "$totalAmount" },
                 orders: { $sum: 1 }
             }},
             { $sort: { _id: 1 } }
@@ -478,7 +537,7 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
                 _id: "$items.productCode",
                 name: { $first: "$items.name" },
                 totalSold: { $sum: "$items.quantity" },
-                revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
+                revenue: { $sum: { $multiply: ["$items.sellingPrice", "$items.quantity"] } }
             }},
             { $sort: { totalSold: -1 } },
             { $limit: 5 }
@@ -491,7 +550,7 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
                 _id: "$seller",
                 shopName: { $first: "$sellerShopName" },
                 totalSold: { $sum: "$items.quantity" },
-                revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
+                revenue: { $sum: { $multiply: ["$items.sellingPrice", "$items.quantity"] } }
             }},
             { $sort: { revenue: -1 } },
             { $limit: 5 }
@@ -658,6 +717,53 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
             timestamp: new Date(),
             note
         });
+
+        if (status === 'Delivered' && order.walletSettlementStatus === 'Pending') {
+            order.deliveredAt = new Date();
+            const SellerObj = (await import('../models/Seller.js')).default;
+            
+            // 1. Credit Seller
+            const sellerToCredit = await SellerObj.findById(order.seller);
+            if (sellerToCredit) {
+                sellerToCredit.walletBalance += (order.sellerEarning || 0);
+                await sellerToCredit.save();
+                
+                await WalletTransaction.create({
+                    userType: 'Seller',
+                    userId: sellerToCredit._id,
+                    amount: (order.sellerEarning || 0),
+                    type: 'Order Earning',
+                    status: 'Success',
+                    orderId: order._id,
+                    description: `Earnings credited for Order ${order.orderId}`,
+                    balanceAfter: sellerToCredit.walletBalance
+                });
+            }
+
+            // 2. Credit Delivery Partner (if exists)
+            if (order.deliveryPartner) {
+                const partnerToCredit = await DeliveryPartner.findById(order.deliveryPartner);
+                if (partnerToCredit) {
+                    partnerToCredit.walletBalance += (order.deliveryEarning || 0);
+                    partnerToCredit.activeOrdersCount = Math.max(0, partnerToCredit.activeOrdersCount - 1);
+                    partnerToCredit.totalDeliveries += 1;
+                    await partnerToCredit.save();
+
+                    await WalletTransaction.create({
+                        userType: 'DeliveryPartner',
+                        userId: partnerToCredit._id,
+                        amount: (order.deliveryEarning || 0),
+                        type: 'Delivery Earning',
+                        status: 'Success',
+                        orderId: order._id,
+                        description: `Delivery fee credited for Order ${order.orderId}`,
+                        balanceAfter: partnerToCredit.walletBalance
+                    });
+                }
+            }
+
+            order.walletSettlementStatus = 'Settled';
+        }
 
         await order.save();
 

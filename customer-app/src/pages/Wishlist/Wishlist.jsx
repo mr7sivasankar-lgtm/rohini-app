@@ -33,9 +33,11 @@ const Wishlist = () => {
         setProducts(prev => prev.filter(p => p._id !== productId));
     };
 
-    const getPrice = (product) => {
-        if (product.discount > 0) return product.price * (1 - product.discount / 100);
-        return product.price;
+    const getDiscount = (mrp, selling) => {
+        if (mrp > selling) {
+            return Math.round(((mrp - selling) / mrp) * 100);
+        }
+        return 0;
     };
 
     return (
@@ -75,8 +77,8 @@ const Wishlist = () => {
                                         ) : (
                                             <div className="placeholder-image">No Image</div>
                                         )}
-                                        {product.discount > 0 && (
-                                            <span className="discount-badge">{product.discount}% OFF</span>
+                                        {getDiscount(product.mrpPrice, product.sellingPrice) > 0 && (
+                                            <span className="discount-badge">{getDiscount(product.mrpPrice, product.sellingPrice)}% OFF</span>
                                         )}
                                         <button
                                             className="wishlist-heart active"
@@ -91,9 +93,9 @@ const Wishlist = () => {
                                     <div className="wishlist-info">
                                         <h3 className="wishlist-name">{product.name}</h3>
                                         <div className="wishlist-price-row">
-                                            <span className="wishlist-price">₹{getPrice(product).toFixed(0)}</span>
-                                            {product.discount > 0 && (
-                                                <span className="wishlist-original">₹{product.price.toFixed(0)}</span>
+                                            <span className="wishlist-price">₹{product.sellingPrice?.toFixed(0)}</span>
+                                            {product.mrpPrice > product.sellingPrice && (
+                                                <span className="wishlist-original">₹{product.mrpPrice?.toFixed(0)}</span>
                                             )}
                                         </div>
                                         {product.stock > 0 ? (

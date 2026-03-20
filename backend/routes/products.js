@@ -27,9 +27,9 @@ router.get('/', async (req, res) => {
         
         // Advanced Filters
         if (minPrice || maxPrice) {
-            query.price = {};
-            if (minPrice) query.price.$gte = Number(minPrice);
-            if (maxPrice) query.price.$lte = Number(maxPrice);
+            query.sellingPrice = {};
+            if (minPrice) query.sellingPrice.$gte = Number(minPrice);
+            if (maxPrice) query.sellingPrice.$lte = Number(maxPrice);
         }
         if (sizes) {
             const sizesArray = sizes.split(',').map(s => s.trim());
@@ -111,8 +111,8 @@ router.get('/', async (req, res) => {
 
         // Sorting Logic
         let sortObj = { createdAt: -1 }; // Default: Newest first
-        if (sort === 'price_asc') sortObj = { price: 1 };
-        else if (sort === 'price_desc') sortObj = { price: -1 };
+        if (sort === 'price_asc') sortObj = { sellingPrice: 1 };
+        else if (sort === 'price_desc') sortObj = { sellingPrice: -1 };
         else if (sort === 'popularity') sortObj = { bestSeller: -1, trending: -1, createdAt: -1 };
 
         const products = await Product.find(query)

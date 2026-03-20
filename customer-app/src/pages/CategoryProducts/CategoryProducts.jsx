@@ -134,9 +134,15 @@ const CategoryProducts = () => {
 const ProductCard = ({ product, onClick }) => {
     const { isInWishlist, toggleWishlist } = useWishlist();
     const wishlisted = isInWishlist(product._id);
-    const finalPrice = product.discount > 0
-        ? product.price * (1 - product.discount / 100)
-        : product.price;
+    const getDiscount = (mrp, selling) => {
+        if (mrp > selling) {
+            return Math.round(((mrp - selling) / mrp) * 100);
+        }
+        return 0;
+    };
+
+    const finalPrice = product.sellingPrice || 0;
+    const discountPercent = getDiscount(product.mrpPrice, product.sellingPrice);
 
     const handleWishlist = (e) => {
         e.stopPropagation();
@@ -175,8 +181,8 @@ const ProductCard = ({ product, onClick }) => {
                 <h3 className="product-title">{product.name}</h3>
                 <div className="product-price-row">
                     <p className="product-price">₹{finalPrice.toFixed(2)}</p>
-                    {product.discount > 0 && (
-                        <p className="product-original-price">₹{product.price.toFixed(2)}</p>
+                    {product.mrpPrice > product.sellingPrice && (
+                        <p className="product-original-price">₹{product.mrpPrice.toFixed(2)}</p>
                     )}
                 </div>
             </div>

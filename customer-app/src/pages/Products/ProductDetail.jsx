@@ -196,9 +196,15 @@ const ProductDetail = () => {
         );
     }
 
-    const discountedPrice = product.discount > 0
-        ? product.price * (1 - product.discount / 100)
-        : product.price;
+    const discountedPrice = product.sellingPrice || 0;
+    
+    const getDiscount = (mrp, selling) => {
+        if (mrp > selling) {
+            return Math.round(((mrp - selling) / mrp) * 100);
+        }
+        return 0;
+    };
+    const discountPercent = getDiscount(product.mrpPrice, product.sellingPrice);
 
     const categoryName = product.category?.name || '';
     const subcategoryNames = Array.isArray(product.subcategory)
@@ -214,8 +220,7 @@ const ProductDetail = () => {
     ].filter(d => d.value);
 
     const getSimilarPrice = (p) => {
-        if (p.discount > 0) return p.price * (1 - p.discount / 100);
-        return p.price;
+        return p.sellingPrice || 0;
     };
 
     return (
@@ -234,8 +239,8 @@ const ProductDetail = () => {
                             alt={product.name}
                             onError={(e) => e.target.src = 'https://via.placeholder.com/500x500?text=Product'}
                         />
-                        {product.discount > 0 && (
-                            <div className="discount-badge-large">-{product.discount}%</div>
+                        {discountPercent > 0 && (
+                            <div className="discount-badge-large">-{discountPercent}%</div>
                         )}
                         {product.images.length > 1 && (
                             <div className="image-counter">{selectedImage + 1} / {product.images.length}</div>
@@ -293,10 +298,10 @@ const ProductDetail = () => {
 
                     <div className="price-section">
                         <span className="current-price-large">₹{discountedPrice.toFixed(2)}</span>
-                        {product.discount > 0 && (
+                        {product.mrpPrice > product.sellingPrice && (
                             <>
-                                <span className="original-price-large">₹{product.price.toFixed(2)}</span>
-                                <span className="save-amount">Save ₹{(product.price - discountedPrice).toFixed(2)}</span>
+                                <span className="original-price-large">₹{product.mrpPrice.toFixed(2)}</span>
+                                <span className="save-amount">Save ₹{(product.mrpPrice - discountedPrice).toFixed(2)}</span>
                             </>
                         )}
                     </div>
@@ -539,8 +544,8 @@ const ProductDetail = () => {
                                         alt={p.name}
                                         onError={(e) => e.target.src = 'https://via.placeholder.com/200x200?text=Product'}
                                     />
-                                    {p.discount > 0 && (
-                                        <span className="similar-discount">-{p.discount}%</span>
+                                    {getDiscount(p.mrpPrice, p.sellingPrice) > 0 && (
+                                        <span className="similar-discount">-{getDiscount(p.mrpPrice, p.sellingPrice)}%</span>
                                     )}
                                     <button className={`wishlist-heart wishlist-heart-sm ${isInWishlist(p._id) ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); toggleWishlist(p._id); }} aria-label="Toggle wishlist">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill={isInWishlist(p._id) ? '#ef4444' : 'none'} stroke={isInWishlist(p._id) ? '#ef4444' : '#fff'} strokeWidth="2">

@@ -119,7 +119,7 @@ const ProductsTab = () => {
                                         <div style={{ fontWeight: 500, color: '#1e293b' }}>{product.name}</div>
                                         <div style={{ fontSize: '12px', color: '#64748b' }}>{product.category?.name || 'Uncategorized'}</div>
                                     </td>
-                                    <td style={{ padding: '12px 16px', fontWeight: 500 }}>₹{product.price}</td>
+                                    <td style={{ padding: '12px 16px', fontWeight: 500 }}>₹{product.sellingPrice || 0}</td>
                                     <td style={{ padding: '12px 16px' }}>
                                         <span style={{ color: product.stock < 10 ? '#ef4444' : '#10b981', fontWeight: 600 }}>
                                             {product.stock}
