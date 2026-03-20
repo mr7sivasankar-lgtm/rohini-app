@@ -386,17 +386,20 @@ router.put('/profile', sellerProtect, async (req, res) => {
 // @access  Private (Seller)
 router.put('/my/deactivate', sellerProtect, async (req, res) => {
     try {
+        const { reason } = req.body;
+        if (!reason || reason.trim() === '') {
+            return res.status(400).json({ success: false, message: 'A reason for deactivation is required.' });
+        }
+
         const seller = await Seller.findById(req.seller._id);
         if (!seller) {
             return res.status(404).json({ success: false, message: 'Seller not found' });
         }
         
         seller.status = 'Deactivated';
+        seller.statusReason = reason.trim();
         seller.isOpen = false;
         await seller.save();
-        
-        // Note: we could also mark all their products as inactive here if desired
-        // For now, tracking their status as Deactivated prevents them from showing up.
         
         res.json({ success: true, message: 'Account deactivated successfully.' });
     } catch (error) {
@@ -611,11 +614,20 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
 // @access  Private (Admin)
 router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
     try {
-        const { status } = req.body;
+        const { status, reason } = req.body;
+        
+        // Require a reason for sensitive statuses
+        if (['Suspended', 'Deactivated', 'Rejected'].includes(status)) {
+            if (!reason || reason.trim() === '') {
+                return res.status(400).json({ success: false, message: `A reason is required to mark the seller as ${status}.` });
+            }
+        }
+
         const seller = await Seller.findById(req.params.id);
 
         if (seller) {
             seller.status = status;
+            if (reason) seller.statusReason = reason.trim();
             await seller.save();
             res.json({ success: true, data: seller });
         } else {
@@ -631,11 +643,17 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
 // @access  Private (Admin)
 router.delete('/admin/:id', protect, adminOnly, async (req, res) => {
     try {
+        const { reason } = req.body;
+        if (!reason || reason.trim() === '') {
+            return res.status(400).json({ success: false, message: 'A reason is required before permanently deleting a seller.' });
+        }
+
         const seller = await Seller.findById(req.params.id);
         if (!seller) {
             return res.status(404).json({ success: false, message: 'Seller not found' });
         }
         
+        // Even though documents are hard-deleted, we enforce the reason check to satisfy admin logging rules.
         await Seller.findByIdAndDelete(req.params.id);
         res.json({ success: true, message: 'Seller deleted successfully' });
     } catch (error) {

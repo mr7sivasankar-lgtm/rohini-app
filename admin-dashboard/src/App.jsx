@@ -1367,7 +1367,7 @@ const DeliveryPartnersTab = () => {
 
   const filtered = partners.filter(p => {
     const q = search.toLowerCase();
-    return !q || p.name?.toLowerCase().includes(q) || p.phone?.includes(q) || p.vehicleNumber?.toLowerCase().includes(q);
+    return !q || p.name?.toLowerCase().includes(q) || String(p.phone || '').includes(q) || p.vehicleNumber?.toLowerCase().includes(q);
   });
 
   const totalActive = partners.filter(p => p.isActive).length;

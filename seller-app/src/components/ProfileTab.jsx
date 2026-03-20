@@ -136,8 +136,14 @@ const ProfileTab = ({ seller }) => {
 
     const handleDeactivate = async () => {
         if (window.confirm('⚠️ DANGER: Are you sure you want to deactivate your seller account? Your shop will be hidden from customers. You will be logged out immediately.')) {
+            const reason = window.prompt('Please provide a reason for deactivating your account:');
+            if (reason === null) return;
+            if (reason.trim() === '') {
+                setErrorMsg('A reason is required to deactivate your account.');
+                return;
+            }
             try {
-                const res = await api.put('/sellers/my/deactivate');
+                const res = await api.put('/sellers/my/deactivate', { reason: reason.trim() });
                 if (res.data.success) {
                     alert('Your account has been deactivated.');
                     logout();
@@ -243,6 +249,12 @@ const ProfileTab = ({ seller }) => {
                                     <span>👤 Owner: {formData.ownerName || 'Not Set'}</span>
                                     <span style={{ color: 'rgba(255,255,255,0.4)' }}>•</span>
                                     <span>📞 {formData.phone || 'Not Set'}</span>
+                                    {seller?.createdAt && (
+                                        <>
+                                            <span style={{ color: 'rgba(255,255,255,0.4)' }}>•</span>
+                                            <span>📅 Joined: {new Date(seller.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</span>
+                                        </>
+                                    )}
                                 </p>
                             </div>
                         </div>

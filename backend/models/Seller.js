@@ -104,6 +104,10 @@ const sellerSchema = new mongoose.Schema({
         type: String,
         default: '21:00'
     },
+    statusReason: {
+        type: String,
+        default: ''
+    },
     status: {
         type: String,
         enum: ['Pending', 'Approved', 'Rejected', 'Suspended', 'Deactivated', 'Paused'],

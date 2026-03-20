@@ -79,10 +79,21 @@ const Sellers = () => {
 
     const updateSellerStatus = async (e, sellerId, newStatus) => {
         e.stopPropagation(); // prevent opening modal
-        if (!window.confirm(`Are you sure you want to change this seller to ${newStatus}?`)) return;
+        
+        let reason = '';
+        if (['Suspended', 'Deactivated', 'Rejected'].includes(newStatus)) {
+            reason = window.prompt(`Please enter the reasoning for marking this seller as ${newStatus}:`);
+            if (reason === null) return; // user cancelled
+            if (reason.trim() === '') {
+                alert('A valid reason is strictly required to perform this action.');
+                return;
+            }
+        } else {
+            if (!window.confirm(`Are you sure you want to change this seller to ${newStatus}?`)) return;
+        }
 
         try {
-            await api.put(`/sellers/admin/${sellerId}/status`, { status: newStatus });
+            await api.put(`/sellers/admin/${sellerId}/status`, { status: newStatus, reason: reason.trim() });
             fetchSellers();
         } catch (error) {
             alert(error.response?.data?.message || 'Failed to update seller status');
@@ -91,10 +102,16 @@ const Sellers = () => {
 
     const handleDeleteSeller = async (e, sellerId) => {
         e.stopPropagation();
-        if (!window.confirm('⚠️ DANGER: Are you sure you want to permanently delete this seller? This action cannot be undone.')) return;
+        
+        const reason = window.prompt('⚠️ DANGER: You are permanently deleting this seller. Please enter a reason required for the deletion log:');
+        if (reason === null) return;
+        if (reason.trim() === '') {
+            alert('A valid reason is required before allowing a hard delete.');
+            return;
+        }
 
         try {
-            const res = await api.delete(`/sellers/admin/${sellerId}`);
+            const res = await api.delete(`/sellers/admin/${sellerId}`, { data: { reason: reason.trim() } });
             if (res.data.success) {
                 fetchSellers();
             }
@@ -220,6 +237,7 @@ const Sellers = () => {
                                 <th style={th}>Delivery Coverage</th>
                                 <th style={th}>Location</th>
                                 <th style={th}>Status</th>
+                                <th style={th}>Joined On</th>
                                 <th style={th}>Actions</th>
                             </tr>
                         </thead>
@@ -274,6 +292,19 @@ const Sellers = () => {
                                         </td>
                                         <td style={td}>
                                             <StatusBadge status={seller.status} />
+                                            {seller.statusReason && ['Suspended', 'Deactivated', 'Rejected'].includes(seller.status) && (
+                                                <div style={{ fontSize: 11, color: '#dc2626', marginTop: 6, fontStyle: 'italic', maxWidth: 120, wordWrap: 'break-word', lineHeight: 1.2 }}>
+                                                    <span style={{fontWeight: 600}}>Reason:</span> {seller.statusReason}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td style={td}>
+                                            <div style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>
+                                                {new Date(seller.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            </div>
+                                            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                                                {new Date(seller.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
                                         </td>
                                         <td style={td}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
