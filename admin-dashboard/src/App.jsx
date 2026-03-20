@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api, { getImageUrl } from './utils/api';
 import { isFuzzyMatch } from './utils/fuzzySearch';
 import ProductForm from './components/ProductForm';
