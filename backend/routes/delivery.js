@@ -6,6 +6,7 @@ import Order from '../models/Order.js';
 import User from '../models/User.js';
 import Seller from '../models/Seller.js';
 import WalletTransaction from '../models/WalletTransaction.js';
+import PartnerStatusLog from '../models/PartnerStatusLog.js';
 
 const router = express.Router();
 
@@ -143,6 +144,8 @@ router.put('/profile/status', protectDelivery, async (req, res) => {
     try {
         const { isOnline } = req.body;
         const partner = await DeliveryPartner.findByIdAndUpdate(req.partner._id, { isOnline }, { new: true });
+        // Log status change for history tracking
+        await PartnerStatusLog.create({ partner: req.partner._id, isOnline, timestamp: new Date() });
         res.json({ success: true, data: { isOnline: partner.isOnline } });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -339,6 +342,50 @@ router.get('/history', protectDelivery, async (req, res) => {
 });
 
 // ── Admin – Partner Management ────────────────────────────────────────────────
+
+// GET /api/delivery/admin/partners/:id/status-history
+router.get('/admin/partners/:id/status-history', async (req, res) => {
+    try {
+        const logs = await PartnerStatusLog.find({ partner: req.params.id })
+            .sort({ timestamp: -1 })
+            .limit(100);
+
+        // Build session list: pair each log with the previous one to compute duration
+        const reversed = [...logs].reverse(); // oldest first
+        const sessions = reversed.map((log, i) => {
+            const nextLog = reversed[i + 1];
+            const endTime = nextLog ? new Date(nextLog.timestamp) : null;
+            const startTime = new Date(log.timestamp);
+            const durationMs = endTime ? endTime - startTime : null;
+            return {
+                isOnline: log.isOnline,
+                startTime: log.timestamp,
+                endTime: endTime,
+                durationMs,
+                isCurrent: !nextLog
+            };
+        });
+
+        // Compute totals
+        const totalOnlineMs = sessions
+            .filter(s => s.isOnline && s.durationMs !== null)
+            .reduce((sum, s) => sum + s.durationMs, 0);
+        const totalOfflineMs = sessions
+            .filter(s => !s.isOnline && s.durationMs !== null)
+            .reduce((sum, s) => sum + s.durationMs, 0);
+
+        res.json({
+            success: true,
+            data: {
+                sessions: sessions.reverse(), // newest first for display
+                totalOnlineMs,
+                totalOfflineMs
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // GET /api/delivery/admin/partners
 router.get('/admin/partners', async (req, res) => {

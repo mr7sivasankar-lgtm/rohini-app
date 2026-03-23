@@ -1341,11 +1341,25 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
   );
 };
 
+// Helper: format milliseconds into human-readable duration
+const fmtDuration = (ms) => {
+  if (ms === null || ms === undefined) return '—';
+  const totalSecs = Math.floor(ms / 1000);
+  const hrs = Math.floor(totalSecs / 3600);
+  const mins = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+  if (hrs > 0) return `${hrs}h ${mins}m`;
+  if (mins > 0) return `${mins}m ${secs}s`;
+  return `${secs}s`;
+};
+
 const DeliveryPartnersTab = () => {
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [expandedPartner, setExpandedPartner] = useState(null);
+  const [expandedHistory, setExpandedHistory] = useState(null);
+  const [historyData, setHistoryData] = useState({});
 
   const fetchPartners = async () => {
     try {
@@ -1378,6 +1392,23 @@ const DeliveryPartnersTab = () => {
       fetchPartners();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update partner approval status');
+    }
+  };
+
+  const toggleHistory = async (partnerId) => {
+    if (expandedHistory === partnerId) {
+      setExpandedHistory(null);
+      return;
+    }
+    setExpandedHistory(partnerId);
+    if (historyData[partnerId]) return; // already loaded
+    try {
+      const res = await api.get(`/delivery/admin/partners/${partnerId}/status-history`);
+      if (res.data.success) {
+        setHistoryData(prev => ({ ...prev, [partnerId]: res.data.data }));
+      }
+    } catch (e) {
+      setHistoryData(prev => ({ ...prev, [partnerId]: { sessions: [], totalOnlineMs: 0, totalOfflineMs: 0, error: true } }));
     }
   };
 
@@ -1438,7 +1469,8 @@ const DeliveryPartnersTab = () => {
                   <th>Partner</th>
                   <th>Phone</th>
                   <th>Vehicle</th>
-                  <th>Status</th>
+                  <th>Approval Status</th>
+                  <th>Online</th>
                   <th>Active Orders</th>
                   <th>Total Deliveries</th>
                   <th>Wallet Balance</th>
@@ -1464,6 +1496,8 @@ const DeliveryPartnersTab = () => {
                         <div style={{ fontSize: '13px', fontWeight: 600 }}>{partner.vehicleType}</div>
                         {partner.vehicleNumber && <div style={{ fontSize: '12px', color: '#64748b' }}>{partner.vehicleNumber}</div>}
                       </td>
+
+                      {/* ── Approval Status column ── */}
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <span style={{
@@ -1474,17 +1508,6 @@ const DeliveryPartnersTab = () => {
                           }}>
                             {partner.status || 'Pending Approval'}
                           </span>
-                          {partner.status === 'Approved' && (
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', gap: '5px',
-                              padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: 700,
-                              background: partner.isOnline ? '#dcfce7' : '#f1f5f9',
-                              color: partner.isOnline ? '#16a34a' : '#64748b', width: 'fit-content'
-                            }}>
-                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: partner.isOnline ? '#16a34a' : '#94a3b8', display: 'inline-block' }}></span>
-                              {partner.isOnline ? 'Online' : 'Offline'}
-                            </span>
-                          )}
                           {!partner.isActive && partner.status === 'Approved' && (
                             <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, background: '#fee2e2', color: '#dc2626', width: 'fit-content' }}>
                               Deactivated
@@ -1492,6 +1515,26 @@ const DeliveryPartnersTab = () => {
                           )}
                         </div>
                       </td>
+
+                      {/* ── Online Status column (new, separate) ── */}
+                      <td>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '6px',
+                          padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
+                          background: partner.isOnline ? '#dcfce7' : '#f1f5f9',
+                          color: partner.isOnline ? '#16a34a' : '#64748b',
+                          border: `1px solid ${partner.isOnline ? '#86efac' : '#e2e8f0'}`
+                        }}>
+                          <span style={{
+                            width: '7px', height: '7px', borderRadius: '50%',
+                            background: partner.isOnline ? '#16a34a' : '#94a3b8',
+                            display: 'inline-block',
+                            boxShadow: partner.isOnline ? '0 0 0 2px rgba(22,163,74,0.25)' : 'none'
+                          }}></span>
+                          {partner.isOnline ? 'Online' : 'Offline'}
+                        </span>
+                      </td>
+
                       <td style={{ textAlign: 'center' }}>
                         <span style={{
                           background: partner.activeOrdersCount > 0 ? '#fef3c7' : '#f0fdf4',
@@ -1506,22 +1549,32 @@ const DeliveryPartnersTab = () => {
                         <div style={{ fontWeight: 800, color: '#047857', fontSize: '14px' }}>
                           ₹{partner.walletBalance?.toFixed(2) || '0.00'}
                         </div>
-                        <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
-                          Earnings
-                        </div>
+                        <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Earnings</div>
                       </td>
                       <td style={{ fontSize: '13px', color: '#64748b' }}>
                         {new Date(partner.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                           <button
                             onClick={() => setExpandedPartner(expandedPartner === partner._id ? null : partner._id)}
                             style={{ padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', background: 'white', cursor: 'pointer' }}
                           >
                             {expandedPartner === partner._id ? 'Collapse' : 'View Docs'}
                           </button>
-                          
+
+                          {/* History button */}
+                          <button
+                            onClick={() => toggleHistory(partner._id)}
+                            style={{
+                              padding: '5px 8px', border: '1px solid #bfdbfe', borderRadius: '6px',
+                              fontSize: '12px', background: expandedHistory === partner._id ? '#dbeafe' : 'white',
+                              color: '#1d4ed8', cursor: 'pointer', fontWeight: expandedHistory === partner._id ? 700 : 400
+                            }}
+                          >
+                            🕐 History
+                          </button>
+
                           {(partner.status === 'Pending Approval' || !partner.status) ? (
                             <>
                               <button onClick={() => updateApprovalStatus(partner, 'Approved')} style={{ padding: '5px 10px', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: '#22c55e', color: 'white' }}>✓ Approve</button>
@@ -1543,11 +1596,11 @@ const DeliveryPartnersTab = () => {
                         </div>
                       </td>
                     </tr>
-                    
+
                     {/* EXPANDED ROW FOR DOCS & KYC */}
                     {expandedPartner === partner._id && (
                       <tr style={{ background: '#f8fafc' }}>
-                        <td colSpan="8" style={{ padding: '20px', borderBottom: '2px solid #e2e8f0' }}>
+                        <td colSpan="10" style={{ padding: '20px', borderBottom: '2px solid #e2e8f0' }}>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
                             <div style={{ background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                               <h4 style={{ margin: '0 0 10px 0', color: '#334155', fontSize: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>Personal Info</h4>
@@ -1559,7 +1612,6 @@ const DeliveryPartnersTab = () => {
                                 <span style={{ color: '#64748b' }}>Address:</span> <span style={{ fontWeight: 500 }}>{partner.address || '—'}</span>
                               </div>
                             </div>
-                            
                             <div style={{ background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                               <h4 style={{ margin: '0 0 10px 0', color: '#334155', fontSize: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>Identity (KYC)</h4>
                               <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '8px', fontSize: '13px' }}>
@@ -1567,7 +1619,6 @@ const DeliveryPartnersTab = () => {
                                 <span style={{ color: '#64748b' }}>PAN No:</span> <span style={{ fontWeight: 500, textTransform: 'uppercase' }}>{partner.panNumber || '—'}</span>
                               </div>
                             </div>
-
                             <div style={{ background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                               <h4 style={{ margin: '0 0 10px 0', color: '#334155', fontSize: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>Bank Details</h4>
                               <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '8px', fontSize: '13px' }}>
@@ -1581,6 +1632,95 @@ const DeliveryPartnersTab = () => {
                         </td>
                       </tr>
                     )}
+
+                    {/* EXPANDED ROW FOR ONLINE/OFFLINE HISTORY */}
+                    {expandedHistory === partner._id && (
+                      <tr style={{ background: '#f0f9ff' }}>
+                        <td colSpan="10" style={{ padding: '20px', borderBottom: '2px solid #bae6fd' }}>
+                          <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '16px' }}>🕐</span>
+                            <h4 style={{ margin: 0, color: '#0c4a6e', fontSize: '14px', fontWeight: 700 }}>
+                              Online / Offline History — {partner.name}
+                            </h4>
+                          </div>
+
+                          {!historyData[partner._id] ? (
+                            <div style={{ color: '#64748b', fontSize: '13px' }}>Loading history…</div>
+                          ) : historyData[partner._id].error ? (
+                            <div style={{ color: '#dc2626', fontSize: '13px' }}>Failed to load history.</div>
+                          ) : historyData[partner._id].sessions.length === 0 ? (
+                            <div style={{ color: '#64748b', fontSize: '13px', padding: '12px', background: 'white', borderRadius: '8px', border: '1px solid #e0f2fe' }}>
+                              No history yet. Partner has not toggled online/offline from the app.
+                            </div>
+                          ) : (
+                            <>
+                              {/* Cumulative totals */}
+                              <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                                <div style={{ background: '#dcfce7', border: '1px solid #86efac', borderRadius: '8px', padding: '8px 14px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '16px' }}>🟢</span>
+                                  <div>
+                                    <div style={{ fontSize: '10px', color: '#166534', fontWeight: 600, textTransform: 'uppercase' }}>Total Online Time</div>
+                                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#15803d' }}>{fmtDuration(historyData[partner._id].totalOnlineMs)}</div>
+                                  </div>
+                                </div>
+                                <div style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 14px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '16px' }}>⚫</span>
+                                  <div>
+                                    <div style={{ fontSize: '10px', color: '#475569', fontWeight: 600, textTransform: 'uppercase' }}>Total Offline Time</div>
+                                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#334155' }}>{fmtDuration(historyData[partner._id].totalOfflineMs)}</div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Session log */}
+                              <div style={{ maxHeight: '280px', overflowY: 'auto', background: 'white', borderRadius: '10px', border: '1px solid #e0f2fe', padding: '12px' }}>
+                                {historyData[partner._id].sessions.map((session, idx) => (
+                                  <div key={idx} style={{
+                                    display: 'flex', alignItems: 'center', gap: '12px',
+                                    padding: '8px 10px', borderRadius: '8px', marginBottom: '6px',
+                                    background: session.isOnline ? '#f0fdf4' : '#f8fafc',
+                                    border: `1px solid ${session.isOnline ? '#bbf7d0' : '#e2e8f0'}`
+                                  }}>
+                                    {/* Status dot */}
+                                    <span style={{
+                                      width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
+                                      background: session.isOnline ? '#22c55e' : '#94a3b8',
+                                      boxShadow: session.isOnline ? '0 0 0 3px rgba(34,197,94,0.15)' : 'none'
+                                    }}></span>
+                                    {/* Label */}
+                                    <span style={{ fontWeight: 700, fontSize: '12px', minWidth: '52px', color: session.isOnline ? '#16a34a' : '#64748b' }}>
+                                      {session.isOnline ? 'Online' : 'Offline'}
+                                      {session.isCurrent && <span style={{ marginLeft: '4px', fontSize: '10px', background: '#fef9c3', color: '#854d0e', padding: '1px 5px', borderRadius: '8px', border: '1px solid #fde68a' }}>Now</span>}
+                                    </span>
+                                    {/* Time range */}
+                                    <div style={{ flex: 1, fontSize: '12px', color: '#475569' }}>
+                                      <span style={{ fontWeight: 500 }}>
+                                        {new Date(session.startTime).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })}
+                                      </span>
+                                      {session.endTime && (
+                                        <>
+                                          <span style={{ color: '#94a3b8', margin: '0 4px' }}>→</span>
+                                          <span style={{ fontWeight: 500 }}>
+                                            {new Date(session.endTime).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })}
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
+                                    {/* Duration */}
+                                    <span style={{
+                                      fontWeight: 700, fontSize: '12px', minWidth: '60px', textAlign: 'right',
+                                      color: session.isOnline ? '#16a34a' : '#94a3b8'
+                                    }}>
+                                      {session.isCurrent ? '(ongoing)' : fmtDuration(session.durationMs)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    )}
                   </React.Fragment>
                 ))}
               </tbody>
@@ -1591,6 +1731,7 @@ const DeliveryPartnersTab = () => {
     </div>
   );
 };
+
 
 const LocationsTab = () => {
     const [locations, setLocations] = useState({ customers: [], sellers: [] });
