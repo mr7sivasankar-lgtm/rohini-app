@@ -7,6 +7,7 @@ import User from '../models/User.js';
 import Seller from '../models/Seller.js';
 import WalletTransaction from '../models/WalletTransaction.js';
 import PartnerStatusLog from '../models/PartnerStatusLog.js';
+import { sendPush } from '../utils/notify.js';
 
 const router = express.Router();
 
@@ -317,6 +318,29 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
 
         await order.save();
 
+        // ── Notify Customer: delivery status update ──
+        try {
+            const customer = await User.findById(order.user);
+            if (customer?.pushSubscription) {
+                const msgMap = {
+                    'Picked Up':      { title: '🛕 Order Picked Up!',    body: 'Your order has been collected from the seller.' },
+                    'Out for Delivery':{ title: '📦 Out for Delivery!', body: 'Your order is on the way to you.' },
+                    'Delivered':      { title: '✅ Order Delivered!',   body: 'Your order has been delivered. Enjoy!' },
+                };
+                const msg = msgMap[deliveryStatus];
+                if (msg) {
+                    await sendPush(customer.pushSubscription, {
+                        ...msg,
+                        icon: '/icons/icon-192.png',
+                        vibrate: deliveryStatus === 'Delivered' ? [200, 100, 200] : undefined,
+                        tag: `delivery-status-${order._id}`,
+                        url: `/orders/${order._id}`
+                    });
+                }
+            }
+        } catch (notifErr) {
+            console.error('[Push] Customer delivery-status notify error:', notifErr.message);
+        }
 
         res.json({ success: true, message: `Status updated to ${deliveryStatus}`, data: order });
     } catch (err) {
@@ -451,6 +475,24 @@ export const autoAssignDeliveryPartner = async (orderId, deliveryType = 'Normal'
         await DeliveryPartner.findByIdAndUpdate(partner._id, {
             $inc: { activeOrdersCount: 1 }
         });
+
+        // ── Notify Delivery Partner: new assignment ──
+        try {
+            const freshPartner = await DeliveryPartner.findById(partner._id);
+            const assignedOrder = await Order.findById(orderId);
+            if (freshPartner?.pushSubscription) {
+                await sendPush(freshPartner.pushSubscription, {
+                    title: '🔔 New Delivery Assigned!',
+                    body: `Pick up from ${assignedOrder?.sellerShopName || 'the shop'}`,
+                    icon: '/icons/icon-192.png',
+                    vibrate: [300, 100, 300],
+                    tag: `assigned-${orderId}`,
+                    url: '/'
+                });
+            }
+        } catch (notifErr) {
+            console.error('[Push] Partner assignment notify error:', notifErr.message);
+        }
 
         console.log(`[AutoAssign] Order ${orderId} assigned to partner ${partner.name} (type: ${deliveryType})`);
         return partner;

@@ -1,25 +1,26 @@
-// Customer App Service Worker
-// Handles push notifications for order status updates
+// Seller App Service Worker
+// Plays loud alert sound for new orders — critical notification
 
 self.addEventListener('push', (event) => {
     let data = {};
     if (event.data) {
         try { data = event.data.json(); }
-        catch { data = { title: 'Rohini', body: event.data.text() }; }
+        catch { data = { title: 'Rohini Seller', body: event.data.text() }; }
     }
 
     const options = {
         body: data.body || '',
         icon: data.icon || '/vite.svg',
         badge: '/vite.svg',
-        tag: data.tag || 'rohini-order-update',
+        tag: data.tag || 'seller-notification',
         renotify: true,
-        vibrate: data.vibrate || [100, 50, 100],
+        vibrate: [500, 200, 500, 200, 500], // Aggressive vibration for new orders
+        requireInteraction: true, // Keep notification on screen until seller dismisses
         data: { url: data.url || '/' }
     };
 
     event.waitUntil(
-        self.registration.showNotification(data.title || 'Rohini', options)
+        self.registration.showNotification(data.title || 'Rohini Seller', options)
     );
 });
 

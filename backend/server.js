@@ -30,6 +30,7 @@ import adminRoutes from './routes/admin.js';
 import adminConfigRoutes from './routes/adminConfig.js';
 import walletRoutes from './routes/wallet.js';
 import paymentRoutes from './routes/payment.js';
+import pushRoutes from './routes/push.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -103,6 +104,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/config', adminConfigRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/push', pushRoutes);
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({

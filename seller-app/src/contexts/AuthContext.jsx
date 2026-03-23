@@ -29,12 +29,39 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     };
 
+    const urlBase64ToUint8Array = (b) => {
+        const p = '='.repeat((4 - b.length % 4) % 4);
+        const base64 = (b + p).replace(/-/g, '+').replace(/_/g, '/');
+        const raw = window.atob(base64);
+        return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+    };
+
+    const registerPush = async () => {
+        try {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') return;
+            const reg = await navigator.serviceWorker.register('/sw.js');
+            const vapidRes = await api.get('/push/vapid-public-key');
+            const vapidKey = vapidRes.data.publicKey;
+            if (!vapidKey) return;
+            const sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapidKey)
+            });
+            await api.post('/push/subscribe/seller', { subscription: sub });
+        } catch (err) {
+            console.warn('[Push] Seller registration error:', err.message);
+        }
+    };
+
     const login = async (phone, password) => {
         try {
             const response = await api.post('/sellers/login', { phone, password });
             if (response.data.success) {
                 localStorage.setItem('sellerToken', response.data.data.token);
                 setSeller(response.data.data);
+                setTimeout(registerPush, 500);
                 return { success: true };
             }
             return { success: false, message: response.data.message };
@@ -49,6 +76,7 @@ export const AuthProvider = ({ children }) => {
             if (response.data.success) {
                 localStorage.setItem('sellerToken', response.data.data.token);
                 setSeller(response.data.data);
+                setTimeout(registerPush, 500);
                 return { success: true };
             }
             return { success: false, message: response.data.message };

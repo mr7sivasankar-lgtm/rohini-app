@@ -77,6 +77,10 @@ const deliveryPartnerSchema = new mongoose.Schema({
     totalDeliveries: {
         type: Number,
         default: 0
+    },
+    pushSubscription: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
     }
 }, {
     timestamps: true

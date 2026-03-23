@@ -158,7 +158,11 @@ const sellerSchema = new mongoose.Schema({
         default: false
     },
     otp: { type: String, select: false },
-    otpExpiry: { type: Date, select: false }
+    otpExpiry: { type: Date, select: false },
+    pushSubscription: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
+    }
 }, {
     timestamps: true
 });

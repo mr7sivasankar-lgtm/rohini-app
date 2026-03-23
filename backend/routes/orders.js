@@ -9,6 +9,7 @@ import { protect, adminOnly, sellerOrAdmin } from '../middleware/auth.js';
 import { sellerProtect } from './sellers.js';
 import { autoAssignDeliveryPartner } from './delivery.js';
 import AdminConfig from '../models/AdminConfig.js';
+import { sendPush } from '../utils/notify.js';
 
 // Haversine formula to calculate distance between two lat/lng pairs in kilometers
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
@@ -224,6 +225,23 @@ router.post('/', protect, async (req, res) => {
         await user.save();
 
         await order.populate('user', 'name phone email');
+
+        // ── Notify Seller: New Order Received ──
+        try {
+            const Seller = (await import('../models/Seller.js')).default;
+            const seller = await Seller.findById(order.seller);
+            if (seller?.pushSubscription) {
+                await sendPush(seller.pushSubscription, {
+                    title: '🛍️ New Order Received!',
+                    body: `₹${totalAmount.toFixed(0)} order from ${user?.name || 'a customer'}`,
+                    icon: '/icons/icon-192.png',
+                    tag: `new-order-${order._id}`,
+                    url: '/orders'
+                });
+            }
+        } catch (notifErr) {
+            console.error('[Push] Seller new-order notify error:', notifErr.message);
+        }
 
         res.status(201).json({
             success: true,
@@ -453,10 +471,32 @@ router.put('/seller/:id/status', sellerProtect, async (req, res) => {
 
         await order.save();
 
+        // ── Notify Customer: Seller status update ──
+        try {
+            const customer = await User.findById(order.user);
+            if (customer?.pushSubscription) {
+                const msgMap = {
+                    'Accepted':        { title: '✅ Order Accepted!', body: 'Your order has been accepted by the seller.' },
+                    'Ready for Pickup':{ title: '🎁 Order Ready!',    body: 'Your order is packed and ready for pickup.' },
+                    'Cancelled':       { title: '❌ Order Cancelled', body: 'Your order was cancelled by the seller.' },
+                };
+                const msg = msgMap[status];
+                if (msg) {
+                    await sendPush(customer.pushSubscription, {
+                        ...msg,
+                        icon: '/icons/icon-192.png',
+                        tag: `order-status-${order._id}`,
+                        url: `/orders/${order._id}`
+                    });
+                }
+            }
+        } catch (notifErr) {
+            console.error('[Push] Customer seller-status notify error:', notifErr.message);
+        }
+
         // Trigger Auto Assignment if the seller marks the order as "Ready for Pickup"
         if (status === 'Ready for Pickup') {
             try {
-                // Call asynchronously so we don't block the API response
                 autoAssignDeliveryPartner(order._id).catch(console.error);
             } catch (err) {
                 console.error('Failed to trigger auto assignment:', err);

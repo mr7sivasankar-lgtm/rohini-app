@@ -46,6 +46,33 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Register push notification service worker
+    const registerPush = async () => {
+        try {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') return;
+            const reg = await navigator.serviceWorker.register('/sw.js');
+            const vapidRes = await api.get('/push/vapid-public-key');
+            const vapidKey = vapidRes.data.publicKey;
+            if (!vapidKey) return;
+            const sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapidKey)
+            });
+            await api.post('/push/subscribe', { subscription: sub });
+        } catch (err) {
+            console.warn('[Push] Registration error:', err.message);
+        }
+    };
+
+    const urlBase64ToUint8Array = (base64String) => {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const raw = window.atob(base64);
+        return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+    };
+
     const sendOTP = async (phone) => {
         try {
             const response = await api.post('/auth/send-otp', { phone });
@@ -64,6 +91,7 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('token', token);
                 localStorage.setItem('user', JSON.stringify(user));
                 setUser(user);
+                setTimeout(registerPush, 500); // Register push after login
             }
 
             return response.data;

@@ -1,25 +1,26 @@
-// Customer App Service Worker
-// Handles push notifications for order status updates
+// Delivery App Service Worker
+// Ring bell vibration on new delivery assignment
 
 self.addEventListener('push', (event) => {
     let data = {};
     if (event.data) {
         try { data = event.data.json(); }
-        catch { data = { title: 'Rohini', body: event.data.text() }; }
+        catch { data = { title: 'Rohini Delivery', body: event.data.text() }; }
     }
 
     const options = {
         body: data.body || '',
         icon: data.icon || '/vite.svg',
         badge: '/vite.svg',
-        tag: data.tag || 'rohini-order-update',
+        tag: data.tag || 'delivery-notification',
         renotify: true,
-        vibrate: data.vibrate || [100, 50, 100],
+        vibrate: data.vibrate || [300, 100, 300, 100, 300], // Bell pattern
+        requireInteraction: true, // Stay on screen until partner taps
         data: { url: data.url || '/' }
     };
 
     event.waitUntil(
-        self.registration.showNotification(data.title || 'Rohini', options)
+        self.registration.showNotification(data.title || 'Rohini Delivery', options)
     );
 });
 
