@@ -55,11 +55,20 @@ app.use(cors({
             'http://localhost:5175',
             'https://rohini-app.vercel.app',
             'https://rohini-admin.vercel.app',
-            'https://rohini-app-4ncj.vercel.app'
+            'https://rohini-app-4ncj.vercel.app',
+            // Capacitor Android app origins
+            'capacitor://localhost',
+            'http://localhost',
+            'ionic://localhost',
+            'https://localhost'
         ];
 
         // Allow vercel preview deployments dynamically
-        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+        if (
+            !origin ||
+            allowedOrigins.indexOf(origin) !== -1 ||
+            origin.endsWith('.vercel.app')
+        ) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
