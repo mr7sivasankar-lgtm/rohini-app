@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Rohini Seller</string>
+    <string name="title_activity_main">Rohini Seller</string>
+    <string name="package_name">com.rohini.seller</string>
+    <string name="custom_url_scheme">com.rohini.seller</string>
+</resources>

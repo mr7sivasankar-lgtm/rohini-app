@@ -1,0 +1,8 @@
+{
+  "appId": "com.rohini.delivery",
+  "appName": "Rohini Delivery",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
