@@ -118,9 +118,10 @@ const Home = () => {
         });
     };
 
+    // Show city or locality — not the full street address
     const locationLabel = locLoading
         ? 'Detecting...'
-        : (fullAddress || pincode || 'Set Location');
+        : (city || locality || pincode || 'Set Location');
 
     return (
         <div className="home-page">
@@ -138,7 +139,7 @@ const Home = () => {
                         </svg>
                     </div>
                 </div>
-                <h1 className="shop-title">Uchicca</h1>
+                <h1 className="shop-title">{user?.name?.split(' ')[0] || 'Hi there!'}</h1>
             </div>
 
             {/* Location Picker Modal */}
@@ -428,7 +429,7 @@ const HeroSlideshow = ({ shops, banners, navigate }) => {
                     <div className="slideshow-slide" key={slide.type === 'shop' ? slide.data._id : slide.type === 'banner' ? slide.data._id : `welcome-${index}`} style={{ minWidth: '100%', flexBasis: '100%', padding: '0 4px', boxSizing: 'border-box', flexShrink: 0 }}>
                         
                         {slide.type === 'welcome' && (
-                            <div className="banner-placeholder" style={{ borderRadius: '16px', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', minHeight: '220px', overflow: 'hidden', position: 'relative' }}>
+                            <div className="banner-placeholder" style={{ borderRadius: '16px', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', height: '180px', overflow: 'hidden', position: 'relative' }}>
                                 <div className="placeholder-content" style={{ zIndex: 2, padding: '24px' }}>
                                     <h2 style={{ fontSize: '26px', marginBottom: '8px' }}>Welcome</h2>
                                     <p style={{ fontSize: '14px', color: '#a0aec0' }}>Your Style, Delivered Instantly</p>
@@ -437,7 +438,7 @@ const HeroSlideshow = ({ shops, banners, navigate }) => {
                         )}
                         
                         {slide.type === 'banner' && (
-                            <div className="banner-slide" style={{ borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', minHeight: '220px' }}>
+                            <div className="banner-slide" style={{ borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', height: '180px' }}>
                                 <img src={getImageUrl(slide.data.image)} alt={slide.data.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                         )}

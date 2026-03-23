@@ -1,4 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { App as CapApp } from '@capacitor/app';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { WishlistProvider } from './contexts/WishlistContext';
@@ -48,6 +50,23 @@ const ProtectedRoute = ({ children }) => {
 
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Android hardware back button
+  useEffect(() => {
+    const handler = CapApp.addListener('backButton', () => {
+      const homePaths = ['/', '/home'];
+      if (homePaths.includes(location.pathname)) {
+        // On home page — exit app
+        CapApp.exitApp();
+      } else {
+        // Navigate back
+        navigate(-1);
+      }
+    });
+    return () => { handler.then(h => h.remove()); };
+  }, [location.pathname, navigate]);
 
   return (
     <>
