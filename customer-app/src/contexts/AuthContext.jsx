@@ -127,7 +127,8 @@ export const AuthProvider = ({ children }) => {
         updateProfile,
         logout,
         isAuthenticated: !!user,
-        fetchUser
+        fetchUser,
+        refreshUser: fetchUser  // alias used by EditProfile
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
