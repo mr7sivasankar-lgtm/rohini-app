@@ -166,6 +166,14 @@ const orderSchema = new mongoose.Schema({
     deliveredAt: {
         type: Date,
         default: null
+    },
+    razorpayOrderId: {
+        type: String,
+        default: null
+    },
+    razorpayPaymentId: {
+        type: String,
+        default: null
     }
 }, {
     timestamps: true

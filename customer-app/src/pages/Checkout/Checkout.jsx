@@ -5,6 +5,18 @@ import { useCart } from '../../contexts/CartContext';
 import api from '../../utils/api';
 import './Checkout.css';
 
+// Inject Razorpay checkout script once
+const loadRazorpayScript = () =>
+    new Promise((resolve) => {
+        if (document.getElementById('razorpay-script')) return resolve(true);
+        const script = document.createElement('script');
+        script.id = 'razorpay-script';
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+    });
+
 const Checkout = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -27,6 +39,7 @@ const Checkout = () => {
     const [email, setEmail] = useState(user?.email || '');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState('COD'); // 'COD' | 'Online'
 
     // Auto-fill address from passed addressId
     useEffect(() => {
@@ -51,8 +64,115 @@ const Checkout = () => {
         }
     }, [passedAddressId]);
 
-    const deliveryFee = 0; // Free delivery — admin can configure this
+    const deliveryFee = 0;
     const total = cartTotal + deliveryFee;
+
+    const buildOrderPayload = () => ({
+        items: cart.map(item => ({
+            product: item.product._id,
+            quantity: item.quantity,
+            size: item.size,
+            color: item.color
+        })),
+        shippingAddress: address,
+        contactInfo: { phone, email },
+        deliveryFee
+    });
+
+    // ── COD Flow ───────────────────────────────────────────────────────────────
+    const handleCOD = async () => {
+        try {
+            setLoading(true);
+            const response = await api.post('/orders', buildOrderPayload());
+            if (response.data.success) {
+                await clearCart();
+                navigate(`/order-success/${response.data.data.orderId}`);
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to place order');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ── Online (Razorpay) Flow ─────────────────────────────────────────────────
+    const handleOnlinePayment = async () => {
+        try {
+            setLoading(true);
+            setError('');
+
+            const scriptLoaded = await loadRazorpayScript();
+            if (!scriptLoaded) {
+                setError('Failed to load payment gateway. Please check your connection.');
+                setLoading(false);
+                return;
+            }
+
+            // Step 1 — create Razorpay order on backend
+            const payload = buildOrderPayload();
+            const createRes = await api.post('/payment/create-order', payload);
+            if (!createRes.data.success) throw new Error(createRes.data.message);
+
+            const { razorpayOrderId, amount, currency, keyId } = createRes.data.data;
+
+            // Step 2 — open Razorpay checkout modal
+            await new Promise((resolve, reject) => {
+                const options = {
+                    key: keyId,
+                    amount: Math.round(amount * 100),
+                    currency,
+                    name: 'Rohini',
+                    description: 'Order Payment',
+                    order_id: razorpayOrderId,
+                    prefill: {
+                        name: address.fullName || user?.name || '',
+                        email: email || user?.email || '',
+                        contact: phone || user?.phone || ''
+                    },
+                    theme: { color: '#f97316' },
+                    handler: async (response) => {
+                        try {
+                            // Step 3 — verify payment + create DB order
+                            const verifyRes = await api.post('/payment/verify', {
+                                razorpayOrderId: response.razorpay_order_id,
+                                razorpayPaymentId: response.razorpay_payment_id,
+                                razorpaySignature: response.razorpay_signature,
+                                ...payload
+                            });
+
+                            if (verifyRes.data.success) {
+                                await clearCart();
+                                navigate(`/order-success/${verifyRes.data.data.orderId}`);
+                                resolve();
+                            } else {
+                                reject(new Error(verifyRes.data.message || 'Payment verification failed'));
+                            }
+                        } catch (err) {
+                            reject(err);
+                        }
+                    },
+                    modal: {
+                        ondismiss: () => {
+                            reject(new Error('DISMISSED'));
+                        }
+                    }
+                };
+
+                const rzp = new window.Razorpay(options);
+                rzp.on('payment.failed', (response) => {
+                    reject(new Error(response.error?.description || 'Payment failed'));
+                });
+                rzp.open();
+            });
+
+        } catch (err) {
+            if (err.message !== 'DISMISSED') {
+                setError(err.response?.data?.message || err.message || 'Payment failed');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -62,40 +182,15 @@ const Checkout = () => {
             setError('Please fill in all required fields including Full Name');
             return;
         }
-
         if (cart.length === 0) {
             setError('Your cart is empty');
             return;
         }
 
-        try {
-            setLoading(true);
-
-            const orderData = {
-                items: cart.map(item => ({
-                    product: item.product._id,
-                    quantity: item.quantity,
-                    size: item.size,
-                    color: item.color
-                })),
-                shippingAddress: address,
-                contactInfo: {
-                    phone,
-                    email
-                },
-                deliveryFee
-            };
-
-            const response = await api.post('/orders', orderData);
-
-            if (response.data.success) {
-                await clearCart();
-                navigate(`/order-success/${response.data.data.orderId}`);
-            }
-        } catch (err) {
-            setError(err.response?.data?.message || 'Failed to place order');
-        } finally {
-            setLoading(false);
+        if (paymentMethod === 'COD') {
+            await handleCOD();
+        } else {
+            await handleOnlinePayment();
         }
     };
 
@@ -120,7 +215,6 @@ const Checkout = () => {
                     <div className="section-header">
                         <h2 className="section-title">Shipping Address</h2>
                     </div>
-                    
                     <div className="display-card">
                         <p className="display-name">{address.fullName || 'No Name Provided'}</p>
                         <p className="display-text">{address.fullAddress || 'No Address Provided'}</p>
@@ -136,7 +230,6 @@ const Checkout = () => {
                     <div className="section-header">
                         <h2 className="section-title">Contact Information</h2>
                     </div>
-
                     <div className="display-card">
                         <p className="display-text"><span className="display-label">Phone:</span> {phone || 'Not provided'}</p>
                         {email && <p className="display-text"><span className="display-label">Email:</span> {email}</p>}
@@ -146,34 +239,67 @@ const Checkout = () => {
                 {/* Order Summary */}
                 <div className="form-section">
                     <h2 className="section-title">Order Summary</h2>
-
                     <div className="summary-row">
                         <span>Items ({cart.length})</span>
                         <span>₹{cartTotal.toFixed(2)}</span>
                     </div>
-
                     <div className="summary-row">
                         <span>Delivery Fee</span>
                         <span>₹{deliveryFee.toFixed(2)}</span>
                     </div>
-
                     <div className="summary-divider"></div>
-
                     <div className="summary-row summary-total">
                         <span>Total</span>
                         <span>₹{total.toFixed(2)}</span>
                     </div>
+                </div>
 
-                    <div className="payment-method">
-                        <label>Payment Method</label>
-                        <div className="payment-option">
-                            <span className="payment-option-icon">💵</span> Cash on Delivery
+                {/* Payment Method */}
+                <div className="form-section">
+                    <h2 className="section-title">Payment Method</h2>
+                    <div className="payment-options-grid">
+
+                        {/* COD option */}
+                        <div
+                            className={`payment-card ${paymentMethod === 'COD' ? 'payment-card--active' : ''}`}
+                            onClick={() => setPaymentMethod('COD')}
+                        >
+                            <div className="payment-card__radio">
+                                <div className={`radio-dot ${paymentMethod === 'COD' ? 'radio-dot--active' : ''}`} />
+                            </div>
+                            <div className="payment-card__icon">💵</div>
+                            <div className="payment-card__info">
+                                <div className="payment-card__title">Cash on Delivery</div>
+                                <div className="payment-card__sub">Pay when your order arrives</div>
+                            </div>
                         </div>
+
+                        {/* Online / Razorpay option */}
+                        <div
+                            className={`payment-card ${paymentMethod === 'Online' ? 'payment-card--active' : ''}`}
+                            onClick={() => setPaymentMethod('Online')}
+                        >
+                            <div className="payment-card__radio">
+                                <div className={`radio-dot ${paymentMethod === 'Online' ? 'radio-dot--active' : ''}`} />
+                            </div>
+                            <div className="payment-card__icon">💳</div>
+                            <div className="payment-card__info">
+                                <div className="payment-card__title">Pay Online</div>
+                                <div className="payment-card__sub">UPI · Cards · Netbanking</div>
+                            </div>
+                            {paymentMethod === 'Online' && (
+                                <div className="payment-card__badge">Razorpay</div>
+                            )}
+                        </div>
+
                     </div>
                 </div>
 
                 <button type="submit" className="btn-submit-order" disabled={loading}>
-                    {loading ? 'Placing Order...' : 'Place Order'}
+                    {loading
+                        ? (paymentMethod === 'Online' ? 'Preparing Payment…' : 'Placing Order…')
+                        : (paymentMethod === 'Online' ? `Pay ₹${total.toFixed(2)} Online` : 'Place Order (COD)')
+                    }
                 </button>
             </form>
         </div>
