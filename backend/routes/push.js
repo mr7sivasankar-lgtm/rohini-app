@@ -4,8 +4,9 @@ import User from '../models/User.js';
 import Seller from '../models/Seller.js';
 import DeliveryPartner from '../models/DeliveryPartner.js';
 import { protect } from '../middleware/auth.js';
-import { sellerProtect } from '../middleware/sellerAuth.js';
-import { protectDelivery } from '../middleware/deliveryAuth.js';
+import { sellerProtect } from '../routes/sellers.js';
+import { protectDelivery } from '../routes/delivery.js';
+
 
 const router = express.Router();
 
