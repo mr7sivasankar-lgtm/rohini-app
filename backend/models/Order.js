@@ -103,6 +103,14 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    paymentGatewayFee: {
+        type: Number,
+        default: 0
+    },
+    adminProfit: {
+        type: Number,
+        default: 0
+    },
     totalAmount: {
         type: Number,
         required: true

@@ -88,6 +88,7 @@ router.post('/', protect, async (req, res) => {
         const config = await AdminConfig.getConfig();
         const platformFee = config.platformFee || 10;
         const commissionPercentage = config.commissionPercentage || 20;
+        const paymentGatewayPercentage = config.paymentGatewayPercentage || 2;
 
         // Verify stock and calculate total
         let sellingPriceTotal = 0;
@@ -191,6 +192,9 @@ router.post('/', protect, async (req, res) => {
         // Customer always pays sellingPrice + deliveryFee + platformFee
         const totalAmount = sellingPriceTotal + finalDeliveryFee + platformFee;
 
+        // Payment gateway fee (estimated on full order total paid by customer)
+        const paymentGatewayFee = Math.round(totalAmount * (paymentGatewayPercentage / 100));
+
         // Create order
         const order = await Order.create({
             user: req.user._id,
@@ -209,6 +213,7 @@ router.post('/', protect, async (req, res) => {
             sellerEarning,
             deliveryEarning,
             totalAmount,
+            paymentGatewayFee,
             walletSettlementStatus: 'Pending',
             paymentMethod: 'COD'
         });
@@ -469,6 +474,100 @@ router.put('/seller/:id/status', sellerProtect, async (req, res) => {
 });
 
 // ========== ADMIN ROUTES (must be BEFORE /:id) ==========
+
+// @route   GET /api/orders/admin/revenue
+// @desc    Revenue & profit analytics for admin dashboard
+// @access  Private/Admin
+router.get('/admin/revenue', protect, adminOnly, async (req, res) => {
+    try {
+        const { filter = 'month', from, to } = req.query;
+
+        // Build date range
+        const now = new Date();
+        let startDate;
+        let endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999);
+
+        if (filter === 'today') {
+            startDate = new Date(now); startDate.setHours(0, 0, 0, 0);
+        } else if (filter === 'week') {
+            startDate = new Date(now); startDate.setDate(now.getDate() - 6); startDate.setHours(0, 0, 0, 0);
+        } else if (filter === 'month') {
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        } else if (filter === 'custom' && from && to) {
+            startDate = new Date(from); startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(to); endDate.setHours(23, 59, 59, 999);
+        } else {
+            startDate = new Date(0); // All time
+        }
+
+        const matchDelivered = {
+            status: 'Delivered',
+            deliveredAt: { $gte: startDate, $lte: endDate }
+        };
+
+        // Summary totals
+        const [summary] = await Order.aggregate([
+            { $match: matchDelivered },
+            { $group: {
+                _id: null,
+                totalOrders:      { $sum: 1 },
+                totalRevenue:     { $sum: '$totalAmount' },
+                totalCommission:  { $sum: '$commissionAmount' },
+                totalPlatformFees:{ $sum: '$platformFee' },
+                totalGatewayFees: { $sum: '$paymentGatewayFee' },
+                totalProfit:      { $sum: '$adminProfit' }
+            }}
+        ]);
+
+        // Daily chart data
+        const dailyChart = await Order.aggregate([
+            { $match: matchDelivered },
+            { $group: {
+                _id: { $dateToString: { format: '%Y-%m-%d', date: '$deliveredAt' } },
+                profit: { $sum: '$adminProfit' },
+                revenue: { $sum: '$totalAmount' },
+                orders:  { $sum: 1 }
+            }},
+            { $sort: { _id: 1 } }
+        ]);
+
+        // Monthly chart data
+        const monthlyChart = await Order.aggregate([
+            { $match: { status: 'Delivered', deliveredAt: { $exists: true } } },
+            { $group: {
+                _id: { $dateToString: { format: '%Y-%m', date: '$deliveredAt' } },
+                profit: { $sum: '$adminProfit' },
+                revenue: { $sum: '$totalAmount' },
+                orders:  { $sum: 1 }
+            }},
+            { $sort: { _id: 1 } },
+            { $limit: 12 }
+        ]);
+
+        // Per-order table (most recent 100)
+        const orders = await Order.find(matchDelivered)
+            .select('orderId sellingPriceTotal commissionAmount platformFee paymentGatewayFee adminProfit deliveredAt totalAmount')
+            .sort({ deliveredAt: -1 })
+            .limit(100);
+
+        res.json({
+            success: true,
+            data: {
+                summary: summary || {
+                    totalOrders: 0, totalRevenue: 0, totalCommission: 0,
+                    totalPlatformFees: 0, totalGatewayFees: 0, totalProfit: 0
+                },
+                dailyChart,
+                monthlyChart,
+                orders
+            }
+        });
+    } catch (err) {
+        console.error('Revenue analytics error:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // @route   GET /api/orders/admin/all
 // @desc    Get all orders (admin)
@@ -763,6 +862,9 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
             }
 
             order.walletSettlementStatus = 'Settled';
+
+            // ── Store admin profit on delivery ──
+            order.adminProfit = (order.commissionAmount || 0) + (order.platformFee || 0) - (order.paymentGatewayFee || 0);
         }
 
         await order.save();

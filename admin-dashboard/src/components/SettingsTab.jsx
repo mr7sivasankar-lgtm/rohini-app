@@ -81,6 +81,15 @@ const SettingsTab = () => {
                     </div>
 
                     <div style={{ background: '#f8fafc', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                        <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a' }}>💳 Payment Gateway</h3>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: '#475569' }}>Gateway Fee (%)</label>
+                            <input type="number" name="paymentGatewayPercentage" value={config.paymentGatewayPercentage ?? 2} onChange={handleChange} min="0" max="10" step="0.1" style={inputStyle} required />
+                            <small style={{ color: '#94a3b8', fontSize: 11, display: 'block', marginTop: 4 }}>Estimated payment processing cost deducted from profit. Default: 2%</small>
+                        </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0' }}>
                         <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a' }}>🚚 Delivery Economics</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                             <div>

@@ -26,6 +26,10 @@ const adminConfigSchema = new mongoose.Schema({
     baseDeliveryDistance: {
         type: Number,
         default: 2 // First 2 KM are covered by baseDeliveryCharge
+    },
+    paymentGatewayPercentage: {
+        type: Number,
+        default: 2 // 2% of total order amount
     }
 }, {
     timestamps: true

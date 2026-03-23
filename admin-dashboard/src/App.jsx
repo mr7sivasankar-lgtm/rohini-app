@@ -9,6 +9,7 @@ import Sellers from './components/Sellers';
 import TopRatedShops from './components/TopRatedShops';
 import SettingsTab from './components/SettingsTab';
 import PayoutsTab from './components/PayoutsTab';
+import RevenueDashboard from './components/RevenueDashboard';
 import './index.css';
 
 function App() {
@@ -384,6 +385,9 @@ function App() {
         </div>
         <div className={`menu-item ${activeTab === 'delivery-partners' ? 'active' : ''}`} onClick={() => handleTabChange('delivery-partners')}>
           🚴 Delivery Partners
+        </div>
+        <div className={`menu-item ${activeTab === 'revenue' ? 'active' : ''}`} onClick={() => handleTabChange('revenue')}>
+          💰 Revenue & Profit
         </div>
         <div className={`menu-item ${activeTab === 'payouts' ? 'active' : ''}`} onClick={() => handleTabChange('payouts')}>
           💸 Payouts Center
@@ -859,6 +863,10 @@ function App() {
 
         {activeTab === 'payouts' && (
           <PayoutsTab />
+        )}
+
+        {activeTab === 'revenue' && (
+          <RevenueDashboard />
         )}
 
         {activeTab === 'settings' && (

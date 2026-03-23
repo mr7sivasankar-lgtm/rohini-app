@@ -28,6 +28,7 @@ router.put('/', protect, adminOnly, async (req, res) => {
         if (req.body.deliveryChargePerKm !== undefined) config.deliveryChargePerKm = req.body.deliveryChargePerKm;
         if (req.body.baseDeliveryCharge !== undefined) config.baseDeliveryCharge = req.body.baseDeliveryCharge;
         if (req.body.baseDeliveryDistance !== undefined) config.baseDeliveryDistance = req.body.baseDeliveryDistance;
+        if (req.body.paymentGatewayPercentage !== undefined) config.paymentGatewayPercentage = req.body.paymentGatewayPercentage;
 
         await config.save();
         res.json({ success: true, data: config, message: 'Configuration updated successfully' });
