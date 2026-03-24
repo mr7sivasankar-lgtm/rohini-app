@@ -8,21 +8,16 @@ const ProfileTab = ({ seller }) => {
     const [isEditing, setIsEditing] = useState(false);
     
     const [formData, setFormData] = useState({
-        ownerName: '',
-        phone: '',
-        shopName: '',
-        shopAddress: '',
-        city: '',
-        state: '',
-        pincode: '',
-        description: '',
-        gstNumber: '',
-        deliveryRadius: 5,
-        minOrderAmount: 0,
-        location: {
-            type: 'Point',
-            coordinates: [0, 0]
-        }
+        ownerName: '', email: '',
+        phone: '', shopName: '',
+        shopCategory: 'Clothing Store',
+        shopAddress: '', city: '', state: '', pincode: '',
+        description: '', gstNumber: '', businessPan: '',
+        openingTime: '10:00', closingTime: '21:00',
+        deliveryRadius: 5, minOrderAmount: 0,
+        bankAccountName: '', bankAccountNumber: '',
+        bankIfsc: '', bankName: '', upiId: '',
+        location: { type: 'Point', coordinates: [0, 0] }
     });
 
     const [loading, setLoading] = useState(false);
@@ -39,16 +34,26 @@ const ProfileTab = ({ seller }) => {
         if (seller) {
             setFormData({
                 ownerName: seller.ownerName || '',
+                email: seller.email || '',
                 phone: seller.phone || '',
                 shopName: seller.shopName || '',
+                shopCategory: seller.shopCategory || 'Clothing Store',
                 shopAddress: seller.shopAddress || '',
                 city: seller.city || '',
                 state: seller.state || '',
                 pincode: seller.pincode || '',
                 description: seller.description || '',
                 gstNumber: seller.gstNumber || '',
+                businessPan: seller.businessPan || '',
+                openingTime: seller.openingTime || '10:00',
+                closingTime: seller.closingTime || '21:00',
                 deliveryRadius: seller.deliveryRadius || 5,
                 minOrderAmount: seller.minOrderAmount || 0,
+                bankAccountName: seller.bankAccountName || '',
+                bankAccountNumber: seller.bankAccountNumber || '',
+                bankIfsc: seller.bankIfsc || '',
+                bankName: seller.bankName || '',
+                upiId: seller.upiId || '',
                 location: seller.location || { type: 'Point', coordinates: [0, 0] }
             });
             if (seller.bannerImage) setBannerPreview(seller.bannerImage);
@@ -177,6 +182,12 @@ const ProfileTab = ({ seller }) => {
         }
     };
 
+    // ── Shared style constants for the edit form ──────────────────────
+    const lbl = { fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' };
+    const inp = { padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s', width: '100%', boxSizing: 'border-box' };
+    const focusStyle = (e) => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.1)'; };
+    const blurStyle = (e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; };
+
     return (
         <div style={{ position: 'relative', width: '100%', maxWidth: '1000px', margin: '0 auto', paddingBottom: '40px' }}>
             
@@ -299,6 +310,19 @@ const ProfileTab = ({ seller }) => {
                                 </div>
                             </div>
 
+                            {/* Bank Info card */}
+                            <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                {[['🏦 Bank', formData.bankName || '—'], ['👤 A/C Holder', formData.bankAccountName || '—'], ['🔢 Account No.', formData.bankAccountNumber ? `****${formData.bankAccountNumber.slice(-4)}` : '—'], ['📋 IFSC', formData.bankIfsc || '—'], ['💳 UPI', formData.upiId || '—']].map(([label, val], i) => (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', ...(i > 0 ? { borderTop: '1px solid #f1f5f9', paddingTop: '16px' } : {}) }}>
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>{label.split(' ')[0]}</div>
+                                        <div>
+                                            <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{label.substring(label.indexOf(' ') + 1)}</div>
+                                            <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: 500 }}>{val}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
                             <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                                     <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#f0fdf4', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>🚚</div>
@@ -385,25 +409,58 @@ const ProfileTab = ({ seller }) => {
                         <input id="logo-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageUpload(e, 'logo')} />
                     </div>
 
+                    {/* Style constants for form inputs */}
+                    {(() => {
+                        // These are rendered into module scope via IIFE trick - actual constants are below
+                        return null;
+                    })()}
+
                     <form onSubmit={handleSave} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Shop Name*</label>
-                            <input type="text" name="shopName" value={formData.shopName} onChange={handleChange} required style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s' }} onFocus={(e) => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; }} />
+                            <label style={lbl}>Shop Name*</label>
+                            <input type="text" name="shopName" value={formData.shopName} onChange={handleChange} required style={inp} onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Owner Name*</label>
-                            <input type="text" name="ownerName" value={formData.ownerName} onChange={handleChange} required style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s' }} onFocus={(e) => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; }} />
+                            <label style={lbl}>Owner Name*</label>
+                            <input type="text" name="ownerName" value={formData.ownerName} onChange={handleChange} required style={inp} onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phone Number</label>
-                            <input type="tel" name="phone" value={formData.phone} onChange={handleChange} style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s' }} onFocus={(e) => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; }} />
+                            <label style={lbl}>Email</label>
+                            <input type="email" name="email" value={formData.email} onChange={handleChange} style={inp} onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>GSTIN Number</label>
-                            <input type="text" name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="e.g. 29XXXXX1234X1Z5" style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s' }} onFocus={(e) => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; }} />
+                            <label style={lbl}>Phone Number</label>
+                            <input type="tel" name="phone" value={formData.phone} onChange={handleChange} style={inp} onFocus={focusStyle} onBlur={blurStyle} />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={lbl}>Shop Category</label>
+                            <select name="shopCategory" value={formData.shopCategory} onChange={handleChange} style={inp}>
+                                {['Clothing Store','Boutique','Tailor','Men Clothing','Women Clothing','Kids Clothing','Mixed Fashion Store'].map(c => <option key={c}>{c}</option>)}
+                            </select>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={lbl}>GSTIN Number</label>
+                            <input type="text" name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="e.g. 29XXXXX1234X1Z5" style={inp} onFocus={focusStyle} onBlur={blurStyle} />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={lbl}>Business PAN</label>
+                            <input type="text" name="businessPan" value={formData.businessPan} onChange={handleChange} placeholder="e.g. ABCDE1234F" maxLength={10} style={{...inp, textTransform: 'uppercase'}} onFocus={focusStyle} onBlur={blurStyle} />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={lbl}>Opening Time</label>
+                            <input type="time" name="openingTime" value={formData.openingTime} onChange={handleChange} style={inp} onFocus={focusStyle} onBlur={blurStyle} />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={lbl}>Closing Time</label>
+                            <input type="time" name="closingTime" value={formData.closingTime} onChange={handleChange} style={inp} onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', gridColumn: '1 / -1' }}>
@@ -455,13 +512,43 @@ const ProfileTab = ({ seller }) => {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Delivery Radius (km)*</label>
-                            <input type="number" name="deliveryRadius" value={formData.deliveryRadius} onChange={handleChange} min="1" max="50" required style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s' }} onFocus={(e) => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; }} />
+                            <label style={lbl}>Delivery Radius (km)*</label>
+                            <input type="number" name="deliveryRadius" value={formData.deliveryRadius} onChange={handleChange} min="1" max="50" required style={inp} onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Minimum Order (₹)*</label>
-                            <input type="number" name="minOrderAmount" value={formData.minOrderAmount} onChange={handleChange} min="0" required style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s' }} onFocus={(e) => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; }} />
+                            <label style={lbl}>Minimum Order (₹)*</label>
+                            <input type="number" name="minOrderAmount" value={formData.minOrderAmount} onChange={handleChange} min="0" required style={inp} onFocus={focusStyle} onBlur={blurStyle} />
+                        </div>
+
+                        {/* ── Bank Details Section ── */}
+                        <div style={{ gridColumn: '1 / -1', borderTop: '2px dashed #e2e8f0', paddingTop: '24px', marginTop: '8px' }}>
+                            <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>🏦 Bank Details</h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={lbl}>Account Holder Name</label>
+                                    <input type="text" name="bankAccountName" value={formData.bankAccountName} onChange={handleChange} style={inp} onFocus={focusStyle} onBlur={blurStyle} />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={lbl}>Bank Name</label>
+                                    <input type="text" name="bankName" value={formData.bankName} onChange={handleChange} list="bank-list-profile" placeholder="Type to search..." style={inp} autoComplete="off" onFocus={focusStyle} onBlur={blurStyle} />
+                                    <datalist id="bank-list-profile">
+                                        {['State Bank of India','HDFC Bank','ICICI Bank','Axis Bank','Punjab National Bank','Bank of Baroda','Canara Bank','Union Bank of India','Kotak Mahindra Bank','IndusInd Bank','Yes Bank','IDFC First Bank','RBL Bank','Bandhan Bank','Federal Bank'].map(b => <option key={b} value={b} />)}
+                                    </datalist>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={lbl}>Account Number</label>
+                                    <input type="text" name="bankAccountNumber" value={formData.bankAccountNumber} onChange={handleChange} style={inp} onFocus={focusStyle} onBlur={blurStyle} />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={lbl}>IFSC Code</label>
+                                    <input type="text" name="bankIfsc" value={formData.bankIfsc} onChange={handleChange} style={{...inp, textTransform: 'uppercase'}} onFocus={focusStyle} onBlur={blurStyle} />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={lbl}>UPI ID</label>
+                                    <input type="text" name="upiId" value={formData.upiId} onChange={handleChange} placeholder="merchant@upi" style={inp} onFocus={focusStyle} onBlur={blurStyle} />
+                                </div>
+                            </div>
                         </div>
 
                         <div style={{ gridColumn: '1 / -1', marginTop: '16px' }}>

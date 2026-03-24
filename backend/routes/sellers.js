@@ -353,6 +353,15 @@ router.put('/profile', sellerProtect, async (req, res) => {
             if (req.body.openingTime) seller.openingTime = req.body.openingTime;
             if (req.body.closingTime) seller.closingTime = req.body.closingTime;
 
+            // ── New fields from registration ──
+            if (req.body.email !== undefined) seller.email = req.body.email;
+            if (req.body.businessPan !== undefined) seller.businessPan = req.body.businessPan;
+            if (req.body.bankAccountName !== undefined) seller.bankAccountName = req.body.bankAccountName;
+            if (req.body.bankAccountNumber !== undefined) seller.bankAccountNumber = req.body.bankAccountNumber;
+            if (req.body.bankIfsc !== undefined) seller.bankIfsc = req.body.bankIfsc;
+            if (req.body.bankName !== undefined) seller.bankName = req.body.bankName;
+            if (req.body.upiId !== undefined) seller.upiId = req.body.upiId;
+
             if (req.body.location && req.body.location.coordinates) {
                 seller.location.coordinates = req.body.location.coordinates;
                 seller.location.type = 'Point';
@@ -375,6 +384,7 @@ router.put('/profile', sellerProtect, async (req, res) => {
         } else {
             res.status(404).json({ success: false, message: 'Seller not found' });
         }
+
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
