@@ -10,7 +10,9 @@ import './Home.css';
 
 const Home = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const { locality, city, pincode, fullAddress, latitude, longitude, serviceable, loading: locLoading, detectLocation, setManualPincode, searchLocations, selectLocation, permissionDenied } = useLocation();
+
     const [banners, setBanners] = useState([]);
     const [categories, setCategories] = useState([]);
     const [nearbyShops, setNearbyShops] = useState([]);
