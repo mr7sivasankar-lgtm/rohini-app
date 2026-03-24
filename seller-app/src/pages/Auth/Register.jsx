@@ -249,7 +249,15 @@ const Register = () => {
                         <h3>📍 Shop Location</h3>
                         <div style={{ border: '2px dashed #cbd5e1', borderRadius: '12px', overflow: 'hidden', height: '200px', marginBottom: '15px', position: 'relative' }}>
                             <div style={{ position: 'absolute', zIndex: 10, background: 'rgba(255,255,255,0.9)', padding: '5px 10px', top: '10px', left: '10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>Pin your exact shop location</div>
-                            <MapPicker onLocationSelect={(loc) => setLocation(loc)} />
+                            <MapPicker
+                                onConfirm={(lat, lng, addressText, details) => {
+                                    setLocation({ coordinates: [lng, lat] });
+                                    if (details?.city) setForm(f => ({ ...f, city: details.city }));
+                                    if (details?.state) setForm(f => ({ ...f, state: details.state }));
+                                    if (details?.pincode) setForm(f => ({ ...f, pincode: details.pincode }));
+                                }}
+                                onClose={() => {}}
+                            />
                         </div>
                         <div className="form-group full-width"><label>Full Address *</label><textarea name="shopAddress" value={form.shopAddress} onChange={handleChange} rows={2} required /></div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
