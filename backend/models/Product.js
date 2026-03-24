@@ -85,6 +85,7 @@ const productSchema = new mongoose.Schema({
     pattern: { type: String, trim: true },
     sleeve: { type: String, trim: true },
     neck: { type: String, trim: true },
+    occasion: { type: String, trim: true },
 
     // Images
     images: [{
