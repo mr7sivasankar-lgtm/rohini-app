@@ -161,14 +161,40 @@ const ShopProfile = () => {
                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                     </svg>
                 </button>
-                <div className="shop-banner-container">
-                    {shop.bannerImage ? (
-                        <img src={getImageUrl(shop.bannerImage)} alt={shop.shopName} className="shop-banner-img" />
+                <div className="shop-banner-container" style={{ position: 'relative' }}>
+                    {(shop.bannerImage || shop.logoImage) ? (
+                        <img
+                            src={getImageUrl(shop.bannerImage || shop.logoImage)}
+                            alt={shop.shopName}
+                            className="shop-banner-img"
+                            onError={(e) => { e.target.src = '/default-shop-banner.png'; }}
+                        />
                     ) : (
-                        <div className="shop-banner-placeholder"></div>
+                        <img
+                            src="/default-shop-banner.png"
+                            alt="Default banner"
+                            className="shop-banner-img"
+                        />
+                    )}
+
+                    {/* Logo badge */}
+                    {(shop.shopLogo || shop.logoImage) && (
+                        <div style={{
+                            position: 'absolute', bottom: -20, left: 16,
+                            width: 56, height: 56, borderRadius: '14px',
+                            border: '3px solid white', background: '#fff',
+                            overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                        }}>
+                            <img
+                                src={getImageUrl(shop.shopLogo || shop.logoImage)}
+                                alt={shop.shopName}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                        </div>
                     )}
                 </div>
-                <div className="shop-info-card">
+                <div className="shop-info-card" style={{ paddingTop: (shop.shopLogo || shop.logoImage) ? '28px' : undefined }}>
                     <div className="shop-title-row">
                         <h1 className="shop-title">{shop.shopName}</h1>
                         <span className="shop-rating">⭐ {shop.rating > 0 ? shop.rating.toFixed(1) : 'New'}</span>

@@ -516,11 +516,38 @@ const ShopCard = ({ shop, onClick, nearby }) => {
 
             {/* Banner */}
             <div className="scc-banner">
-                {shop.bannerImage
-                    ? <img src={getImageUrl(shop.bannerImage)} alt={shop.shopName} onError={(e) => { e.target.style.display = 'none'; }} />
-                    : <div className="scc-no-banner" />
-                }
+                {(shop.bannerImage || shop.logoImage) ? (
+                    <img
+                        src={getImageUrl(shop.bannerImage || shop.logoImage)}
+                        alt={shop.shopName}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => { e.target.src = '/default-shop-banner.png'; }}
+                    />
+                ) : (
+                    <img
+                        src="/default-shop-banner.png"
+                        alt="Default banner"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                )}
                 <div className="scc-overlay" />
+
+                {/* Seller logo badge */}
+                {(shop.shopLogo || shop.logoImage) && (
+                    <div style={{
+                        position: 'absolute', bottom: 8, left: 10,
+                        width: 38, height: 38, borderRadius: '50%',
+                        border: '2px solid white', background: '#fff',
+                        overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.25)'
+                    }}>
+                        <img
+                            src={getImageUrl(shop.shopLogo || shop.logoImage)}
+                            alt=""
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                    </div>
+                )}
 
                 <div className="scc-top-badges">
                     {shop.isOpen !== undefined && (
@@ -543,6 +570,7 @@ const ShopCard = ({ shop, onClick, nearby }) => {
 
                 <div className="scc-bottom-gradient"></div>
             </div>
+
 
             {/* Body */}
             <div className="scc-body">

@@ -17,6 +17,7 @@ const ProfileTab = ({ seller }) => {
         deliveryRadius: 5, minOrderAmount: 0,
         bankAccountName: '', bankAccountNumber: '',
         bankIfsc: '', bankName: '', upiId: '',
+        bannerImage: '', logoImage: '',
         location: { type: 'Point', coordinates: [0, 0] }
     });
 
@@ -54,10 +55,12 @@ const ProfileTab = ({ seller }) => {
                 bankIfsc: seller.bankIfsc || '',
                 bankName: seller.bankName || '',
                 upiId: seller.upiId || '',
+                bannerImage: seller.bannerImage || '',
+                logoImage: seller.logoImage || seller.shopLogo || '',
                 location: seller.location || { type: 'Point', coordinates: [0, 0] }
             });
             if (seller.bannerImage) setBannerPreview(seller.bannerImage);
-            if (seller.logoImage) setLogoPreview(seller.logoImage);
+            if (seller.logoImage || seller.shopLogo) setLogoPreview(seller.logoImage || seller.shopLogo);
         }
     }, [seller]);
 
