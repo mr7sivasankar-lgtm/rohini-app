@@ -8,14 +8,14 @@ const DELIVERY_TYPE_LABELS = { Normal: '🚚 Normal Delivery', 'Return Pickup': 
 const STATUS_COLORS = { Assigned: '#f59e0b', 'Picked Up': '#3b82f6', 'Out for Delivery': '#8b5cf6' };
 
 export default function Dashboard() {
-    const { partner, logout, updatePartner } = useAuth();
+    const { partner, updatePartner } = useAuth();
     const navigate = useNavigate();
 
     const [isOnline, setIsOnline] = useState(partner?.isOnline || false);
-
     const [stats, setStats] = useState({ assigned: 0, pending: 0, deliveredToday: 0, returnPickups: 0, exchangePickups: 0 });
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeFilter, setActiveFilter] = useState(null); // null = show all active
 
     const fetchData = useCallback(async () => {
         try {
@@ -47,6 +47,48 @@ export default function Dashboard() {
         } catch { setIsOnline(!newStatus); }
     };
 
+    const handleFilterClick = (key) => {
+        setActiveFilter(prev => prev === key ? null : key);
+    };
+
+    const getFilteredOrders = () => {
+        if (!activeFilter) return orders;
+        switch (activeFilter) {
+            case 'assigned':
+                return orders.filter(o => o.deliveryStatus === 'Assigned');
+            case 'pending':
+                return orders.filter(o => ['Picked Up', 'Out for Delivery'].includes(o.deliveryStatus));
+            case 'deliveredToday': {
+                const today = new Date().toDateString();
+                return orders.filter(o => o.deliveryStatus === 'Delivered' && new Date(o.updatedAt).toDateString() === today);
+            }
+            case 'returnPickups':
+                return orders.filter(o => o.deliveryType === 'Return Pickup');
+            case 'exchangePickups':
+                return orders.filter(o => o.deliveryType === 'Exchange Pickup');
+            default:
+                return orders;
+        }
+    };
+
+    const filteredOrders = getFilteredOrders();
+
+    const FILTER_LABELS = {
+        assigned: 'Assigned',
+        pending: 'Pending',
+        deliveredToday: 'Delivered Today',
+        returnPickups: 'Return Pickups',
+        exchangePickups: 'Exchange Pickups',
+    };
+
+    const statCards = [
+        { key: 'assigned',        label: 'Assigned',         value: stats.assigned,        color: '#f59e0b', icon: '📦' },
+        { key: 'pending',         label: 'Pending',          value: stats.pending,         color: '#3b82f6', icon: '⏳' },
+        { key: 'deliveredToday',  label: 'Delivered Today',  value: stats.deliveredToday,  color: '#10b981', icon: '✅' },
+        { key: 'returnPickups',   label: 'Return Pickups',   value: stats.returnPickups,   color: '#ef4444', icon: '↩️' },
+        { key: 'exchangePickups', label: 'Exchange Pickups', value: stats.exchangePickups, color: '#8b5cf6', icon: '🔄' },
+    ];
+
     return (
         <div className="dashboard-page">
             {/* Header */}
@@ -58,7 +100,6 @@ export default function Dashboard() {
                         <p>Ready to deliver?</p>
                     </div>
                 </div>
-
                 <div className="status-toggle-wrap-dashboard">
                     <span className={`status-dot ${isOnline ? 'online' : 'offline'}`}></span>
                     <span style={{ fontSize: 13, fontWeight: 700 }}>{isOnline ? 'Online' : 'Offline'}</span>
@@ -69,40 +110,56 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* Stats Cards — tap to filter */}
             <div className="stats-grid">
-                {[
-                    { label: 'Assigned', value: stats.assigned, color: '#f59e0b', icon: '📦' },
-                    { label: 'Pending', value: stats.pending, color: '#3b82f6', icon: '⏳' },
-                    { label: 'Delivered Today', value: stats.deliveredToday, color: '#10b981', icon: '✅' },
-                    { label: 'Return Pickups', value: stats.returnPickups, color: '#ef4444', icon: '↩️' },
-                    { label: 'Exchange Pickups', value: stats.exchangePickups, color: '#8b5cf6', icon: '🔄' },
-                ].map(s => (
-                    <div className="stat-card" key={s.label} style={{ borderTop: `3px solid ${s.color}` }}>
+                {statCards.map(s => (
+                    <div
+                        key={s.key}
+                        className="stat-card"
+                        onClick={() => handleFilterClick(s.key)}
+                        style={{
+                            borderTop: `3px solid ${s.color}`,
+                            cursor: 'pointer',
+                            outline: activeFilter === s.key ? `2.5px solid ${s.color}` : 'none',
+                            background: activeFilter === s.key ? `${s.color}18` : 'white',
+                            transform: activeFilter === s.key ? 'scale(1.04)' : 'scale(1)',
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
                         <div className="stat-icon">{s.icon}</div>
                         <div className="stat-value" style={{ color: s.color }}>{s.value}</div>
-                        <div className="stat-label">{s.label}</div>
+                        <div className="stat-label">{s.label.toUpperCase()}</div>
                     </div>
                 ))}
             </div>
 
-            {/* Orders */}
+            {/* Section header */}
             <div className="section-header">
-                <h3>Active Deliveries</h3>
+                <h3>
+                    {activeFilter ? `${FILTER_LABELS[activeFilter]} Orders` : 'Active Deliveries'}
+                    {activeFilter && (
+                        <span
+                            onClick={() => setActiveFilter(null)}
+                            style={{ marginLeft: 8, fontSize: 12, color: '#64748b', cursor: 'pointer', textDecoration: 'underline', fontWeight: 400 }}
+                        >
+                            (Clear)
+                        </span>
+                    )}
+                </h3>
                 <button className="refresh-btn" onClick={fetchData}>↻ Refresh</button>
             </div>
 
             {loading ? (
                 <div className="empty-state"><div className="spinner"></div></div>
-            ) : orders.length === 0 ? (
+            ) : filteredOrders.length === 0 ? (
                 <div className="empty-state">
                     <div className="empty-icon">📭</div>
-                    <p>No active deliveries right now</p>
-                    <span>New orders will appear here automatically</span>
+                    <p>{activeFilter ? `No ${FILTER_LABELS[activeFilter]} orders` : 'No active deliveries right now'}</p>
+                    <span>{activeFilter ? 'Tap the card again to clear filter' : 'New orders will appear here automatically'}</span>
                 </div>
             ) : (
                 <div className="orders-list">
-                    {orders.map(order => (
+                    {filteredOrders.map(order => (
                         <div key={order._id} className="order-card" onClick={() => navigate(`/order/${order._id}`)}>
                             <div className="order-card-top">
                                 <div>
@@ -115,26 +172,12 @@ export default function Dashboard() {
                                     {order.deliveryStatus}
                                 </div>
                             </div>
-
                             <div className="order-card-info">
-                                <div className="info-row">
-                                    <span>👤</span>
-                                    <span>{order.shippingAddress?.fullName || order.user?.name || 'Customer'}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>📍</span>
-                                    <span className="address-text">{order.shippingAddress?.fullAddress}, {order.shippingAddress?.city}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>📦</span>
-                                    <span>{order.items?.map(i => i.name).join(', ')}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>💰</span>
-                                    <span className="amount" style={{ color: '#10b981', fontWeight: 700 }}>+₹{(order.deliveryEarning || 0).toFixed(0)}</span>
-                                </div>
+                                <div className="info-row"><span>👤</span><span>{order.shippingAddress?.fullName || order.user?.name || 'Customer'}</span></div>
+                                <div className="info-row"><span>📍</span><span className="address-text">{order.shippingAddress?.fullAddress}, {order.shippingAddress?.city}</span></div>
+                                <div className="info-row"><span>📦</span><span>{order.items?.map(i => i.name).join(', ')}</span></div>
+                                <div className="info-row"><span>💰</span><span className="amount" style={{ color: '#10b981', fontWeight: 700 }}>+₹{(order.deliveryEarning || 0).toFixed(0)}</span></div>
                             </div>
-
                             <div className="order-card-footer">
                                 <span className="tap-hint">Tap to view details →</span>
                             </div>
