@@ -249,6 +249,7 @@ const Register = () => {
                         <h3>📍 Shop Location</h3>
                         <div style={{ border: '2px dashed #cbd5e1', borderRadius: '12px', overflow: 'hidden', height: '200px', marginBottom: '15px', position: 'relative' }}>
                             <div style={{ position: 'absolute', zIndex: 10, background: 'rgba(255,255,255,0.9)', padding: '5px 10px', top: '10px', left: '10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>Pin your exact shop location</div>
+                            {/* MapPicker: onConfirm(lat, lng, addressText, details) — fixed */}
                             <MapPicker
                                 onConfirm={(lat, lng, addressText, details) => {
                                     setLocation({ coordinates: [lng, lat] });
