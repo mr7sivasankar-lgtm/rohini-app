@@ -333,10 +333,14 @@ const Sellers = () => {
                                                     }}
                                                 >
                                                     <option value="" disabled>Actions ▾</option>
-                                                    {seller.status !== 'Approved' && <option value="Approved">Activate</option>}
-                                                    {seller.status !== 'Suspended' && <option value="Suspended">Suspend</option>}
-                                                    {seller.status !== 'On Hold' && <option value="On Hold">Hold</option>}
-                                                    {seller.status !== 'Rejected' && <option value="Rejected">Reject</option>}
+                                                    {seller.status === 'Pending' && <option value="Approved">✅ Approve</option>}
+                                                    {seller.status === 'Pending' && <option value="Rejected">❌ Reject</option>}
+                                                    {seller.status === 'Pending' && <option value="On Hold">⏸ Hold</option>}
+                                                    {['Suspended', 'Rejected', 'On Hold', 'Deactivated'].includes(seller.status) && <option value="Approved">✅ Activate</option>}
+                                                    {seller.status === 'Approved' && <option value="Suspended">⛔ Suspend</option>}
+                                                    {seller.status === 'Approved' && <option value="Deactivated">🚫 Deactivate</option>}
+                                                    {seller.status === 'Approved' && <option value="On Hold">⏸ Hold</option>}
+                                                    {!['Rejected'].includes(seller.status) && seller.status !== 'Pending' && <option value="Rejected">❌ Reject</option>}
                                                 </select>
 
                                                 <button 
