@@ -396,30 +396,112 @@ const Sellers = () => {
 
                         {/* Modal Content */}
                         <div style={{ padding: 24 }}>
-                            {/* Summary Cards */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
-                                <div style={{ background: '#f8fafc', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                                    <div style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>Contact Info</div>
-                                    <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 14 }}>📞 {selectedSeller.phone}</div>
-                                    <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 14, marginTop: 6, wordBreak: 'break-all' }}>✉️ {selectedSeller.email || 'N/A'}</div>
+
+                            {/* ── Row 1: Summary Cards ───────────────────────────────── */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 24 }}>
+                                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                                    <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>Contact Info</div>
+                                    <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 13 }}>📞 {selectedSeller.phone}</div>
+                                    <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 13, marginTop: 4, wordBreak: 'break-all' }}>✉️ {selectedSeller.email || 'N/A'}</div>
                                 </div>
-                                <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 12, border: '1px solid #bbf7d0' }}>
-                                    <div style={{ fontSize: 12, color: '#166534', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>Delivery Coverage</div>
-                                    <div style={{ fontWeight: 700, color: '#14532d', fontSize: 18, marginBottom: 4 }}>{selectedSeller.dpCount || 0} Partners</div>
+                                <div style={{ background: '#f0fdf4', padding: 14, borderRadius: 12, border: '1px solid #bbf7d0' }}>
+                                    <div style={{ fontSize: 11, color: '#166534', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>Delivery Coverage</div>
+                                    <div style={{ fontWeight: 700, color: '#14532d', fontSize: 16, marginBottom: 4 }}>{selectedSeller.dpCount || 0} Partners</div>
                                     <CoverageBadge status={selectedSeller.coverageStatus} />
                                 </div>
-                                <div style={{ background: '#eff6ff', padding: 16, borderRadius: 12, border: '1px solid #bfdbfe' }}>
-                                    <div style={{ fontSize: 12, color: '#1e40af', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>Location / Area</div>
-                                    <div style={{ fontWeight: 600, color: '#1e3a8a', fontSize: 14 }}>{selectedSeller.city || 'No City'} {selectedSeller.pincode && `(${selectedSeller.pincode})`}</div>
-                                    <div style={{ color: '#3b82f6', fontSize: 12, marginTop: 6 }}>{selectedSeller.shopAddress}</div>
+                                <div style={{ background: '#eff6ff', padding: 14, borderRadius: 12, border: '1px solid #bfdbfe' }}>
+                                    <div style={{ fontSize: 11, color: '#1e40af', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>Location</div>
+                                    <div style={{ fontWeight: 600, color: '#1e3a8a', fontSize: 13 }}>{selectedSeller.city || 'No City'} {selectedSeller.pincode && `(${selectedSeller.pincode})`}</div>
+                                    <div style={{ color: '#3b82f6', fontSize: 12, marginTop: 4 }}>{selectedSeller.state || ''}</div>
+                                </div>
+                                <div style={{ background: '#fdf4ff', padding: 14, borderRadius: 12, border: '1px solid #e9d5ff' }}>
+                                    <div style={{ fontSize: 11, color: '#7e22ce', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>Business</div>
+                                    <div style={{ fontWeight: 600, color: '#581c87', fontSize: 13 }}>{selectedSeller.shopCategory || 'N/A'}</div>
+                                    <div style={{ color: '#7c3aed', fontSize: 12, marginTop: 4 }}>🕐 {selectedSeller.openingTime || '--'} – {selectedSeller.closingTime || '--'}</div>
                                 </div>
                             </div>
 
-                            {/* Products Section */}
+                            {/* ── Business & KYC Details ─────────────────────────────── */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+
+                                {/* Business Info */}
+                                <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', padding: 16 }}>
+                                    <h4 style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📋 Business Details</h4>
+                                    {[
+                                        ['Shop Address', selectedSeller.shopAddress],
+                                        ['GSTIN', selectedSeller.gstNumber || selectedSeller.gstin || '—'],
+                                        ['Business PAN', selectedSeller.businessPan || '—'],
+                                        ['Wallet Balance', `₹${selectedSeller.walletBalance?.toFixed(2) || '0.00'}`],
+                                        ['Status Reason', selectedSeller.statusReason || '—'],
+                                    ].map(([label, value]) => (
+                                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: 13 }}>
+                                            <span style={{ color: '#64748b', fontWeight: 600 }}>{label}</span>
+                                            <span style={{ color: '#1e293b', fontWeight: 500, textAlign: 'right', maxWidth: '55%', wordBreak: 'break-word' }}>{value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Bank Details */}
+                                <div style={{ background: '#f0fdf4', borderRadius: 12, border: '1px solid #bbf7d0', padding: 16 }}>
+                                    <h4 style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 700, color: '#14532d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🏦 Bank Details</h4>
+                                    {[
+                                        ['Account Holder', selectedSeller.bankAccountName || '—'],
+                                        ['Bank Name', selectedSeller.bankName || '—'],
+                                        ['Account No.', selectedSeller.bankAccountNumber || '—'],
+                                        ['IFSC Code', selectedSeller.bankIfsc || '—'],
+                                        ['UPI ID', selectedSeller.upiId || '—'],
+                                    ].map(([label, value]) => (
+                                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #dcfce7', fontSize: 13 }}>
+                                            <span style={{ color: '#166534', fontWeight: 600 }}>{label}</span>
+                                            <span style={{ color: '#14532d', fontWeight: 500, textAlign: 'right', maxWidth: '55%', wordBreak: 'break-word', fontFamily: value && value !== '—' && label !== 'Bank Name' && label !== 'Account Holder' ? 'monospace' : 'inherit' }}>{value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* ── KYC Documents ─────────────────────────────────────── */}
+                            <div style={{ marginBottom: 24 }}>
+                                <h4 style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📄 KYC Documents</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 14 }}>
+                                    {[
+                                        { label: 'Aadhaar Card', field: 'documentAadhaar', icon: '🪪' },
+                                        { label: 'PAN Card', field: 'documentPan', icon: '🗂️' },
+                                        { label: 'Shop Photo', field: 'documentShopPhoto', icon: '🏪' },
+                                        { label: 'Cancelled Cheque', field: 'documentCancelledCheque', icon: '🏦' },
+                                        { label: 'Store Logo', field: 'shopLogo', icon: '🖼️' },
+                                    ].map(({ label, field, icon }) => {
+                                        const url = selectedSeller[field] ? getImageUrl(selectedSeller[field]) : null;
+                                        return (
+                                            <div key={field} style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: url ? '#fff' : '#f8fafc' }}>
+                                                {url ? (
+                                                    <a href={url} target="_blank" rel="noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
+                                                        <div style={{ height: 100, background: '#f1f5f9', overflow: 'hidden' }}>
+                                                            <img src={url} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                                                            <div style={{ display: 'none', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>{icon}</div>
+                                                        </div>
+                                                        <div style={{ padding: '6px 8px', background: '#eff6ff' }}>
+                                                            <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af' }}>{label}</div>
+                                                            <div style={{ fontSize: 10, color: '#3b82f6' }}>Click to view ↗</div>
+                                                        </div>
+                                                    </a>
+                                                ) : (
+                                                    <div style={{ padding: '14px 10px', textAlign: 'center' }}>
+                                                        <div style={{ fontSize: 24, marginBottom: 6 }}>{icon}</div>
+                                                        <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{label}</div>
+                                                        <div style={{ fontSize: 10, color: '#cbd5e1', marginTop: 2 }}>Not uploaded</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* ── Products Section ───────────────────────────────────── */}
                             <div>
-                                <h3 style={{ fontSize: 18, color: '#0f172a', marginBottom: 16, fontWeight: 700 }}>
+                                <h4 style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                     📦 Catalog Products ({sellerProducts.length})
-                                </h3>
+                                </h4>
                                 {loadingProducts ? (
                                     <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>Loading products...</div>
                                 ) : sellerProducts.length === 0 ? (
@@ -427,22 +509,22 @@ const Sellers = () => {
                                         No products uploaded yet.
                                     </div>
                                 ) : (
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 14 }}>
                                         {sellerProducts.map(prod => (
-                                            <div key={prod._id} style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', background: '#fff' }}>
-                                                <div style={{ height: 140, background: '#f1f5f9', position: 'relative' }}>
+                                            <div key={prod._id} style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
+                                                <div style={{ height: 120, background: '#f1f5f9' }}>
                                                     {prod.images?.[0] ? (
                                                         <img src={getImageUrl(prod.images[0])} alt={prod.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                     ) : (
-                                                        <div style={{width:'100%',height:'100%',display:'flex',justifyContent:'center',alignItems:'center',color:'#94a3b8'}}>No Image</div>
+                                                        <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#94a3b8', fontSize: 13 }}>No Image</div>
                                                     )}
                                                 </div>
-                                                <div style={{ padding: 12 }}>
-                                                    <div style={{ fontWeight: 600, fontSize: 13, color: '#1e293b', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{prod.name}</div>
+                                                <div style={{ padding: 10 }}>
+                                                    <div style={{ fontWeight: 600, fontSize: 12, color: '#1e293b', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{prod.name}</div>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <span style={{ fontWeight: 700, color: '#047857', fontSize: 13 }}>₹{prod.price}</span>
-                                                        <span style={{ fontSize: 11, fontWeight: 700, color: prod.stock > 0 ? '#3b82f6' : '#dc2626', background: prod.stock > 0 ? '#eff6ff' : '#fef2f2', padding: '2px 6px', borderRadius: 10 }}>
-                                                            Stock: {prod.stock}
+                                                        <span style={{ fontWeight: 700, color: '#047857', fontSize: 12 }}>₹{prod.price}</span>
+                                                        <span style={{ fontSize: 10, fontWeight: 700, color: prod.stock > 0 ? '#3b82f6' : '#dc2626', background: prod.stock > 0 ? '#eff6ff' : '#fef2f2', padding: '2px 5px', borderRadius: 8 }}>
+                                                            Stk: {prod.stock}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -452,6 +534,7 @@ const Sellers = () => {
                                 )}
                             </div>
                         </div>
+
                     </div>
                 </div>
             )}
