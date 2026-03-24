@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import MapPicker from '../../components/MapPicker/MapPicker';
@@ -6,43 +6,51 @@ import api from '../../utils/api';
 import './Auth.css';
 
 const SHOP_CATEGORIES = [
-    'Clothing Store',
-    'Boutique',
-    'Tailor',
-    'Men Clothing',
-    'Women Clothing',
-    'Kids Clothing',
-    'Mixed Fashion Store',
+    'Clothing Store', 'Boutique', 'Tailor', 'Men Clothing',
+    'Women Clothing', 'Kids Clothing', 'Mixed Fashion Store',
 ];
 
-const StepIndicator = ({ step, maxSteps = 6 }) => {
-    return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: '14px', left: 0, right: 0, height: '4px', background: '#e2e8f0', zIndex: 0, borderRadius: '2px' }}>
-                <div style={{ width: `${((step - 1) / (maxSteps - 1)) * 100}%`, height: '100%', background: '#3b82f6', transition: 'width 0.3s ease', borderRadius: '2px' }} />
-            </div>
-            {Array.from({ length: maxSteps }).map((_, i) => (
-                <div key={i} style={{
-                    width: '32px', height: '32px', borderRadius: '50%', background: step >= i + 1 ? '#3b82f6' : '#fff', color: step >= i + 1 ? '#fff' : '#64748b',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '14px', zIndex: 1, border: `2px solid ${step >= i + 1 ? '#3b82f6' : '#cbd5e1'}`, transition: 'all 0.3s'
-                }}>
-                    {i + 1}
-                </div>
-            ))}
+const INDIAN_BANKS = [
+    'State Bank of India', 'HDFC Bank', 'ICICI Bank', 'Axis Bank',
+    'Punjab National Bank', 'Bank of Baroda', 'Canara Bank', 'Union Bank of India',
+    'Kotak Mahindra Bank', 'IndusInd Bank', 'Yes Bank', 'IDFC First Bank',
+    'Bank of India', 'Indian Bank', 'Central Bank of India', 'UCO Bank',
+    'Indian Overseas Bank', 'Federal Bank', 'South Indian Bank', 'Karnataka Bank',
+    'Andhra Bank', 'Vijaya Bank', 'Syndicate Bank', 'Allahabad Bank',
+    'Dena Bank', 'Corporation Bank', 'City Union Bank', 'Lakshmi Vilas Bank',
+    'RBL Bank', 'Bandhan Bank', 'AU Small Finance Bank', 'Ujjivan Small Finance Bank',
+    'Jana Small Finance Bank', 'Equitas Small Finance Bank', 'Post Office (India Post)',
+];
+
+const StepIndicator = ({ step, maxSteps = 6 }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '14px', left: 0, right: 0, height: '4px', background: '#e2e8f0', zIndex: 0, borderRadius: '2px' }}>
+            <div style={{ width: `${((step - 1) / (maxSteps - 1)) * 100}%`, height: '100%', background: '#3b82f6', transition: 'width 0.3s ease', borderRadius: '2px' }} />
         </div>
-    );
-};
+        {Array.from({ length: maxSteps }).map((_, i) => (
+            <div key={i} style={{
+                width: '32px', height: '32px', borderRadius: '50%',
+                background: step >= i + 1 ? '#3b82f6' : '#fff',
+                color: step >= i + 1 ? '#fff' : '#64748b',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 'bold', fontSize: '14px', zIndex: 1,
+                border: `2px solid ${step >= i + 1 ? '#3b82f6' : '#cbd5e1'}`,
+                transition: 'all 0.3s'
+            }}>
+                {i + 1}
+            </div>
+        ))}
+    </div>
+);
 
 const Register = () => {
     const [step, setStep] = useState(1);
-
-    // Auth Base
     const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
     const [devOtp, setDevOtp] = useState('');
     const [phoneVerified, setPhoneVerified] = useState(false);
+    const [commissionRate, setCommissionRate] = useState(null); // dynamic from backend
 
-    // Form Data
     const [form, setForm] = useState({
         ownerName: '', email: '', password: '', confirmPassword: '',
         shopName: '', shopCategory: 'Clothing Store', gstNumber: '', businessPan: '',
@@ -52,10 +60,9 @@ const Register = () => {
     });
 
     const [location, setLocation] = useState({ coordinates: [0, 0] });
-
-    // File inputs
     const [docs, setDocs] = useState({
-        shopLogo: null, documentAadhaar: null, documentPan: null, documentShopPhoto: null, documentCancelledCheque: null
+        shopLogo: null, documentAadhaar: null, documentPan: null,
+        documentShopPhoto: null, documentCancelledCheque: null
     });
 
     const [error, setError] = useState('');
@@ -65,36 +72,37 @@ const Register = () => {
 
     const navigate = useNavigate();
 
+    // Fetch platform commission rate on mount
+    useEffect(() => {
+        api.get('/config').then(res => {
+            if (res.data.success && res.data.data?.commissionPercentage) {
+                setCommissionRate(res.data.data.commissionPercentage);
+            }
+        }).catch(() => {});
+    }, []);
+
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
     const handleFileChange = (e) => setDocs({ ...docs, [e.target.name]: e.target.files[0] });
 
-    // Step Modifiers
     const nextStep = () => {
         setError('');
         if (step === 3) {
-            if (!form.ownerName || !form.password || !form.shopName) {
-                return setError('Please fill all mandatory Basic & Shop Info.');
-            }
-            if (form.password !== form.confirmPassword) {
-                return setError('Passwords do not match.');
-            }
+            if (!form.ownerName || !form.password || !form.shopName) return setError('Please fill all mandatory Basic & Shop Info.');
+            if (form.password !== form.confirmPassword) return setError('Passwords do not match.');
         }
         if (step === 4) {
-            if (!form.shopAddress || !form.city || !form.pincode) {
-                return setError('Please fill your complete address.');
-            }
+            if (!form.shopAddress || !form.city || !form.pincode) return setError('Please fill your complete address.');
         }
         if (step === 5) {
-            if (!form.bankAccountName || !form.bankAccountNumber || !form.bankIfsc) {
-                return setError('Please fill your mandatory banking details.');
-            }
+            if (!form.bankAccountName || !form.bankAccountNumber || !form.bankIfsc) return setError('Please fill your mandatory banking details.');
+            if (!docs.documentAadhaar) return setError('Aadhaar card upload is required.');
+            if (!docs.documentPan) return setError('PAN card upload is required.');
         }
         setStep(prev => prev + 1);
     };
 
     const prevStep = () => setStep(prev => prev - 1);
 
-    // OTP Handlers
     const handleSendOtp = async (e) => {
         e.preventDefault();
         setError('');
@@ -102,10 +110,8 @@ const Register = () => {
         setIsLoading(true);
         try {
             const res = await api.post('/sellers/send-otp', { phone: `+91${phone}` });
-            if (res.data.success) {
-                setStep(2);
-                if (res.data.otp) setDevOtp(res.data.otp);
-            } else { setError(res.data.message); }
+            if (res.data.success) { setStep(2); if (res.data.otp) setDevOtp(res.data.otp); }
+            else setError(res.data.message);
         } catch (err) { setError(err.response?.data?.message || 'Failed to send OTP'); }
         finally { setIsLoading(false); }
     };
@@ -116,47 +122,29 @@ const Register = () => {
         setIsLoading(true);
         try {
             const res = await api.post('/sellers/verify-otp', { phone: `+91${phone}`, otp });
-            if (res.data.success) {
-                setPhoneVerified(true);
-                setStep(3);
-            } else { setError(res.data.message); }
+            if (res.data.success) { setPhoneVerified(true); setStep(3); }
+            else setError(res.data.message);
         } catch (err) { setError(err.response?.data?.message || 'OTP verification failed'); }
         finally { setIsLoading(false); }
     };
 
-    // Final Submit
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        if (!form.commissionAgreementAccepted) {
-            return setError('You must accept the mandatory 20% commission agreement to register.');
-        }
-
+        if (!form.commissionAgreementAccepted) return setError('You must accept the commission agreement to register.');
         setIsLoading(true);
         const payload = new FormData();
-
         payload.append('phone', `+91${phone}`);
         Object.keys(form).forEach(key => payload.append(key, form[key]));
-
         const [lng, lat] = location.coordinates;
-        if (lng !== 0) {
-            payload.append('longitude', lng);
-            payload.append('latitude', lat);
-        }
-
-        Object.keys(docs).forEach(key => {
-            if (docs[key]) payload.append(key, docs[key]);
-        });
-
+        if (lng !== 0) { payload.append('longitude', lng); payload.append('latitude', lat); }
+        Object.keys(docs).forEach(key => { if (docs[key]) payload.append(key, docs[key]); });
         try {
-            const res = await api.post('/sellers/register', payload, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const res = await api.post('/sellers/register', payload, { headers: { 'Content-Type': 'multipart/form-data' } });
             if (res.data.success) setIsSuccess(true);
             else setError(res.data.message);
-        } catch (err) {
-            setError(err.response?.data?.message || 'Registration failed');
-        } finally { setIsLoading(false); }
+        } catch (err) { setError(err.response?.data?.message || 'Registration failed'); }
+        finally { setIsLoading(false); }
     };
 
     if (isSuccess) {
@@ -166,17 +154,15 @@ const Register = () => {
                     <div className="success-icon" style={{ fontSize: '50px' }}>🎉</div>
                     <h2>Registration Complete!</h2>
                     <p>Your shop <strong>{form.shopName}</strong> has been submitted.</p>
-                    <div style={{ margin: '15px 0', padding: '10px', background: '#fef3c7', color: '#b45309', borderRadius: '8px', fontWeight: 'bold' }}>
-                        ⏳ Pending Admin Approval
-                    </div>
-                    <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>
-                        We are currently reviewing your documents and KYC. You will be notified once approved.
-                    </p>
+                    <div style={{ margin: '15px 0', padding: '10px', background: '#fef3c7', color: '#b45309', borderRadius: '8px', fontWeight: 'bold' }}>⏳ Pending Admin Approval</div>
+                    <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>We are reviewing your documents. You will be notified once approved.</p>
                     <button className="btn-primary" onClick={() => navigate('/login')}>Return to Login</button>
                 </div>
             </div>
         );
     }
+
+    const commission = commissionRate !== null ? commissionRate : '...';
 
     return (
         <>
@@ -190,7 +176,6 @@ const Register = () => {
                     </div>
 
                     <StepIndicator step={step} maxSteps={6} />
-
                     {error && <div className="alert alert-error" style={{ marginBottom: '15px' }}>{error}</div>}
 
                     {/* STEP 1: Phone */}
@@ -225,7 +210,7 @@ const Register = () => {
                         </form>
                     )}
 
-                    {/* STEP 3: Basic & Shop Info */}
+                    {/* STEP 3: Shop & Owner Info */}
                     {step === 3 && (
                         <div className="auth-form">
                             <h3>🏪 Shop & Owner Details</h3>
@@ -246,23 +231,14 @@ const Register = () => {
                     {step === 4 && (
                         <div className="auth-form">
                             <h3>📍 Shop Location</h3>
-
-                            {/* Pin on Map Button */}
-                            <button
-                                type="button"
-                                onClick={() => setShowMapPicker(true)}
-                                style={{ width: '100%', padding: '14px', marginBottom: '12px', background: '#eff6ff', border: '2px dashed #3b82f6', color: '#2563eb', borderRadius: '10px', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}
-                            >
+                            <button type="button" onClick={() => setShowMapPicker(true)} style={{ width: '100%', padding: '14px', marginBottom: '12px', background: '#eff6ff', border: '2px dashed #3b82f6', color: '#2563eb', borderRadius: '10px', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}>
                                 📍 Pin My Shop on Map
                             </button>
-
-                            {/* Confirmed badge */}
                             {location.coordinates[0] !== 0 && (
                                 <div style={{ marginBottom: '12px', padding: '10px 14px', background: '#ecfdf5', border: '1px solid #6ee7b7', borderRadius: '8px', color: '#065f46', fontSize: '13px', fontWeight: 600 }}>
                                     ✅ Location pinned — Lat: {location.coordinates[1].toFixed(4)}, Lng: {location.coordinates[0].toFixed(4)}
                                 </div>
                             )}
-
                             <div className="form-group full-width"><label>Full Address *</label><textarea name="shopAddress" value={form.shopAddress} onChange={handleChange} rows={2} required /></div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                                 <div className="form-group"><label>City *</label><input type="text" name="city" value={form.city} onChange={handleChange} required /></div>
@@ -276,22 +252,55 @@ const Register = () => {
                     {step === 5 && (
                         <div className="auth-form">
                             <h3>🏦 Bank & KYC Documents</h3>
-                            <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '15px' }}>Mandatory for payouts & approval process.</p>
+                            <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '15px' }}>Only Aadhaar & PAN are mandatory for KYC. Bank details are required for payouts.</p>
 
+                            {/* Bank Details */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
                                 <div className="form-group"><label>Account Holder Name *</label><input type="text" name="bankAccountName" value={form.bankAccountName} onChange={handleChange} required /></div>
-                                <div className="form-group"><label>Bank Name *</label><input type="text" name="bankName" value={form.bankName} onChange={handleChange} required /></div>
+                                <div className="form-group">
+                                    <label>Bank Name *</label>
+                                    {/* Bank name with datalist autocomplete */}
+                                    <input
+                                        type="text"
+                                        name="bankName"
+                                        value={form.bankName}
+                                        onChange={handleChange}
+                                        list="bank-list"
+                                        placeholder="Type to search bank..."
+                                        required
+                                        autoComplete="off"
+                                    />
+                                    <datalist id="bank-list">
+                                        {INDIAN_BANKS.map(b => <option key={b} value={b} />)}
+                                    </datalist>
+                                </div>
                                 <div className="form-group"><label>Account Number *</label><input type="text" name="bankAccountNumber" value={form.bankAccountNumber} onChange={handleChange} required /></div>
                                 <div className="form-group"><label>IFSC Code *</label><input type="text" name="bankIfsc" value={form.bankIfsc} onChange={handleChange} style={{ textTransform: 'uppercase' }} required /></div>
                                 <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>UPI ID (Optional)</label><input type="text" name="upiId" value={form.upiId} onChange={handleChange} placeholder="merchant@upi" /></div>
                             </div>
 
+                            {/* Documents */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                <div className="form-group"><label>Aadhaar Card Upload (Front/Back PDF or Image) *</label><input type="file" name="documentAadhaar" onChange={handleFileChange} /></div>
-                                <div className="form-group"><label>PAN Card Upload *</label><input type="file" name="documentPan" onChange={handleFileChange} /></div>
-                                <div className="form-group"><label>Shop Photo Image *</label><input type="file" name="documentShopPhoto" accept="image/*" onChange={handleFileChange} /></div>
-                                <div className="form-group"><label>Cancelled Cheque / Passbook Image *</label><input type="file" name="documentCancelledCheque" onChange={handleFileChange} /></div>
-                                <div className="form-group"><label>Store Logo Image (Optional)</label><input type="file" name="shopLogo" accept="image/*" onChange={handleFileChange} /></div>
+                                <div className="form-group">
+                                    <label>Aadhaar Card Upload * <span style={{ color: '#ef4444', fontSize: '12px' }}>(required)</span></label>
+                                    <input type="file" name="documentAadhaar" onChange={handleFileChange} />
+                                </div>
+                                <div className="form-group">
+                                    <label>PAN Card Upload * <span style={{ color: '#ef4444', fontSize: '12px' }}>(required)</span></label>
+                                    <input type="file" name="documentPan" onChange={handleFileChange} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Shop Photo Image <span style={{ color: '#64748b', fontSize: '12px' }}>(optional)</span></label>
+                                    <input type="file" name="documentShopPhoto" accept="image/*" onChange={handleFileChange} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Cancelled Cheque / Passbook Image <span style={{ color: '#64748b', fontSize: '12px' }}>(optional)</span></label>
+                                    <input type="file" name="documentCancelledCheque" onChange={handleFileChange} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Store Logo Image <span style={{ color: '#64748b', fontSize: '12px' }}>(optional)</span></label>
+                                    <input type="file" name="shopLogo" accept="image/*" onChange={handleFileChange} />
+                                </div>
                             </div>
                         </div>
                     )}
@@ -300,26 +309,31 @@ const Register = () => {
                     {step === 6 && (
                         <form onSubmit={handleSubmit} className="auth-form">
                             <h3>📜 Final Review & Agreement</h3>
-
                             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
                                 <h4 style={{ color: '#b91c1c', marginTop: 0, marginBottom: '8px' }}>Platform Commission Agreement</h4>
                                 <p style={{ fontSize: '13px', color: '#7f1d1d', margin: 0, lineHeight: 1.5 }}>
-                                    By proceeding, you strictly agree to the platform logistics model. <strong>The platform deducts a flat 20% commission</strong> on all fulfilled orders processed through the application. All deliveries are mandated and fulfilled exclusively via our in-house delivery partner network to ensure guaranteed quality and tracking for customers.
+                                    By proceeding, you agree to the platform logistics model.{' '}
+                                    {commissionRate !== null
+                                        ? <><strong>The platform deducts a {commissionRate}% commission</strong> on all fulfilled orders.</>
+                                        : 'A platform commission will be deducted on all fulfilled orders.'
+                                    }{' '}
+                                    All deliveries are fulfilled exclusively via our in-house delivery partner network.
                                 </p>
                             </div>
-
                             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '14px', cursor: 'pointer', marginBottom: '20px' }}>
                                 <input type="checkbox" name="commissionAgreementAccepted" checked={form.commissionAgreementAccepted} onChange={e => setForm({ ...form, commissionAgreementAccepted: e.target.checked })} style={{ marginTop: '3px', transform: 'scale(1.2)' }} />
-                                <span>I explicitly agree to the 20% platform commission and terms of service. I understand my account will be manually vetted by an Administrator before activation.</span>
+                                <span>
+                                    I explicitly agree to the{commissionRate !== null ? ` ${commissionRate}%` : ''} platform commission and terms of service.
+                                    I understand my account will be manually vetted by an Administrator before activation.
+                                </span>
                             </label>
-
                             <button type="submit" className="btn-primary full-width" disabled={isLoading || !form.commissionAgreementAccepted} style={{ padding: '14px', fontSize: '16px' }}>
                                 {isLoading ? 'Submitting Application...' : 'Submit Shop Application'}
                             </button>
                         </form>
                     )}
 
-                    {/* Navigation Buttons */}
+                    {/* Navigation */}
                     {step >= 3 && step <= 6 && (
                         <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                             <button type="button" onClick={prevStep} style={{ flex: 1, padding: '12px', border: '1px solid #cbd5e1', background: '#fff', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>← Back</button>
@@ -331,7 +345,7 @@ const Register = () => {
                 </div>
             </div>
 
-            {/* MapPicker Modal — controlled by showMapPicker state */}
+            {/* MapPicker Modal */}
             {showMapPicker && (
                 <MapPicker
                     onConfirm={(lat, lng, addressText, details) => {

@@ -18,7 +18,7 @@ const SettingsTab = () => {
 
     const fetchConfig = async () => {
         try {
-            const res = await api.get('/adminConfig');
+            const res = await api.get('/config');
             if (res.data.success && res.data.data) {
                 setConfig(res.data.data);
             }
@@ -38,7 +38,7 @@ const SettingsTab = () => {
         e.preventDefault();
         setSaving(true);
         try {
-            const res = await api.put('/adminConfig', config);
+            const res = await api.put('/config', config);
             if (res.data.success) {
                 alert('Platform settings updated successfully!');
                 fetchConfig();

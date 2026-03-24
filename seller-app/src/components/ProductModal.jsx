@@ -37,7 +37,7 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
             if (res.data.success) setAllCategories(res.data.data || []);
         }).catch(() => {});
         
-        api.get('/adminConfig').then(res => {
+        api.get('/config').then(res => {
             if (res.data.success && res.data.data) {
                 setCommission(res.data.data.commissionPercentage || 5);
             }
