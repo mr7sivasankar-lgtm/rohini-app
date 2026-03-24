@@ -65,8 +65,16 @@ export default function Login() {
         if (step === 1 && (!form.name || !form.phone || !form.password)) {
             setError('Please fill all required basic details.'); return;
         }
-        if (step === 2 && (!form.aadhaarNumber || !form.panNumber)) {
-            setError('Please provide Aadhaar and PAN numbers.'); return;
+        if (step === 2) {
+            if (!form.aadhaarNumber || !form.panNumber) {
+                setError('Please provide Aadhaar and PAN numbers.'); return;
+            }
+            if (!/^\d{12}$/.test(form.aadhaarNumber)) {
+                setError('Aadhaar number must be exactly 12 digits.'); return;
+            }
+            if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.panNumber.toUpperCase())) {
+                setError('PAN must be in format: ABCDE1234F (5 letters, 4 digits, 1 letter).'); return;
+            }
         }
         if (step === 3 && (!form.address || !form.city || !form.pincode)) {
             setError('Please provide complete address and pin a location.'); return;
@@ -121,7 +129,7 @@ export default function Login() {
             <div className="login-card" style={mode === 'register' ? {maxHeight: '90vh', overflowY: 'auto'} : {}}>
                 <div className="login-brand">
                     <div className="brand-icon">🚴</div>
-                    <h1>Partner Delivery</h1>
+                    <h1>Delivery Partner</h1>
                     <p>Delivery Partner Portal</p>
                 </div>
 
@@ -226,11 +234,11 @@ export default function Login() {
                                                 </div>
                                             )}
                                             <input name="address" placeholder="Full Address / Door No *" value={form.address} onChange={handle} required style={{ marginBottom: '8px', boxSizing: 'border-box', width: '100%' }} />
-                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                                                 <input name="city" placeholder="City *" value={form.city} onChange={handle} required style={{ flex: 1, boxSizing: 'border-box' }} />
-                                                <input name="state" placeholder="State/Region" value={form.state} onChange={handle} style={{ flex: 1, boxSizing: 'border-box' }} />
+                                                <input name="pincode" placeholder="Pincode *" value={form.pincode} onChange={handle} required style={{ flex: 1, boxSizing: 'border-box' }} />
                                             </div>
-                                            <input name="pincode" placeholder="Pincode *" value={form.pincode} onChange={handle} required style={{ marginTop: '8px', boxSizing: 'border-box', width: '100%' }} />
+                                            <input name="state" placeholder="State / Region" value={form.state} onChange={handle} style={{ boxSizing: 'border-box', width: '100%' }} />
                                         </div>
                                     </div>
                                 </div>
@@ -299,19 +307,20 @@ export default function Login() {
 
             {showMapPicker && (
                 <MapPicker 
-                    onSelect={(loc) => {
+                    initialLat={form.location.coordinates[0] !== 0 ? form.location.coordinates[1] : null}
+                    initialLng={form.location.coordinates[0] !== 0 ? form.location.coordinates[0] : null}
+                    onConfirm={(lat, lng, addressText, details) => {
                         setForm(prev => ({
                             ...prev,
-                            location: { type: 'Point', coordinates: [loc.lng, loc.lat] },
-                            address: loc.address || prev.address,
-                            city: loc.city || prev.city,
-                            state: loc.state || prev.state,
-                            pincode: loc.pincode || prev.pincode
+                            location: { type: 'Point', coordinates: [lng, lat] },
+                            address: addressText || prev.address,
+                            city: details?.city || prev.city,
+                            state: details?.state || prev.state,
+                            pincode: details?.pincode || prev.pincode
                         }));
                         setShowMapPicker(false);
                     }}
                     onClose={() => setShowMapPicker(false)}
-                    initialLocation={form.location.coordinates[0] !== 0 ? { lat: form.location.coordinates[1], lng: form.location.coordinates[0] } : null}
                 />
             )}
         </div>
