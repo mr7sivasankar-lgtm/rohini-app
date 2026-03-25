@@ -32,10 +32,10 @@ const DashboardTab = () => {
         }
     };
 
-    if (loading) return <div className="loading"><div className="spinner" style={{borderTopColor: '#4f46e5'}}></div></div>;
+    if (loading) return <div className="loading"><div className="spinner" style={{ borderTopColor: '#4f46e5' }}></div></div>;
 
     const statCards = [
-        { title: 'Profile Views', value: seller?.profileViews || 0, icon: '👁️', color: '#fdf4ff', textColor: '#d946ef' },
+        { title: 'Unique Visitors', value: seller?.profileViews || 0, icon: '👁️', color: '#fdf4ff', textColor: '#d946ef' },
         { title: 'Orders Today', value: stats.ordersToday, icon: '📦', color: '#eff6ff', textColor: '#3b82f6' },
         { title: 'Pending Orders', value: stats.pendingOrders, icon: '⏳', color: '#fef3c7', textColor: '#d97706' },
         { title: 'Revenue Today', value: `₹${stats.revenueToday.toLocaleString('en-IN')}`, icon: '₹', color: '#dcfce7', textColor: '#16a34a' },
@@ -103,10 +103,10 @@ const DashboardTab = () => {
                                     </td>
                                     <td style={{ padding: '16px', fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>₹{order.total.toLocaleString('en-IN')}</td>
                                     <td style={{ padding: '16px' }}>
-                                        <span style={{ 
-                                            padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, 
-                                            background: ['Placed', 'Accepted'].includes(order.status) ? '#fef3c7' : ['Delivered'].includes(order.status) ? '#dcfce7' : '#f1f5f9', 
-                                            color: ['Placed', 'Accepted'].includes(order.status) ? '#b45309' : ['Delivered'].includes(order.status) ? '#16a34a' : '#64748b' 
+                                        <span style={{
+                                            padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
+                                            background: ['Placed', 'Accepted'].includes(order.status) ? '#fef3c7' : ['Delivered'].includes(order.status) ? '#dcfce7' : '#f1f5f9',
+                                            color: ['Placed', 'Accepted'].includes(order.status) ? '#b45309' : ['Delivered'].includes(order.status) ? '#16a34a' : '#64748b'
                                         }}>
                                             {order.status}
                                         </span>

@@ -25,11 +25,11 @@ const ShopProfile = () => {
     const { latitude: custLat, longitude: custLng } = useLocCtx();
     const isFav = isInFavorites(id);
 
-    
+
     const [shop, setShop] = useState(null);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     // Filters and Categories
     const [activeCategory, setActiveCategory] = useState('All');
     const [categories, setCategories] = useState(['All']);
@@ -52,10 +52,19 @@ const ShopProfile = () => {
             if (productsRes.data.success) {
                 const prods = productsRes.data.data;
                 setProducts(prods);
-                
+
                 // Extract unique category names (p.category is a populated object, not a string)
                 const uniqueCats = ['All', ...new Set(prods.map(p => p.category?.name).filter(Boolean))];
                 setCategories(uniqueCats);
+            }
+
+            // ── Unique visitor tracking (24-hour cooldown via localStorage) ──
+            const storageKey = `viewed_seller_${id}`;
+            const lastViewed = localStorage.getItem(storageKey);
+            const isFirstVisitToday = !lastViewed || Date.now() - Number(lastViewed) > 24 * 60 * 60 * 1000;
+            if (isFirstVisitToday) {
+                api.post(`/sellers/${id}/view`).catch(() => { }); // fire-and-forget
+                localStorage.setItem(storageKey, String(Date.now()));
             }
         } catch (error) {
             console.error('Error fetching shop:', error);
@@ -64,17 +73,18 @@ const ShopProfile = () => {
         }
     };
 
+
     if (loading) return <div className="loading-state">Loading shop details...</div>;
     if (!shop) return <div className="empty-state">Shop not found</div>;
 
     // Filter and Sort Products
     let displayProducts = [...products];
-    
+
     // 1. Category Filter
     if (activeCategory !== 'All') {
         displayProducts = displayProducts.filter(p => p.category?.name === activeCategory || p.category === activeCategory);
     }
-    
+
     // 2. In Stock Filter
     if (activeFilters.inStock) {
         displayProducts = displayProducts.filter(p => p.stock > 0);
@@ -82,10 +92,10 @@ const ShopProfile = () => {
 
     // 3. Price Range Filter
     const PRICE_RANGES = {
-        '0-500':     { min: 0,    max: 500  },
-        '500-1000':  { min: 500,  max: 1000 },
+        '0-500': { min: 0, max: 500 },
+        '500-1000': { min: 500, max: 1000 },
         '1000-2000': { min: 1000, max: 2000 },
-        '2000+':     { min: 2000, max: null },
+        '2000+': { min: 2000, max: null },
     };
     if (activeFilters.priceRange && PRICE_RANGES[activeFilters.priceRange]) {
         const { min, max } = PRICE_RANGES[activeFilters.priceRange];
@@ -229,8 +239,8 @@ const ShopProfile = () => {
                 {categories.length > 1 && (
                     <div className="shop-categories-scroll">
                         {categories.map(cat => (
-                            <button 
-                                key={cat} 
+                            <button
+                                key={cat}
                                 className={`shop-cat-btn ${activeCategory === cat ? 'active' : ''}`}
                                 onClick={() => setActiveCategory(cat)}
                             >
@@ -242,7 +252,7 @@ const ShopProfile = () => {
 
                 {/* Sort / Filter Controls */}
                 <div style={{ position: 'relative', zIndex: 20 }}>
-                    <FilterSortBar 
+                    <FilterSortBar
                         activeSort={activeSort}
                         onSortChange={setActiveSort}
                         activeFilters={activeFilters}

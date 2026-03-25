@@ -135,8 +135,8 @@ router.post('/register', upload.fields([
     { name: 'documentCancelledCheque', maxCount: 1 }
 ]), async (req, res) => {
     try {
-        const { 
-            shopName, ownerName, phone, password, shopAddress, latitude, longitude, 
+        const {
+            shopName, ownerName, phone, password, shopAddress, latitude, longitude,
             shopCategory, gstNumber, openingTime, closingTime,
             email, businessPan, bankAccountName, bankAccountNumber, bankIfsc, bankName, upiId,
             commissionAgreementAccepted
@@ -405,12 +405,12 @@ router.put('/my/deactivate', sellerProtect, async (req, res) => {
         if (!seller) {
             return res.status(404).json({ success: false, message: 'Seller not found' });
         }
-        
+
         seller.status = 'Deactivated';
         seller.statusReason = reason.trim();
         seller.isOpen = false;
         await seller.save();
-        
+
         res.json({ success: true, message: 'Account deactivated successfully.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -511,17 +511,12 @@ router.get('/top-rated', async (req, res) => {
     }
 });
 
-// @desc    Get single shop profile & increment profile views
+// @desc    Get single shop profile (data only — no view increment)
 // @route   GET /api/sellers/:id
 // @access  Public
 router.get('/:id', async (req, res) => {
     try {
-        const shop = await Seller.findByIdAndUpdate(
-            req.params.id,
-            { $inc: { profileViews: 1 } },
-            { new: true }
-        );
-        
+        const shop = await Seller.findById(req.params.id);
         if (!shop || shop.status !== 'Approved') {
             return res.status(404).json({ success: false, message: 'Shop not found' });
         }
@@ -531,6 +526,17 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// @desc    Count a unique profile view (called by frontend with 24-h localStorage dedup)
+// @route   POST /api/sellers/:id/view
+// @access  Public
+router.post('/:id/view', async (req, res) => {
+    try {
+        await Seller.findByIdAndUpdate(req.params.id, { $inc: { profileViews: 1 } });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
 
 // -------------------------------------------------------------
 // ADMIN APIS
@@ -541,10 +547,10 @@ router.get('/:id', async (req, res) => {
 // @access  Private (Admin)
 router.get('/admin/all', protect, adminOnly, async (req, res) => {
     try {
-// Removed dynamic imports since they are now statically imported at the top
+        // Removed dynamic imports since they are now statically imported at the top
 
         const sellers = await Seller.find({}).sort({ createdAt: -1 }).lean();
-        
+
         // Aggregate total products successfully delivered per seller
         const sales = await Order.aggregate([
             { $match: { status: 'Delivered' } },
@@ -590,15 +596,15 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
 
         const enhancedSellers = sellers.map(seller => {
             const catalog = catalogMap[seller._id.toString()] || { productsAdded: 0, categories: [] };
-            
+
             // Calculate Delivery Partner coverage for this seller
             let dpCount = 0;
             const sellerCity = (seller.city || '').toLowerCase();
             const sellerPincode = seller.pincode || '';
-            
+
             if (sellerCity || sellerPincode) {
-                dpCount = dps.filter(d => 
-                    (sellerCity && (d.city || '').toLowerCase() === sellerCity) || 
+                dpCount = dps.filter(d =>
+                    (sellerCity && (d.city || '').toLowerCase() === sellerCity) ||
                     (sellerPincode && (d.pincode || '') === sellerPincode)
                 ).length;
             }
@@ -625,7 +631,7 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
 router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
     try {
         const { status, reason } = req.body;
-        
+
         // Require a reason for sensitive statuses
         if (['Suspended', 'Deactivated', 'Rejected'].includes(status)) {
             if (!reason || reason.trim() === '') {
@@ -662,7 +668,7 @@ router.delete('/admin/:id', protect, adminOnly, async (req, res) => {
         if (!seller) {
             return res.status(404).json({ success: false, message: 'Seller not found' });
         }
-        
+
         // Even though documents are hard-deleted, we enforce the reason check to satisfy admin logging rules.
         await Seller.findByIdAndDelete(req.params.id);
         res.json({ success: true, message: 'Seller deleted successfully' });
