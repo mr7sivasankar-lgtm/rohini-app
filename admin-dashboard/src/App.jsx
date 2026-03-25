@@ -267,6 +267,16 @@ function App() {
     }
   };
 
+  const handleDeleteProduct = async (id) => {
+    if (!window.confirm('Permanently delete this product? This cannot be undone.')) return;
+    try {
+      await api.delete(`/products/${id}?hard=true`);
+      fetchProducts();
+    } catch (error) {
+      alert('Failed to delete product');
+    }
+  };
+
   const handleAddNewProduct = () => {
     setShowProductForm(true);
   };
@@ -736,7 +746,7 @@ function App() {
                   <table className="table">
                     <thead>
                       <tr>
-                      <th>Image</th>
+                        <th>Image</th>
                         <th>Name</th>
                         <th>Brand</th>
                         <th>Gender</th>
@@ -744,7 +754,7 @@ function App() {
                         <th>Price</th>
                         <th>Stock</th>
                         <th>Category</th>
-                        <th>Visibility</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -788,26 +798,27 @@ function App() {
                             </td>
                             <td>{product.category?.name || 'N/A'}</td>
                             <td style={{ textAlign: 'center' }}>
-                              <select
-                                value={product.isActive ? 'visible' : 'hidden'}
-                                onChange={(e) => {
-                                  const wantHide = e.target.value === 'hidden';
-                                  const isCurrentlyActive = product.isActive;
-                                  if ((wantHide && isCurrentlyActive) || (!wantHide && !isCurrentlyActive)) {
-                                    handleToggleProductVisibility(product);
-                                  }
-                                }}
-                                style={{
-                                  padding: '6px 10px', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
-                                  border: `1.5px solid ${product.isActive ? '#86efac' : '#fca5a5'}`,
-                                  background: product.isActive ? '#f0fdf4' : '#fef2f2',
-                                  color: product.isActive ? '#15803d' : '#dc2626',
-                                  cursor: 'pointer', outline: 'none'
-                                }}
-                              >
-                                <option value="visible">✅ Show to Customers</option>
-                                <option value="hidden">🚫 Hide from Customers</option>
-                              </select>
+                              <div style={{ display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center' }}>
+                                <button
+                                  onClick={() => handleToggleProductVisibility(product)}
+                                  title={product.isActive ? 'Click to hide from customers' : 'Click to show to customers'}
+                                  style={{
+                                    padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none',
+                                    background: product.isActive ? '#fef2f2' : '#f0fdf4',
+                                    color: product.isActive ? '#dc2626' : '#16a34a',
+                                    transition: 'all 0.15s'
+                                  }}
+                                >
+                                  {product.isActive ? '🚫 Hide' : '✅ Show'}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProduct(product._id)}
+                                  title="Delete permanently"
+                                  style={{ padding: '5px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#fee2e2', color: '#dc2626' }}
+                                >
+                                  🗑️
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );

@@ -291,73 +291,73 @@ router.put('/:id', sellerOrAdmin, uploadMultiple, async (req, res) => {
     }
 });
 // @route   PUT /api/products/:id/toggle
-// @desc    Toggle product active status
+// @desc    Toggle product active (visible/hidden) status
 // @access  Private/Admin or Seller
 router.put('/:id/toggle', sellerOrAdmin, async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
 
         if (!product) {
-            return res.status(404).json({
-                success: false,
-                message: 'Product not found'
-            });
+            return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
-        // Ensure sellers can only toggle their own products
-        if (req.seller && product.seller.toString() !== req.seller._id.toString()) {
+        // Sellers can only toggle their own products
+        if (req.seller && product.seller?.toString() !== req.seller._id.toString()) {
             return res.status(403).json({ success: false, message: 'Not authorized to update this product' });
         }
 
-        product.isActive = !product.isActive;
-        await product.save();
+        // Use findByIdAndUpdate to skip schema validation
+        const updated = await Product.findByIdAndUpdate(
+            req.params.id,
+            { isActive: !product.isActive },
+            { new: true, runValidators: false }
+        );
 
         res.status(200).json({
             success: true,
-            message: `Product ${product.isActive ? 'activated' : 'deactivated'} successfully`,
-            data: product
+            message: `Product ${updated.isActive ? 'shown to' : 'hidden from'} customers`,
+            data: updated
         });
     } catch (error) {
         console.error('Toggle product status error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error updating product status'
-        });
+        res.status(500).json({ success: false, message: 'Error updating product status' });
     }
 });
 
 // @route   DELETE /api/products/:id
-// @desc    Delete product (soft delete)
+// @desc    Delete product — soft delete for sellers, hard delete for admin (pass ?hard=true)
 // @access  Private/Admin or Seller
 router.delete('/:id', sellerOrAdmin, async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
 
         if (!product) {
-            return res.status(404).json({
-                success: false,
-                message: 'Product not found'
-            });
+            return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
-        // Ensure sellers can only delete their own products
-        if (req.seller && product.seller.toString() !== req.seller._id.toString()) {
+        // Sellers can only delete their own products
+        if (req.seller && product.seller?.toString() !== req.seller._id.toString()) {
             return res.status(403).json({ success: false, message: 'Not authorized to delete this product' });
         }
 
-        product.isActive = false;
-        await product.save();
+        // Admin can hard-delete; sellers soft-delete
+        const isAdmin = !req.seller && req.user?.role === 'admin';
+        if (isAdmin && req.query.hard === 'true') {
+            await Product.findByIdAndDelete(req.params.id);
+            return res.status(200).json({ success: true, message: 'Product permanently deleted' });
+        }
 
-        res.status(200).json({
-            success: true,
-            message: 'Product deleted successfully'
-        });
+        // Soft delete — use update to skip validators
+        await Product.findByIdAndUpdate(
+            req.params.id,
+            { isActive: false },
+            { runValidators: false }
+        );
+
+        res.status(200).json({ success: true, message: 'Product deleted successfully' });
     } catch (error) {
         console.error('Delete product error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error deleting product'
-        });
+        res.status(500).json({ success: false, message: 'Error deleting product' });
     }
 });
 
