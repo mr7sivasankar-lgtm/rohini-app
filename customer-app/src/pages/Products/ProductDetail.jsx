@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLocation } from '../../contexts/LocationContext';
 import api, { getImageUrl } from '../../utils/api';
 import './ProductDetail.css';
 
@@ -12,6 +13,37 @@ const ProductDetail = () => {
     const { addToCart } = useCart();
     const { isInWishlist, toggleWishlist } = useWishlist();
     const { isAuthenticated } = useAuth();
+    const { latitude: userLat, longitude: userLng } = useLocation();
+
+    // Haversine distance helper
+    const calculateDistance = (lat1, lon1, lat2, lon2) => {
+        if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+        const R = 6371; // km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+
+    // Dynamic Delivery Time logic
+    const getDeliveryEstimate = () => {
+        if (product?.deliveryTime) return product.deliveryTime; // If seller explicitly set one
+
+        const sellerLng = product?.seller?.location?.coordinates?.[0];
+        const sellerLat = product?.seller?.location?.coordinates?.[1];
+
+        const dist = calculateDistance(userLat, userLng, sellerLat, sellerLng);
+        if (dist === null) return '30-45 mins'; // Default instant fallback
+
+        // Instant Delivery Time Brackets
+        if (dist <= 1.5) return '10-15 mins';
+        if (dist <= 3) return '15-25 mins';
+        if (dist <= 5) return '25-35 mins';
+        if (dist <= 8) return '35-45 mins';
+        return '45-60 mins';
+    };
 
     const [product, setProduct] = useState(null);
     const [selectedImage, setSelectedImage] = useState(0);
@@ -197,7 +229,7 @@ const ProductDetail = () => {
     }
 
     const discountedPrice = product.sellingPrice || 0;
-    
+
     const getDiscount = (mrp, selling) => {
         if (mrp > selling) {
             return Math.round(((mrp - selling) / mrp) * 100);
@@ -394,8 +426,8 @@ const ProductDetail = () => {
                         <div className="delivery-row">
                             <span className="delivery-icon">🚚</span>
                             <div>
-                                <span className="delivery-title">Delivery</span>
-                                <span className="delivery-value">{product.deliveryTime || '3-5 Days'}</span>
+                                <span className="delivery-title">Delivery Estimate</span>
+                                <span className="delivery-value" style={{ color: '#10b981', fontWeight: 700 }}>⚡ {getDeliveryEstimate()}</span>
                             </div>
                         </div>
                         <div className="delivery-row">
