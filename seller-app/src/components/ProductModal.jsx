@@ -64,6 +64,7 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
         category: '', subcategory: [], images: []
     });
     const [files, setFiles] = useState([]);
+    const [previewUrls, setPreviewUrls] = useState([]);
     const [removedImages, setRemovedImages] = useState([]);
     const fileInputRef = useRef(null);
     const [loading, setLoading] = useState(false);
@@ -181,13 +182,28 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
     };
 
     const handleFileChange = (e) => {
-        setFiles(prev => [...prev, ...Array.from(e.target.files)]);
+        const newFiles = Array.from(e.target.files);
+        if (!newFiles.length) return;
+        setFiles(prev => [...prev, ...newFiles]);
+        // Use FileReader for reliable cross-browser previews (URL.createObjectURL can fail in some contexts)
+        newFiles.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                setPreviewUrls(prev => [...prev, ev.target.result]);
+            };
+            reader.readAsDataURL(file);
+        });
         e.target.value = '';
+    };
+
+    const removeNewFile = (i) => {
+        setFiles(prev => prev.filter((_, j) => j !== i));
+        setPreviewUrls(prev => prev.filter((_, j) => j !== i));
     };
 
     const removeExistingImage = (img) => {
         setRemovedImages(prev => [...prev, img]);
-        setFormData(prev => ({ ...prev, images: prev.images.filter(i => i !== img) }));
+        setFormData(prev => ({ ...prev, images: prev.images.filter(x => x !== img) }));
     };
 
     // Pricing calculator
@@ -464,16 +480,6 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
                             )}
                         </h3>
 
-                        {/* Hidden file input */}
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            style={{ display: 'none' }}
-                        />
-
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 10, marginBottom: 10 }}>
                             {formData.images.map((img, i) => (
                                 <div key={`ex-${i}`} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', border: '2px solid #e5e7eb' }}>
@@ -481,24 +487,20 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
                                     <button type="button" onClick={() => removeExistingImage(img)} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: 11 }}>✕</button>
                                 </div>
                             ))}
-                            {files.map((f, i) => (
+                            {previewUrls.map((url, i) => (
                                 <div key={`new-${i}`} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', border: '2px solid #86efac' }}>
-                                    <img src={URL.createObjectURL(f)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    <button type="button" onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: 11 }}>✕</button>
+                                    <img src={url} alt={`Preview ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <span style={{ position: 'absolute', bottom: 3, left: 3, background: '#16a34a', color: '#fff', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3 }}>NEW</span>
+                                    <button type="button" onClick={() => removeNewFile(i)} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: 11 }}>✕</button>
                                 </div>
                             ))}
 
-                            {/* Add Photo button — uses ref instead of label wrapping */}
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                style={{ aspectRatio: '1', border: '2px dashed #c7d2fe', borderRadius: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#f5f3ff', gap: 4, transition: 'all 0.2s' }}
-                                onMouseOver={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.background = '#ede9fe'; }}
-                                onMouseOut={e => { e.currentTarget.style.borderColor = '#c7d2fe'; e.currentTarget.style.background = '#f5f3ff'; }}
-                            >
+                            {/* Label wrapping — same pattern as working admin ProductForm */}
+                            <label style={{ aspectRatio: '1', border: '2px dashed #c7d2fe', borderRadius: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#f5f3ff', gap: 4 }}>
+                                <input type="file" multiple accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                                 <span style={{ fontSize: 28, color: '#6366f1' }}>＋</span>
                                 <span style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>Add Photo</span>
-                            </button>
+                            </label>
                         </div>
                         <small style={{ color: '#94a3b8', fontSize: 12 }}>Upload up to 10 images (front, back, side, detail views) • First image is the primary image</small>
                     </div>
