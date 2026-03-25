@@ -433,6 +433,49 @@ const haversineKm = (lat1, lon1, lat2, lon2) => {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
+// @desc    Get lowest price per seller in bulk (for shop card price tags)
+// @route   GET /api/sellers/min-prices
+// @access  Public
+router.get('/min-prices', async (req, res) => {
+    try {
+        const prices = await Product.aggregate([
+            { $match: { isActive: true, stock: { $gt: 0 } } },
+            { $sort: { sellingPrice: 1 } },
+            {
+                $group: {
+                    _id: '$seller',
+                    startingPrice: { $first: '$sellingPrice' },
+                    categoryId: { $first: '$category' }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'categories',
+                    localField: 'categoryId',
+                    foreignField: '_id',
+                    as: 'categoryDoc'
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    startingPrice: 1,
+                    startingCategory: { $ifNull: [{ $arrayElemAt: ['$categoryDoc.name', 0] }, 'Items'] }
+                }
+            }
+        ]);
+
+        // Convert to sellerId => { startingPrice, startingCategory } map
+        const map = {};
+        prices.forEach(p => { map[p._id.toString()] = { startingPrice: p.startingPrice, startingCategory: p.startingCategory }; });
+
+        res.json({ success: true, data: map });
+    } catch (error) {
+        console.error('min-prices error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // @desc    Get nearby shops
 // @route   GET /api/sellers/nearby?lat=&lng=&radius=
 // @access  Public
