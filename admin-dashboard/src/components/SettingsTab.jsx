@@ -43,6 +43,7 @@ const SettingsTab = () => {
             if (res.data.success) {
                 alert('Platform settings updated successfully!');
                 fetchConfig();
+                setIsEditing(false);
             }
         } catch (error) {
             alert(error.response?.data?.message || 'Failed to update settings');
@@ -55,73 +56,105 @@ const SettingsTab = () => {
 
     const inputStyle = { 
         width: '100%', 
-        padding: '14px 16px', 
-        fontSize: '15px', 
-        border: '1.5px solid',
-        borderColor: isEditing ? '#6366f1' : '#e2e8f0', 
-        borderRadius: '12px', 
+        padding: '16px 20px', 
+        fontSize: '16px', 
+        border: isEditing ? '2px solid #3b82f6' : '1px solid transparent',
+        borderRadius: '16px', 
         outline: 'none', 
         boxSizing: 'border-box',
-        backgroundColor: isEditing ? '#ffffff' : '#f8fafc',
-        color: isEditing ? '#0f172a' : '#64748b',
-        transition: 'all 0.3s ease',
-        boxShadow: isEditing ? '0 0 0 4px rgba(99, 102, 241, 0.1)' : 'none',
-        fontWeight: isEditing ? '500' : '600',
-        cursor: isEditing ? 'text' : 'not-allowed'
+        backgroundColor: isEditing ? '#ffffff' : '#f1f5f9',
+        color: isEditing ? '#0f172a' : '#475569',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        fontWeight: '600',
+        cursor: isEditing ? 'text' : 'not-allowed',
+        boxShadow: isEditing ? '0 4px 12px rgba(59, 130, 246, 0.1)' : 'none'
     };
 
     const cardStyle = {
-        background: 'rgba(255, 255, 255, 0.8)',
-        backdropFilter: 'blur(16px)',
-        padding: '24px',
-        borderRadius: '20px',
-        border: '1px solid rgba(255,255,255,0.4)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.04)',
-        marginBottom: '24px'
+        background: '#ffffff',
+        padding: '32px',
+        borderRadius: '24px',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+        marginBottom: '32px',
+        border: '1px solid #f1f5f9'
     };
 
     const labelStyle = { 
         display: 'block', 
-        marginBottom: '8px', 
+        marginBottom: '10px', 
         fontSize: '14px', 
         fontWeight: '700', 
-        color: '#334155' 
+        color: '#1e293b',
+        letterSpacing: '0.3px'
     };
 
     const hintStyle = { 
-        color: '#94a3b8', 
-        fontSize: '12px', 
+        color: '#64748b', 
+        fontSize: '13px', 
         display: 'block', 
-        marginTop: '6px',
+        marginTop: '8px',
         fontWeight: '500'
     };
 
+    const IconRevenue = () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+    );
+
+    const IconPayment = () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+            <line x1="1" y1="10" x2="23" y2="10"></line>
+        </svg>
+    );
+
+    const IconDelivery = () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="1" y="3" width="15" height="13"></rect>
+            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+            <circle cx="5.5" cy="18.5" r="2.5"></circle>
+            <circle cx="18.5" cy="18.5" r="2.5"></circle>
+        </svg>
+    );
+
     return (
-        <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+        <div style={{ padding: '40px 24px', maxWidth: '880px', margin: '0 auto', fontFamily: '"Inter", sans-serif' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
                 <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#0f172a', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>Global Platform Settings</h1>
-                    <p style={{ color: '#64748b', margin: 0, fontSize: '15px' }}>Manage commissions, platform fees, and delivery logic</p>
+                    <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#0f172a', margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>Global Configuration</h1>
+                    <p style={{ color: '#64748b', margin: 0, fontSize: '16px', fontWeight: '500' }}>Manage core platform rules, fees, and logistics parameters</p>
                 </div>
                 <button 
                     onClick={() => setIsEditing(!isEditing)}
                     style={{
-                        background: isEditing ? '#fef2f2' : '#f0f9ff',
-                        color: isEditing ? '#ef4444' : '#0ea5e9',
-                        border: isEditing ? '1px solid #fecaca' : '1px solid #bae6fd',
-                        padding: '10px 20px',
-                        borderRadius: '12px',
+                        background: isEditing ? '#f8fafc' : '#1e293b',
+                        color: isEditing ? '#475569' : '#ffffff',
+                        border: isEditing ? '1px solid #e2e8f0' : 'none',
+                        padding: '12px 24px',
+                        borderRadius: '14px',
                         fontWeight: '700',
                         fontSize: '14px',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                        transition: 'all 0.2s ease'
+                        gap: '10px',
+                        boxShadow: isEditing ? 'none' : '0 4px 12px rgba(30, 41, 59, 0.2)',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                     }}
                 >
-                    {isEditing ? '✕ Cancel' : '⚙️ Edit Settings'}
+                    {isEditing ? (
+                        <>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            Lock Settings
+                        </>
+                    ) : (
+                        <>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                            Edit Settings
+                        </>
+                    )}
                 </button>
             </div>
             
@@ -129,83 +162,95 @@ const SettingsTab = () => {
                 
                 {/* Revenue & Fees */}
                 <div style={cardStyle}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>💰</div>
-                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#1e293b' }}>Revenue & Fees</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+                        <div style={{ width: 48, height: 48, borderRadius: 14, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <IconRevenue />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Revenue & Commissions</h3>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' }}>
                         <div>
                             <label style={labelStyle}>Seller Commission (%)</label>
                             <input type="number" name="commissionPercentage" value={config.commissionPercentage} onChange={handleChange} min="0" max="100" style={inputStyle} disabled={!isEditing} required />
-                            <small style={hintStyle}>Deducted from selling price</small>
+                            <small style={hintStyle}>Percentage deducted from the final selling price</small>
                         </div>
                         <div>
                             <label style={labelStyle}>Platform Fee (₹)</label>
                             <input type="number" name="platformFee" value={config.platformFee} onChange={handleChange} min="0" style={inputStyle} disabled={!isEditing} required />
-                            <small style={hintStyle}>Charged directly to customer</small>
+                            <small style={hintStyle}>Flat fee charged directly to the customer</small>
                         </div>
                     </div>
                 </div>
 
                 {/* Payment Gateway */}
                 <div style={cardStyle}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>💳</div>
-                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#1e293b' }}>Payment Gateway</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+                        <div style={{ width: 48, height: 48, borderRadius: 14, background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <IconPayment />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Payment Processing</h3>
                     </div>
                     <div>
                         <label style={labelStyle}>Gateway Fee (%)</label>
                         <input type="number" name="paymentGatewayPercentage" value={config.paymentGatewayPercentage ?? 2} onChange={handleChange} min="0" max="10" step="0.1" style={inputStyle} disabled={!isEditing} required />
-                        <small style={hintStyle}>Estimated payment processing cost deducted from profit. Default: 2%</small>
+                        <small style={hintStyle}>Estimated transaction fee deducted from total profit. Default is 2.0%</small>
                     </div>
                 </div>
 
                 {/* Delivery Economics */}
                 <div style={cardStyle}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#ffedd5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🚚</div>
-                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#1e293b' }}>Delivery Economics</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+                        <div style={{ width: 48, height: 48, borderRadius: 14, background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <IconDelivery />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Delivery Logistics</h3>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' }}>
                         <div>
                             <label style={labelStyle}>Base Delivery Fee (₹)</label>
                             <input type="number" name="baseDeliveryCharge" value={config.baseDeliveryCharge} onChange={handleChange} min="0" style={inputStyle} disabled={!isEditing} required />
-                            <small style={hintStyle}>Charge for the first 2 KM</small>
+                            <small style={hintStyle}>Base charge covering the first 2 KM of delivery</small>
                         </div>
                         <div>
                             <label style={labelStyle}>Charge Per Extra KM (₹)</label>
                             <input type="number" name="deliveryChargePerKm" value={config.deliveryChargePerKm} onChange={handleChange} min="0" style={inputStyle} disabled={!isEditing} required />
-                            <small style={hintStyle}>Charged for distance beyond 2 KM</small>
+                            <small style={hintStyle}>Dynamic fee applied to distance beyond 2 KM</small>
                         </div>
-                        <div style={{ gridColumn: '1 / -1' }}>
+                        <div style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
                             <label style={labelStyle}>Free Delivery Threshold (₹)</label>
                             <input type="number" name="freeDeliveryThreshold" value={config.freeDeliveryThreshold} onChange={handleChange} min="0" style={inputStyle} disabled={!isEditing} required />
-                            <small style={hintStyle}>Orders above this amount bypass all delivery fees.</small>
+                            <small style={hintStyle}>Carts exceeding this total will completely waive delivery charges.</small>
                         </div>
                     </div>
                 </div>
 
-                {isEditing && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px', position: 'sticky', bottom: '24px', zIndex: 10 }}>
-                        <div style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', padding: '16px', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', border: '1px solid rgba(255,255,255,0.5)' }}>
-                            <button type="submit" disabled={saving} style={{ 
-                                background: 'linear-gradient(135deg, #4f46e5, #3b82f6)', 
-                                color: 'white', 
-                                padding: '14px 32px', 
-                                border: 'none', 
-                                borderRadius: '12px', 
-                                fontSize: '15px', 
-                                fontWeight: '700', 
-                                cursor: 'pointer', 
-                                opacity: saving ? 0.7 : 1,
-                                boxShadow: '0 4px 14px rgba(79, 70, 229, 0.4)',
-                                transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                            }}>
-                                {saving ? 'Applying Updates...' : 'Save Configuration Data'}
-                            </button>
-                        </div>
-                    </div>
-                )}
+                <div style={{ 
+                    marginTop: '16px', 
+                    opacity: isEditing ? 1 : 0, 
+                    pointerEvents: isEditing ? 'auto' : 'none', 
+                    transition: 'opacity 0.3s ease',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    position: 'sticky',
+                    bottom: '32px',
+                    zIndex: 50
+                }}>
+                    <button type="submit" disabled={saving} style={{ 
+                        background: '#2563eb', 
+                        color: '#ffffff', 
+                        padding: '16px 40px', 
+                        border: 'none', 
+                        borderRadius: '16px', 
+                        fontSize: '16px', 
+                        fontWeight: '800', 
+                        cursor: 'pointer',
+                        boxShadow: '0 8px 20px rgba(37, 99, 235, 0.3)',
+                        transition: 'transform 0.2s ease',
+                        transform: saving ? 'scale(0.98)' : 'scale(1)'
+                    }}>
+                        {saving ? 'Applying...' : 'Save Configuration'}
+                    </button>
+                </div>
             </form>
         </div>
     );
