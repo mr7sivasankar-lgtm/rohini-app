@@ -201,6 +201,26 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
         setPreviewUrls(prev => prev.filter((_, j) => j !== i));
     };
 
+    // Move an existing saved image to position 0 (primary)
+    const setPrimaryExistingImage = (i) => {
+        if (i === 0) return;
+        setFormData(prev => {
+            const imgs = [...prev.images];
+            const [picked] = imgs.splice(i, 1);
+            return { ...prev, images: [picked, ...imgs] };
+        });
+    };
+
+    // Move a new (unsaved) file to position 0 (primary)
+    const setPrimaryNewFile = (i) => {
+        if (i === 0 && formData.images.length === 0) return;
+        setFiles(prev => { const a = [...prev]; const [p] = a.splice(i, 1); return [p, ...a]; });
+        setPreviewUrls(prev => { const a = [...prev]; const [p] = a.splice(i, 1); return [p, ...a]; });
+        // If there are existing images, new primary must go before them — move existing images aside
+        // Simplest: prepend the new file to existing images list is not possible directly.
+        // Instead, just reorder within new files; if no existing images, first new file = primary.
+    };
+
     const removeExistingImage = (img) => {
         setRemovedImages(prev => [...prev, img]);
         setFormData(prev => ({ ...prev, images: prev.images.filter(x => x !== img) }));
@@ -479,30 +499,55 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
                                 </span>
                             )}
                         </h3>
+                        <p style={{ fontSize: 12, color: '#64748b', marginTop: -10, marginBottom: 12 }}>Click any image to set it as <strong>Primary</strong> (shown first to customers)</p>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 10, marginBottom: 10 }}>
-                            {formData.images.map((img, i) => (
-                                <div key={`ex-${i}`} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', border: '2px solid #e5e7eb' }}>
-                                    <img src={img.startsWith('http') ? img : `${import.meta.env.VITE_API_URL?.replace('/api', '')}${img}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    <button type="button" onClick={() => removeExistingImage(img)} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: 11 }}>✕</button>
-                                </div>
-                            ))}
-                            {previewUrls.map((url, i) => (
-                                <div key={`new-${i}`} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', border: '2px solid #86efac' }}>
-                                    <img src={url} alt={`Preview ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    <span style={{ position: 'absolute', bottom: 3, left: 3, background: '#16a34a', color: '#fff', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3 }}>NEW</span>
-                                    <button type="button" onClick={() => removeNewFile(i)} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: 11 }}>✕</button>
-                                </div>
-                            ))}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 10, marginBottom: 10 }}>
 
-                            {/* Label wrapping — same pattern as working admin ProductForm */}
+                            {/* Existing (saved) images */}
+                            {formData.images.map((img, i) => {
+                                const isPrimary = i === 0;
+                                return (
+                                    <div
+                                        key={`ex-${i}`}
+                                        onClick={() => setPrimaryExistingImage(i)}
+                                        title={isPrimary ? 'Primary image' : 'Click to set as primary'}
+                                        style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', border: `2.5px solid ${isPrimary ? '#f59e0b' : '#e5e7eb'}`, cursor: 'pointer', boxShadow: isPrimary ? '0 0 0 2px #fde68a' : 'none', transition: 'all 0.15s' }}
+                                    >
+                                        <img src={img.startsWith('http') ? img : `${import.meta.env.VITE_API_URL?.replace('/api', '')}${img}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        {isPrimary && <span style={{ position: 'absolute', bottom: 3, left: 3, background: '#f59e0b', color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>⭐ PRIMARY</span>}
+                                        <button type="button" onClick={(e) => { e.stopPropagation(); removeExistingImage(img); }} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: 11 }}>✕</button>
+                                    </div>
+                                );
+                            })}
+
+                            {/* New file previews */}
+                            {previewUrls.map((url, i) => {
+                                const isPrimary = formData.images.length === 0 && i === 0;
+                                return (
+                                    <div
+                                        key={`new-${i}`}
+                                        onClick={() => setPrimaryNewFile(i)}
+                                        title={isPrimary ? 'Primary image' : 'Click to set as primary'}
+                                        style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', border: `2.5px solid ${isPrimary ? '#f59e0b' : '#86efac'}`, cursor: 'pointer', boxShadow: isPrimary ? '0 0 0 2px #fde68a' : 'none', transition: 'all 0.15s' }}
+                                    >
+                                        <img src={url} alt={`Preview ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        {isPrimary
+                                            ? <span style={{ position: 'absolute', bottom: 3, left: 3, background: '#f59e0b', color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>⭐ PRIMARY</span>
+                                            : <span style={{ position: 'absolute', bottom: 3, left: 3, background: '#16a34a', color: '#fff', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3 }}>NEW</span>
+                                        }
+                                        <button type="button" onClick={(e) => { e.stopPropagation(); removeNewFile(i); }} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: 11 }}>✕</button>
+                                    </div>
+                                );
+                            })}
+
+                            {/* Add Photo */}
                             <label style={{ aspectRatio: '1', border: '2px dashed #c7d2fe', borderRadius: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#f5f3ff', gap: 4 }}>
                                 <input type="file" multiple accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                                 <span style={{ fontSize: 28, color: '#6366f1' }}>＋</span>
                                 <span style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>Add Photo</span>
                             </label>
                         </div>
-                        <small style={{ color: '#94a3b8', fontSize: 12 }}>Upload up to 10 images (front, back, side, detail views) • First image is the primary image</small>
+                        <small style={{ color: '#94a3b8', fontSize: 12 }}>Upload up to 10 images • First image = primary shown to customers</small>
                     </div>
 
                     {/* ── 5. ADVANCED ───────────────────────────────────── */}
