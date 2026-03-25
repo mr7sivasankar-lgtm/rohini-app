@@ -141,7 +141,11 @@ const Home = () => {
                         </svg>
                     </div>
                 </div>
-                <h1 className="shop-title">{user?.name?.split(' ')[0] || 'Hi there!'}</h1>
+                <div className="shop-title">
+                    <span className="greeting-text">Hey </span>
+                    <span className="greeting-name">{user?.name?.split(' ')[0] || 'there'}</span>
+                    <span> 👋</span>
+                </div>
             </div>
 
             {/* Location Picker Modal */}
