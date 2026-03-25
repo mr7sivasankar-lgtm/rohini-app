@@ -104,7 +104,7 @@ function App() {
             shouldAlert = true;
             notifBody.push(`${exchangeCount - lastExchangeCountRef.current} new exchange request(s)`);
           }
-          
+
           const cancelledCount = response.data.stats?.cancelled || 0;
           if (cancelledCount > lastCancelledCountRef.current && lastCancelledCountRef.current > 0) {
             shouldAlert = true;
@@ -627,7 +627,7 @@ function App() {
             let matchSearch = true;
 
             if (productCategoryFilter) matchCat = p.category?._id === productCategoryFilter;
-            
+
             if (productSellerFilter) {
               if (productSellerFilter === 'admin') matchSel = !p.seller;
               else matchSel = p.seller?._id === productSellerFilter;
@@ -790,7 +790,7 @@ function App() {
                                 </span>
                               )}
                             </td>
-                            <td style={{ fontWeight: 600 }}>₹{product.price}</td>
+                            <td style={{ fontWeight: 600 }}>₹{product.sellingPrice || product.price || '-'}</td>
                             <td>
                               <span style={{ color: stockColor, fontWeight: 700, fontSize: '14px' }}>
                                 {product.stock}
@@ -825,7 +825,7 @@ function App() {
                       })}
                     </tbody>
                   </table>
-                  
+
                   {filteredProducts.length === 0 && (
                     <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
                       No products found matching the selected filters.
@@ -1020,16 +1020,16 @@ const OrderManagementTab = ({ orders, updateOrderStatus, deleteOrder, handleUpda
 // ... other tabs ...
 
 const ITEM_NEXT_STATES = {
-  'Active':                     [],
-  'Return Requested':           ['Return Approved', 'Return Rejected'],
-  'Return Approved':            ['Return Completed'],
-  'Return Completed':           [],
-  'Return Rejected':            [],
-  'Exchange Requested':         ['Exchange Approved', 'Exchange Rejected'],
-  'Exchange Approved':          ['Exchange Completed'],
-  'Exchange Completed':         [],
-  'Exchange Rejected':          [],
-  'Cancelled':                  [],
+  'Active': [],
+  'Return Requested': ['Return Approved', 'Return Rejected'],
+  'Return Approved': ['Return Completed'],
+  'Return Completed': [],
+  'Return Rejected': [],
+  'Exchange Requested': ['Exchange Approved', 'Exchange Rejected'],
+  'Exchange Approved': ['Exchange Completed'],
+  'Exchange Completed': [],
+  'Exchange Rejected': [],
+  'Cancelled': [],
 };
 
 const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus }) => {
@@ -1061,307 +1061,307 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
         {orders.map(order => {
           const isCancelled = order.status === 'Cancelled' || order.items.every(i => i.status === 'Cancelled');
           const isExchangeRequested = order.status === 'Exchange Requested';
-          
+
           let rowClass = '';
           if (isCancelled) rowClass = 'cancelled-row';
           if (isExchangeRequested) rowClass = 'exchange-row';
 
           return (
-          <>
-          <tr key={order._id} className={rowClass}>
-            <td style={{ minWidth: '30px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600 }}>#{order.orderId?.slice(-6)}</span>
-                <button
-                  onClick={() => toggleHistory(order._id)}
-                  title="Show order history"
-                  style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', padding: '1px 4px', color: '#64748b' }}
-                >{expandedOrders[order._id] ? '▲' : '▼'}</button>
-              </div>
-            </td>
-            <td>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ background: '#e2e8f0', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
-                  👤
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600 }}>
-                    {order.user?.name !== 'User' && order.user?.name ? order.user.name : (order.shippingAddress?.fullName || 'Customer')}
+            <>
+              <tr key={order._id} className={rowClass}>
+                <td style={{ minWidth: '30px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600 }}>#{order.orderId?.slice(-6)}</span>
+                    <button
+                      onClick={() => toggleHistory(order._id)}
+                      title="Show order history"
+                      style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', padding: '1px 4px', color: '#64748b' }}
+                    >{expandedOrders[order._id] ? '▲' : '▼'}</button>
                   </div>
-                  <div style={{ fontSize: '0.85em', color: '#666' }}>{order.contactInfo?.phone}</div>
-                </div>
-              </div>
-            </td>
-            <td>
-              <span style={{ fontWeight: 600, color: '#3b82f6', fontSize: '13px' }}>
-                {order.seller?.shopName || 'Admin'}
-              </span>
-            </td>
-            <td>
-              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {order.items.map((item, idx) => (
-                  <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9em' }}>
-                    {item.image && (
-                      <img
-                        src={getImageUrl(item.image)}
-                        alt={item.name}
-                        style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #e2e8f0' }}
-                        onError={(e) => { e.target.style.display = 'none'; }}
-                      />
-                    )}
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '13px', color: '#1e293b' }}>{item.name} <span style={{ fontWeight: 600, color: '#334155' }}>(x{item.quantity})</span></span>
-                      <span style={{ fontSize: '12px', color: '#64748b' }}>
-                        {item.size && `Size: ${item.size}`}
-                        {item.size && item.color && ' | '}
-                        {item.color && `Color: ${item.color}`}
-                      </span>
+                </td>
+                <td>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ background: '#e2e8f0', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
+                      👤
                     </div>
-                  </li>
-                ))}
-              </ul>
-            </td>
-            <td>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
-                {order.items.map((item, idx) => (
-                  <div key={idx} style={{ 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                    minHeight: '36px', fontSize: '0.9em', color: '#3730a3', fontWeight: 600,
-                    background: '#e0e7ff', borderRadius: '6px', padding: '2px 8px', width: 'fit-content', margin: '0 auto' 
-                  }}>
-                    {item.productCode || 'N/A'}
+                    <div>
+                      <div style={{ fontWeight: 600 }}>
+                        {order.user?.name !== 'User' && order.user?.name ? order.user.name : (order.shippingAddress?.fullName || 'Customer')}
+                      </div>
+                      <div style={{ fontSize: '0.85em', color: '#666' }}>{order.contactInfo?.phone}</div>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </td>
-            <td style={{ fontWeight: 600, textAlign: 'center', fontSize: '1.1em' }}>
-              {order.items.reduce((total, item) => total + item.quantity, 0)}
-            </td>
-            <td style={{ maxWidth: '250px', fontSize: '0.9em' }}>
-              <div style={{ fontWeight: 500 }}>{order.shippingAddress?.fullAddress}</div>
-              {order.shippingAddress?.city && <div>{order.shippingAddress.city}, {order.shippingAddress.pincode}</div>}
-              {order.shippingAddress?.district && <div>{order.shippingAddress.district}</div>}
-              {order.shippingAddress?.latitude && order.shippingAddress?.longitude && (
-                <a
-                  href={`https://www.google.com/maps?q=${order.shippingAddress.latitude},${order.shippingAddress.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    marginTop: '8px',
-                    padding: '4px 8px',
-                    background: '#e0f2fe',
-                    color: '#0369a1',
-                    borderRadius: '4px',
-                    textDecoration: 'none',
-                    fontSize: '0.85em',
-                    fontWeight: 600
-                  }}
-                >
-                  📍 View on Map
-                </a>
-              )}
-            </td>
-            <td style={{ fontWeight: 600 }}>₹{order.total.toFixed(2)}</td>
-            <td>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
-                <span className={`status-badge status-${order.status.toLowerCase().replace(/ /g, '-')}`}>
-                  {order.status === 'Delivered' ? '✔ Delivered' : 
-                   order.status === 'Cancelled' ? '❌ Cancelled' : 
-                   order.status}
-                </span>
-
-                {/* Return window tag for delivered orders */}
-                {order.status === 'Delivered' && (() => {
-                  const deliveredStatus = order.statusHistory?.find(s => s.status === 'Delivered');
-                  if (!deliveredStatus) return null;
-                  
-                  const hoursSinceDelivery = (new Date() - new Date(deliveredStatus.timestamp)) / (1000 * 60 * 60);
-                  const isExpired = hoursSinceDelivery >= 3;
-                  
-                  return (
-                    <span style={{
-                      fontSize: '10px',
-                      fontWeight: 700,
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      background: isExpired ? '#fef2f2' : '#eff6ff',
-                      color: isExpired ? '#ef4444' : '#3b82f6',
-                      border: `1px solid ${isExpired ? '#fecaca' : '#bfdbfe'}`,
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {isExpired ? 'Return Window: Expired' : 'Return Window: Active'}
-                    </span>
-                  );
-                })()}
-
-                {order.deliveryPartnerId && (
-                  <div style={{ marginTop: '4px', padding: '4px 6px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontWeight: 600, color: '#334155' }}>🚚 {order.deliveryPartnerId.name}</span>
-                    <span style={{ color: '#64748b' }}>{order.deliveryPartnerId.phone}</span>
-                  </div>
-                )}
-              </div>
-            </td>
-            <td>
-              <div>{new Date(order.createdAt).toLocaleDateString('en-IN')}</div>
-              <div style={{ fontSize: '0.85em', color: '#666' }}>{new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
-            </td>
-            <td>
-              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '200px' }}>
-                {order.items.map((item, idx) => {
-                  const nextStates = ITEM_NEXT_STATES[item.status] || [];
-                  const fmt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : null;
-
-                  const terminalChips = {
-                    'Return Completed': { bg: '#dcfce7', color: '#15803d', border: '#86efac', icon: '✅', label: 'Return Completed', ts: item.returnCompletedAt },
-                    'Exchange Completed':{ bg: '#ede9fe', color: '#6d28d9', border: '#c4b5fd', icon: '✅', label: 'Exchange Completed', ts: item.exchangeCompletedAt },
-                    'Return Rejected':  { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Return Rejected', ts: item.returnRejectedAt },
-                    'Exchange Rejected':{ bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Exchange Rejected', ts: item.exchangeRejectedAt },
-                    'Cancelled':        { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Cancelled', ts: item.cancelledAt },
-                  };
-                  const chip = terminalChips[item.status];
-
-                  const inProgressTs = {
-                    'Return Requested':   item.returnRequestedAt,
-                    'Return Approved':    item.returnApprovedAt,
-                    'Exchange Requested': item.exchangeRequestedAt,
-                    'Exchange Approved':  item.exchangeApprovedAt,
-                  }[item.status];
-
-                  const pref = item.exchangeSize || item.exchangeColor ? (
-                    <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 600, marginBottom: '4px' }}>
-                      Prefers: {item.exchangeSize && `Size ${item.exchangeSize}`} {item.exchangeColor && `Color ${item.exchangeColor}`}
-                    </div>
-                  ) : null;
-
-                  return (
-                    <li key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                      {pref}
-                      {chip ? (
-                        <>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: chip.bg, color: chip.color, border: `1px solid ${chip.border}`, borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
-                            {chip.icon} {chip.label}
-                          </div>
-                          {chip.ts && <div style={{ fontSize: '10px', color: '#94a3b8' }}>🕐 {fmt(chip.ts)}</div>}
-                        </>
-                      ) : nextStates.length > 0 ? (
-                        <>
-                          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>
-                            Status: <span style={{ color: '#f97316' }}>{item.status}</span>
-                          </div>
-                          {inProgressTs && <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '4px' }}>🕐 {fmt(inProgressTs)}</div>}
-                        </>
-                      ) : item.status === 'Active' ? (
-                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>— No action —</span>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            </td>
-            <td>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px' }}>
-                {order.items.map((item, idx) => {
-                  let reason = null;
-                  let user = null;
-                  if (item.actionReason) reason = item.actionReason;
-                  if (item.status === 'Cancelled') user = item.cancelledBy || 'Customer';
-                  
-                  if (!reason && !user) return <div key={idx} style={{ minHeight: '36px', fontSize: '12px', color: '#94a3b8' }}>—</div>;
-
-                  return (
-                    <div key={idx} style={{ minHeight: '36px', fontSize: '12px', padding: '6px', background: '#f8fafc', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ fontWeight: 600, color: '#334155', marginBottom: '2px', fontSize: '11px' }}>{item.name}</div>
-                      {reason && <div style={{ color: '#475569', fontStyle: 'italic' }}>"{reason}"</div>}
-                      {user && <div style={{ color: '#ef4444', fontWeight: 600, marginTop: '2px' }}>By: {user}</div>}
-                    </div>
-                  );
-                })}
-              </div>
-            </td>
-            <td>
-              {deleteOrder && (
-                <button
-                  onClick={() => deleteOrder(order._id)}
-                  title="Delete Order"
-                  style={{
-                    padding: '6px 10px',
-                    background: '#fee2e2',
-                    color: '#dc2626',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                  }}
-                >
-                  🗑️
-                </button>
-              )}
-            </td>
-          </tr>
-          {/* Expandable History Row */}
-          {expandedOrders[order._id] && (
-            <tr key={`hist-${order._id}`}>
-              <td colSpan={13} style={{ background: '#f8fafc', padding: '0 12px 12px 40px', borderBottom: '2px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', paddingTop: '12px' }}>
-                  {/* Order Status Timeline */}
-                  <div style={{ minWidth: '220px' }}>
-                    <div style={{ fontWeight: 700, fontSize: '13px', color: '#334155', marginBottom: '8px' }}>📦 Order Status History</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      {(order.statusHistory || []).map((h, i) => (
-                        <div key={i} style={{ display: 'flex', gap: '8px', fontSize: '12px', alignItems: 'flex-start' }}>
-                          <span style={{ color: '#f97316', fontSize: '16px', lineHeight: 1.2 }}>●</span>
-                          <div>
-                            <span style={{ fontWeight: 600, color: '#1e293b' }}>{h.status}</span>
-                            <div style={{ color: '#94a3b8', fontSize: '11px' }}>
-                              {h.timestamp ? new Date(h.timestamp).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true }) : ''}
-                            </div>
-                            {h.note && <div style={{ color: '#64748b', fontStyle: 'italic', fontSize: '11px' }}>{h.note}</div>}
-                          </div>
+                </td>
+                <td>
+                  <span style={{ fontWeight: 600, color: '#3b82f6', fontSize: '13px' }}>
+                    {order.seller?.shopName || 'Admin'}
+                  </span>
+                </td>
+                <td>
+                  <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {order.items.map((item, idx) => (
+                      <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9em' }}>
+                        {item.image && (
+                          <img
+                            src={getImageUrl(item.image)}
+                            alt={item.name}
+                            style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #e2e8f0' }}
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '13px', color: '#1e293b' }}>{item.name} <span style={{ fontWeight: 600, color: '#334155' }}>(x{item.quantity})</span></span>
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>
+                            {item.size && `Size: ${item.size}`}
+                            {item.size && item.color && ' | '}
+                            {item.color && `Color: ${item.color}`}
+                          </span>
                         </div>
-                      ))}
-                    </div>
+                      </li>
+                    ))}
+                  </ul>
+                </td>
+                <td>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
+                    {order.items.map((item, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        minHeight: '36px', fontSize: '0.9em', color: '#3730a3', fontWeight: 600,
+                        background: '#e0e7ff', borderRadius: '6px', padding: '2px 8px', width: 'fit-content', margin: '0 auto'
+                      }}>
+                        {item.productCode || 'N/A'}
+                      </div>
+                    ))}
                   </div>
-                  {/* Per-item timeline */}
-                  {order.items.map((item, idx) => {
-                    const fmtDt = (d) => d ? new Date(d).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:true }) : null;
-                    const steps = [
-                      { label: 'Return Requested',  ts: item.returnRequestedAt },
-                      { label: 'Return Approved',   ts: item.returnApprovedAt },
-                      { label: 'Return Completed',  ts: item.returnCompletedAt },
-                      { label: 'Return Rejected',   ts: item.returnRejectedAt },
-                      { label: 'Exchange Requested',ts: item.exchangeRequestedAt },
-                      { label: 'Exchange Approved', ts: item.exchangeApprovedAt },
-                      { label: 'Exchange Completed',ts: item.exchangeCompletedAt },
-                      { label: 'Exchange Rejected', ts: item.exchangeRejectedAt },
-                      { label: 'Cancelled',         ts: item.cancelledAt },
-                    ].filter(s => s.ts);
-                    if (steps.length === 0) return null;
-                    return (
-                      <div key={idx} style={{ minWidth: '180px' }}>
-                        <div style={{ fontWeight: 700, fontSize: '13px', color: '#334155', marginBottom: '8px' }}>🏷 {item.name} History</div>
+                </td>
+                <td style={{ fontWeight: 600, textAlign: 'center', fontSize: '1.1em' }}>
+                  {order.items.reduce((total, item) => total + item.quantity, 0)}
+                </td>
+                <td style={{ maxWidth: '250px', fontSize: '0.9em' }}>
+                  <div style={{ fontWeight: 500 }}>{order.shippingAddress?.fullAddress}</div>
+                  {order.shippingAddress?.city && <div>{order.shippingAddress.city}, {order.shippingAddress.pincode}</div>}
+                  {order.shippingAddress?.district && <div>{order.shippingAddress.district}</div>}
+                  {order.shippingAddress?.latitude && order.shippingAddress?.longitude && (
+                    <a
+                      href={`https://www.google.com/maps?q=${order.shippingAddress.latitude},${order.shippingAddress.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        marginTop: '8px',
+                        padding: '4px 8px',
+                        background: '#e0f2fe',
+                        color: '#0369a1',
+                        borderRadius: '4px',
+                        textDecoration: 'none',
+                        fontSize: '0.85em',
+                        fontWeight: 600
+                      }}
+                    >
+                      📍 View on Map
+                    </a>
+                  )}
+                </td>
+                <td style={{ fontWeight: 600 }}>₹{order.total.toFixed(2)}</td>
+                <td>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                    <span className={`status-badge status-${order.status.toLowerCase().replace(/ /g, '-')}`}>
+                      {order.status === 'Delivered' ? '✔ Delivered' :
+                        order.status === 'Cancelled' ? '❌ Cancelled' :
+                          order.status}
+                    </span>
+
+                    {/* Return window tag for delivered orders */}
+                    {order.status === 'Delivered' && (() => {
+                      const deliveredStatus = order.statusHistory?.find(s => s.status === 'Delivered');
+                      if (!deliveredStatus) return null;
+
+                      const hoursSinceDelivery = (new Date() - new Date(deliveredStatus.timestamp)) / (1000 * 60 * 60);
+                      const isExpired = hoursSinceDelivery >= 3;
+
+                      return (
+                        <span style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: isExpired ? '#fef2f2' : '#eff6ff',
+                          color: isExpired ? '#ef4444' : '#3b82f6',
+                          border: `1px solid ${isExpired ? '#fecaca' : '#bfdbfe'}`,
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {isExpired ? 'Return Window: Expired' : 'Return Window: Active'}
+                        </span>
+                      );
+                    })()}
+
+                    {order.deliveryPartnerId && (
+                      <div style={{ marginTop: '4px', padding: '4px 6px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ fontWeight: 600, color: '#334155' }}>🚚 {order.deliveryPartnerId.name}</span>
+                        <span style={{ color: '#64748b' }}>{order.deliveryPartnerId.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td>
+                  <div>{new Date(order.createdAt).toLocaleDateString('en-IN')}</div>
+                  <div style={{ fontSize: '0.85em', color: '#666' }}>{new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
+                </td>
+                <td>
+                  <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '200px' }}>
+                    {order.items.map((item, idx) => {
+                      const nextStates = ITEM_NEXT_STATES[item.status] || [];
+                      const fmt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : null;
+
+                      const terminalChips = {
+                        'Return Completed': { bg: '#dcfce7', color: '#15803d', border: '#86efac', icon: '✅', label: 'Return Completed', ts: item.returnCompletedAt },
+                        'Exchange Completed': { bg: '#ede9fe', color: '#6d28d9', border: '#c4b5fd', icon: '✅', label: 'Exchange Completed', ts: item.exchangeCompletedAt },
+                        'Return Rejected': { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Return Rejected', ts: item.returnRejectedAt },
+                        'Exchange Rejected': { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Exchange Rejected', ts: item.exchangeRejectedAt },
+                        'Cancelled': { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', icon: '❌', label: 'Cancelled', ts: item.cancelledAt },
+                      };
+                      const chip = terminalChips[item.status];
+
+                      const inProgressTs = {
+                        'Return Requested': item.returnRequestedAt,
+                        'Return Approved': item.returnApprovedAt,
+                        'Exchange Requested': item.exchangeRequestedAt,
+                        'Exchange Approved': item.exchangeApprovedAt,
+                      }[item.status];
+
+                      const pref = item.exchangeSize || item.exchangeColor ? (
+                        <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 600, marginBottom: '4px' }}>
+                          Prefers: {item.exchangeSize && `Size ${item.exchangeSize}`} {item.exchangeColor && `Color ${item.exchangeColor}`}
+                        </div>
+                      ) : null;
+
+                      return (
+                        <li key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          {pref}
+                          {chip ? (
+                            <>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: chip.bg, color: chip.color, border: `1px solid ${chip.border}`, borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: 700 }}>
+                                {chip.icon} {chip.label}
+                              </div>
+                              {chip.ts && <div style={{ fontSize: '10px', color: '#94a3b8' }}>🕐 {fmt(chip.ts)}</div>}
+                            </>
+                          ) : nextStates.length > 0 ? (
+                            <>
+                              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>
+                                Status: <span style={{ color: '#f97316' }}>{item.status}</span>
+                              </div>
+                              {inProgressTs && <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '4px' }}>🕐 {fmt(inProgressTs)}</div>}
+                            </>
+                          ) : item.status === 'Active' ? (
+                            <span style={{ fontSize: '12px', color: '#94a3b8' }}>— No action —</span>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </td>
+                <td>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px' }}>
+                    {order.items.map((item, idx) => {
+                      let reason = null;
+                      let user = null;
+                      if (item.actionReason) reason = item.actionReason;
+                      if (item.status === 'Cancelled') user = item.cancelledBy || 'Customer';
+
+                      if (!reason && !user) return <div key={idx} style={{ minHeight: '36px', fontSize: '12px', color: '#94a3b8' }}>—</div>;
+
+                      return (
+                        <div key={idx} style={{ minHeight: '36px', fontSize: '12px', padding: '6px', background: '#f8fafc', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                          <div style={{ fontWeight: 600, color: '#334155', marginBottom: '2px', fontSize: '11px' }}>{item.name}</div>
+                          {reason && <div style={{ color: '#475569', fontStyle: 'italic' }}>"{reason}"</div>}
+                          {user && <div style={{ color: '#ef4444', fontWeight: 600, marginTop: '2px' }}>By: {user}</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </td>
+                <td>
+                  {deleteOrder && (
+                    <button
+                      onClick={() => deleteOrder(order._id)}
+                      title="Delete Order"
+                      style={{
+                        padding: '6px 10px',
+                        background: '#fee2e2',
+                        color: '#dc2626',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                      }}
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </td>
+              </tr>
+              {/* Expandable History Row */}
+              {expandedOrders[order._id] && (
+                <tr key={`hist-${order._id}`}>
+                  <td colSpan={13} style={{ background: '#f8fafc', padding: '0 12px 12px 40px', borderBottom: '2px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', paddingTop: '12px' }}>
+                      {/* Order Status Timeline */}
+                      <div style={{ minWidth: '220px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '13px', color: '#334155', marginBottom: '8px' }}>📦 Order Status History</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {steps.map((s, si) => (
-                            <div key={si} style={{ display: 'flex', gap: '8px', fontSize: '12px', alignItems: 'flex-start' }}>
-                              <span style={{ color: '#3b82f6', fontSize: '16px', lineHeight: 1.2 }}>●</span>
+                          {(order.statusHistory || []).map((h, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '8px', fontSize: '12px', alignItems: 'flex-start' }}>
+                              <span style={{ color: '#f97316', fontSize: '16px', lineHeight: 1.2 }}>●</span>
                               <div>
-                                <span style={{ fontWeight: 600, color: '#1e293b' }}>{s.label}</span>
-                                <div style={{ color: '#94a3b8', fontSize: '11px' }}>🕐 {fmtDt(s.ts)}</div>
+                                <span style={{ fontWeight: 600, color: '#1e293b' }}>{h.status}</span>
+                                <div style={{ color: '#94a3b8', fontSize: '11px' }}>
+                                  {h.timestamp ? new Date(h.timestamp).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : ''}
+                                </div>
+                                {h.note && <div style={{ color: '#64748b', fontStyle: 'italic', fontSize: '11px' }}>{h.note}</div>}
                               </div>
                             </div>
                           ))}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </td>
-            </tr>
-          )}
-        </>);
+                      {/* Per-item timeline */}
+                      {order.items.map((item, idx) => {
+                        const fmtDt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : null;
+                        const steps = [
+                          { label: 'Return Requested', ts: item.returnRequestedAt },
+                          { label: 'Return Approved', ts: item.returnApprovedAt },
+                          { label: 'Return Completed', ts: item.returnCompletedAt },
+                          { label: 'Return Rejected', ts: item.returnRejectedAt },
+                          { label: 'Exchange Requested', ts: item.exchangeRequestedAt },
+                          { label: 'Exchange Approved', ts: item.exchangeApprovedAt },
+                          { label: 'Exchange Completed', ts: item.exchangeCompletedAt },
+                          { label: 'Exchange Rejected', ts: item.exchangeRejectedAt },
+                          { label: 'Cancelled', ts: item.cancelledAt },
+                        ].filter(s => s.ts);
+                        if (steps.length === 0) return null;
+                        return (
+                          <div key={idx} style={{ minWidth: '180px' }}>
+                            <div style={{ fontWeight: 700, fontSize: '13px', color: '#334155', marginBottom: '8px' }}>🏷 {item.name} History</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              {steps.map((s, si) => (
+                                <div key={si} style={{ display: 'flex', gap: '8px', fontSize: '12px', alignItems: 'flex-start' }}>
+                                  <span style={{ color: '#3b82f6', fontSize: '16px', lineHeight: 1.2 }}>●</span>
+                                  <div>
+                                    <span style={{ fontWeight: 600, color: '#1e293b' }}>{s.label}</span>
+                                    <div style={{ color: '#94a3b8', fontSize: '11px' }}>🕐 {fmtDt(s.ts)}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </>);
         })}
       </tbody>
     </table>
@@ -1761,81 +1761,81 @@ const DeliveryPartnersTab = () => {
 
 
 const LocationsTab = () => {
-    const [locations, setLocations] = useState({ customers: [], sellers: [] });
-    const [loading, setLoading] = useState(true);
-    const mapRef = useRef(null);
-    const LRef = useRef(null);
-    const markersRef = useRef([]);
+  const [locations, setLocations] = useState({ customers: [], sellers: [] });
+  const [loading, setLoading] = useState(true);
+  const mapRef = useRef(null);
+  const LRef = useRef(null);
+  const markersRef = useRef([]);
 
-    useEffect(() => {
-        const fetchLocations = async () => {
-            try {
-                const response = await api.get('/admin/locations');
-                if (response.data.success) {
-                    setLocations(response.data.data);
-                }
-            } catch (error) {
-                console.error('Error fetching locations:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchLocations();
-    }, []);
-
-    // Load leaflet dynamically
-    useEffect(() => {
-        if (loading || mapRef.current) return;
-
-        // Add leaflet CSS dynamically
-        if (!document.getElementById('leaflet-css')) {
-            const link = document.createElement('link');
-            link.id = 'leaflet-css';
-            link.rel = 'stylesheet';
-            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-            document.head.appendChild(link);
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await api.get('/admin/locations');
+        if (response.data.success) {
+          setLocations(response.data.data);
         }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLocations();
+  }, []);
 
-        const initMap = async () => {
-             if (window.L) {
-                 LRef.current = window.L;
-                 setupMap();
-             } else {
-                 const script = document.createElement('script');
-                 script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-                 script.onload = () => {
-                     LRef.current = window.L;
-                     setupMap();
-                 };
-                 document.body.appendChild(script);
-             }
+  // Load leaflet dynamically
+  useEffect(() => {
+    if (loading || mapRef.current) return;
+
+    // Add leaflet CSS dynamically
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+
+    const initMap = async () => {
+      if (window.L) {
+        LRef.current = window.L;
+        setupMap();
+      } else {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = () => {
+          LRef.current = window.L;
+          setupMap();
         };
+        document.body.appendChild(script);
+      }
+    };
 
-        const setupMap = () => {
-            const L = LRef.current;
-            const container = document.getElementById('admin-locations-map');
-            if (!container || mapRef.current) return;
+    const setupMap = () => {
+      const L = LRef.current;
+      const container = document.getElementById('admin-locations-map');
+      if (!container || mapRef.current) return;
 
-            mapRef.current = L.map(container).setView([20.5937, 78.9629], 5); // Center on India
+      mapRef.current = L.map(container).setView([20.5937, 78.9629], 5); // Center on India
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(mapRef.current);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(mapRef.current);
 
-            // Calculate bounds
-            const bounds = [];
+      // Calculate bounds
+      const bounds = [];
 
-            // Add Seller Markers (Blue)
-            locations.sellers.forEach(seller => {
-                if(seller.lat && seller.lng) {
-                     const marker = L.circleMarker([seller.lat, seller.lng], {
-                        color: '#2563eb', // Blue border
-                        fillColor: '#3b82f6', // Lighter blue fill
-                        fillOpacity: 0.8,
-                        radius: 8
-                    }).addTo(mapRef.current);
+      // Add Seller Markers (Blue)
+      locations.sellers.forEach(seller => {
+        if (seller.lat && seller.lng) {
+          const marker = L.circleMarker([seller.lat, seller.lng], {
+            color: '#2563eb', // Blue border
+            fillColor: '#3b82f6', // Lighter blue fill
+            fillOpacity: 0.8,
+            radius: 8
+          }).addTo(mapRef.current);
 
-                    marker.bindPopup(`
+          marker.bindPopup(`
                         <div style="font-family: Arial, sans-serif;">
                             <strong style="color: #1e3a8a; font-size: 14px;">🏪 ${seller.name}</strong><br/>
                             <span style="color: #4b5563; font-size: 12px;">👤 ${seller.ownerName}</span><br/>
@@ -1847,22 +1847,22 @@ const LocationsTab = () => {
                             </div>
                         </div>
                     `);
-                    bounds.push([seller.lat, seller.lng]);
-                    markersRef.current.push(marker);
-                }
-            });
+          bounds.push([seller.lat, seller.lng]);
+          markersRef.current.push(marker);
+        }
+      });
 
-            // Add Customer Markers (Green)
-            locations.customers.forEach(customer => {
-                if(customer.lat && customer.lng) {
-                     const marker = L.circleMarker([customer.lat, customer.lng], {
-                        color: '#16a34a', // Green border
-                        fillColor: '#22c55e', // Lighter green fill
-                        fillOpacity: 0.8,
-                        radius: 6
-                    }).addTo(mapRef.current);
+      // Add Customer Markers (Green)
+      locations.customers.forEach(customer => {
+        if (customer.lat && customer.lng) {
+          const marker = L.circleMarker([customer.lat, customer.lng], {
+            color: '#16a34a', // Green border
+            fillColor: '#22c55e', // Lighter green fill
+            fillOpacity: 0.8,
+            radius: 6
+          }).addTo(mapRef.current);
 
-                    marker.bindPopup(`
+          marker.bindPopup(`
                         <div style="font-family: Arial, sans-serif;">
                             <strong style="color: #14532d; font-size: 14px;">👤 ${customer.name || 'User'}</strong><br/>
                             <span style="color: #4b5563; font-size: 12px;">📞 ${customer.phone || 'N/A'}</span><br/>
@@ -1870,63 +1870,63 @@ const LocationsTab = () => {
                             <div style="color: #6b7280; font-size: 11px;">${customer.addressText || 'No address text'}</div>
                         </div>
                     `);
-                    bounds.push([customer.lat, customer.lng]);
-                    markersRef.current.push(marker);
-                }
-            });
-
-            // Fit bounds to show all markers
-            if (bounds.length > 0) {
-                mapRef.current.fitBounds(L.latLngBounds(bounds), { padding: [50, 50], maxZoom: 15 });
-            }
-        };
-
-        initMap();
-
-        return () => {
-            if (mapRef.current) {
-                mapRef.current.remove();
-                mapRef.current = null;
-            }
+          bounds.push([customer.lat, customer.lng]);
+          markersRef.current.push(marker);
         }
-    }, [loading, locations]);
+      });
+
+      // Fit bounds to show all markers
+      if (bounds.length > 0) {
+        mapRef.current.fitBounds(L.latLngBounds(bounds), { padding: [50, 50], maxZoom: 15 });
+      }
+    };
+
+    initMap();
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    }
+  }, [loading, locations]);
 
 
-    return (
-        <div>
-            <div className="page-header">
-                <h1>🗺️ Entities Locations Map</h1>
-                <p>View all customer and seller locations placed on the map</p>
-            </div>
+  return (
+    <div>
+      <div className="page-header">
+        <h1>🗺️ Entities Locations Map</h1>
+        <p>View all customer and seller locations placed on the map</p>
+      </div>
 
-            <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
-                <div style={{ background: 'white', padding: '15px 20px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flex: 1 }}>
-                     <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#3b82f6', border: '2px solid #2563eb' }}></div>
-                     <div>
-                         <div style={{ fontSize: '14px', color: '#64748b', fontWeight: 600 }}>Total Sellers</div>
-                         <div style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b' }}>{locations.sellers.length}</div>
-                     </div>
-                </div>
-                <div style={{ background: 'white', padding: '15px 20px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flex: 1 }}>
-                     <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#22c55e', border: '2px solid #16a34a' }}></div>
-                     <div>
-                         <div style={{ fontSize: '14px', color: '#64748b', fontWeight: 600 }}>Total Customer Pins</div>
-                         <div style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b' }}>{locations.customers.length}</div>
-                     </div>
-                </div>
-            </div>
-
-            <div className="card" style={{ padding: '0', overflow: 'hidden', height: '70vh', minHeight: '500px', display: 'flex', flexDirection: 'column' }}>
-                {loading ? (
-                    <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '16px' }}>
-                        Loading map data...
-                    </div>
-                ) : (
-                    <div id="admin-locations-map" style={{ flex: 1, width: '100%', zIndex: 1 }}></div>
-                )}
-            </div>
+      <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
+        <div style={{ background: 'white', padding: '15px 20px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flex: 1 }}>
+          <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#3b82f6', border: '2px solid #2563eb' }}></div>
+          <div>
+            <div style={{ fontSize: '14px', color: '#64748b', fontWeight: 600 }}>Total Sellers</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b' }}>{locations.sellers.length}</div>
+          </div>
         </div>
-    );
+        <div style={{ background: 'white', padding: '15px 20px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flex: 1 }}>
+          <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#22c55e', border: '2px solid #16a34a' }}></div>
+          <div>
+            <div style={{ fontSize: '14px', color: '#64748b', fontWeight: 600 }}>Total Customer Pins</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: '#1e293b' }}>{locations.customers.length}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: '0', overflow: 'hidden', height: '70vh', minHeight: '500px', display: 'flex', flexDirection: 'column' }}>
+        {loading ? (
+          <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '16px' }}>
+            Loading map data...
+          </div>
+        ) : (
+          <div id="admin-locations-map" style={{ flex: 1, width: '100%', zIndex: 1 }}></div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default App;
