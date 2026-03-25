@@ -30,6 +30,10 @@ const adminConfigSchema = new mongoose.Schema({
     paymentGatewayPercentage: {
         type: Number,
         default: 2 // 2% of total order amount
+    },
+    freeDeliveryThreshold: {
+        type: Number,
+        default: 0 // ₹0 means disabled unless specified
     }
 }, {
     timestamps: true
