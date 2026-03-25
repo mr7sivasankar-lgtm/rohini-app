@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 const ProfileTab = ({ seller }) => {
     const { logout } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
-    
+
     const [formData, setFormData] = useState({
         ownerName: '', email: '',
         phone: '', shopName: '',
@@ -18,6 +18,7 @@ const ProfileTab = ({ seller }) => {
         bankAccountName: '', bankAccountNumber: '',
         bankIfsc: '', bankName: '', upiId: '',
         bannerImage: '', logoImage: '',
+        documentAadhaar: '', documentPan: '', documentShopPhoto: '', documentCancelledCheque: '',
         location: { type: 'Point', coordinates: [0, 0] }
     });
 
@@ -57,6 +58,10 @@ const ProfileTab = ({ seller }) => {
                 upiId: seller.upiId || '',
                 bannerImage: seller.bannerImage || '',
                 logoImage: seller.logoImage || seller.shopLogo || '',
+                documentAadhaar: seller.documentAadhaar || '',
+                documentPan: seller.documentPan || '',
+                documentShopPhoto: seller.documentShopPhoto || '',
+                documentCancelledCheque: seller.documentCancelledCheque || '',
                 location: seller.location || { type: 'Point', coordinates: [0, 0] }
             });
             if (seller.bannerImage) setBannerPreview(seller.bannerImage);
@@ -193,7 +198,7 @@ const ProfileTab = ({ seller }) => {
 
     return (
         <div style={{ position: 'relative', width: '100%', maxWidth: '1000px', margin: '0 auto', paddingBottom: '40px' }}>
-            
+
             {showMapPicker && (
                 <MapPicker
                     initialLat={formData.location?.coordinates[1] || 13.6288}
@@ -202,7 +207,7 @@ const ProfileTab = ({ seller }) => {
                         setFormData(prev => ({
                             ...prev,
                             location: { type: 'Point', coordinates: [lng, lat] },
-                            shopAddress: addressText ? (prev.shopAddress || addressText) : prev.shopAddress,
+                            shopAddress: addressText || prev.shopAddress,
                             city: addrDetails?.city || prev.city,
                             state: addrDetails?.state || prev.state,
                             pincode: addrDetails?.pincode || prev.pincode,
@@ -231,7 +236,7 @@ const ProfileTab = ({ seller }) => {
                     {/* Hero Banner Section */}
                     <div style={{ position: 'relative', height: '220px', background: bannerPreview ? `url(${bannerPreview}) center/cover` : 'linear-gradient(135deg, #1e1b4b, #4338ca, #3b82f6)' }}>
                         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.8) 0%, rgba(15,23,42,0) 100%)' }}></div>
-                        
+
                         {/* Edit Settings Gear Button */}
                         <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 10 }}>
                             <button onClick={() => setIsEditing(true)} style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.3)', width: '42px', height: '42px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', fontSize: '18px', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}>
@@ -276,7 +281,7 @@ const ProfileTab = ({ seller }) => {
 
                     {/* Details Grid */}
                     <div style={{ padding: '32px', background: '#f8fafc' }}>
-                        
+
                         {/* Description Box */}
                         <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '24px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
                             <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>About the Shop</h3>
@@ -344,12 +349,69 @@ const ProfileTab = ({ seller }) => {
                             </div>
                         </div>
 
+                        {/* KYC & Documents Section */}
+                        {(formData.documentAadhaar || formData.documentPan || formData.documentShopPhoto || formData.documentCancelledCheque || formData.businessPan || formData.gstNumber) && (
+                            <div style={{ marginTop: '20px', background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                <h3 style={{ margin: '0 0 20px 0', fontSize: '15px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ background: '#fef3c7', color: '#d97706', width: '30px', height: '30px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🪪</span>
+                                    KYC &amp; Documents
+                                </h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                                    {formData.businessPan && (
+                                        <div style={{ padding: '12px 16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                                            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Business PAN</div>
+                                            <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b', letterSpacing: '1px' }}>{formData.businessPan}</div>
+                                        </div>
+                                    )}
+                                    {formData.gstNumber && (
+                                        <div style={{ padding: '12px 16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                                            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>GSTIN</div>
+                                            <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b', letterSpacing: '1px' }}>{formData.gstNumber}</div>
+                                        </div>
+                                    )}
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '16px', marginTop: '16px' }}>
+                                    {[['documentAadhaar', '🪪 Aadhaar'], ['documentPan', '📋 PAN Card'], ['documentShopPhoto', '🏪 Shop Photo'], ['documentCancelledCheque', '🏦 Cancelled Cheque']].map(([field, label]) =>
+                                        formData[field] ? (
+                                            <div key={field} style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>{label}</div>
+                                                <a href={formData[field]} target="_blank" rel="noopener noreferrer">
+                                                    <img src={formData[field]} alt={label} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '10px', border: '2px solid #e2e8f0', cursor: 'pointer' }}
+                                                        onError={(e) => { e.target.style.display = 'none'; }} />
+                                                </a>
+                                                <div style={{ fontSize: '11px', color: '#3b82f6', marginTop: '4px' }}>Click to view full</div>
+                                            </div>
+                                        ) : null
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Shop Location Map */}
+                        {formData.location?.coordinates?.[0] !== 0 && formData.location?.coordinates?.[1] !== 0 && (
+                            <div style={{ marginTop: '20px', background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>📍 Shop Location</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', background: '#eff6ff', padding: '8px 12px', borderRadius: '8px' }}>
+                                    <span style={{ fontSize: '12px', color: '#3b82f6', fontWeight: 600, fontFamily: 'monospace' }}>
+                                        Lat: {formData.location.coordinates[1].toFixed(6)} | Lng: {formData.location.coordinates[0].toFixed(6)}
+                                    </span>
+                                </div>
+                                <iframe
+                                    title="Shop location"
+                                    width="100%"
+                                    height="220"
+                                    style={{ border: 'none', borderRadius: '12px' }}
+                                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${formData.location.coordinates[0] - 0.005},${formData.location.coordinates[1] - 0.005},${formData.location.coordinates[0] + 0.005},${formData.location.coordinates[1] + 0.005}&layer=mapnik&marker=${formData.location.coordinates[1]},${formData.location.coordinates[0]}`}
+                                />
+                            </div>
+                        )}
+
                     </div>
                 </div>
             ) : (
                 /* ======================= EDIT MODE ======================= */
                 <div style={{ background: '#ffffff', borderRadius: '24px', padding: '32px', boxShadow: '0 10px 40px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', position: 'relative' }}>
-                    
+
                     <button onClick={() => setIsEditing(false)} style={{ position: 'absolute', top: '24px', right: '24px', background: '#f1f5f9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', transition: 'all 0.2s', zIndex: 10 }} onMouseOver={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#1e293b'; }} onMouseOut={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}>
                         ✕
                     </button>
@@ -442,7 +504,7 @@ const ProfileTab = ({ seller }) => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             <label style={lbl}>Shop Category</label>
                             <select name="shopCategory" value={formData.shopCategory} onChange={handleChange} style={inp}>
-                                {['Clothing Store','Boutique','Tailor','Men Clothing','Women Clothing','Kids Clothing','Mixed Fashion Store'].map(c => <option key={c}>{c}</option>)}
+                                {['Clothing Store', 'Boutique', 'Tailor', 'Men Clothing', 'Women Clothing', 'Kids Clothing', 'Mixed Fashion Store'].map(c => <option key={c}>{c}</option>)}
                             </select>
                         </div>
 
@@ -453,7 +515,7 @@ const ProfileTab = ({ seller }) => {
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             <label style={lbl}>Business PAN</label>
-                            <input type="text" name="businessPan" value={formData.businessPan} onChange={handleChange} placeholder="e.g. ABCDE1234F" maxLength={10} style={{...inp, textTransform: 'uppercase'}} onFocus={focusStyle} onBlur={blurStyle} />
+                            <input type="text" name="businessPan" value={formData.businessPan} onChange={handleChange} placeholder="e.g. ABCDE1234F" maxLength={10} style={{ ...inp, textTransform: 'uppercase' }} onFocus={focusStyle} onBlur={blurStyle} />
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -499,8 +561,8 @@ const ProfileTab = ({ seller }) => {
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '10px' }}>
-                                    <button type="button" onClick={detectLocation} disabled={locationLoading} style={{ padding: '8px 16px', background: 'white', border: '1px solid #cbd5e1', color: '#1e293b', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }} onMouseOver={(e) => { if(!locationLoading) { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#94a3b8'; } }} onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#cbd5e1'; }}>
-                                        {locationLoading ? <span className="spinner" style={{width: '14px', height: '14px', borderWidth: '2px'}}></span> : '📡'} Auto-Detect
+                                    <button type="button" onClick={detectLocation} disabled={locationLoading} style={{ padding: '8px 16px', background: 'white', border: '1px solid #cbd5e1', color: '#1e293b', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }} onMouseOver={(e) => { if (!locationLoading) { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#94a3b8'; } }} onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#cbd5e1'; }}>
+                                        {locationLoading ? <span className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }}></span> : '📡'} Auto-Detect
                                     </button>
                                     <button type="button" onClick={() => setShowMapPicker(true)} style={{ padding: '8px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#2563eb', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }} onMouseOver={(e) => { e.currentTarget.style.background = '#dbeafe'; e.currentTarget.style.borderColor = '#93c5fd'; }} onMouseOut={(e) => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.borderColor = '#bfdbfe'; }}>
                                         🗺️ Pin on Map
@@ -536,7 +598,7 @@ const ProfileTab = ({ seller }) => {
                                     <label style={lbl}>Bank Name</label>
                                     <input type="text" name="bankName" value={formData.bankName} onChange={handleChange} list="bank-list-profile" placeholder="Type to search..." style={inp} autoComplete="off" onFocus={focusStyle} onBlur={blurStyle} />
                                     <datalist id="bank-list-profile">
-                                        {['State Bank of India','HDFC Bank','ICICI Bank','Axis Bank','Punjab National Bank','Bank of Baroda','Canara Bank','Union Bank of India','Kotak Mahindra Bank','IndusInd Bank','Yes Bank','IDFC First Bank','RBL Bank','Bandhan Bank','Federal Bank'].map(b => <option key={b} value={b} />)}
+                                        {['State Bank of India', 'HDFC Bank', 'ICICI Bank', 'Axis Bank', 'Punjab National Bank', 'Bank of Baroda', 'Canara Bank', 'Union Bank of India', 'Kotak Mahindra Bank', 'IndusInd Bank', 'Yes Bank', 'IDFC First Bank', 'RBL Bank', 'Bandhan Bank', 'Federal Bank'].map(b => <option key={b} value={b} />)}
                                     </datalist>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -545,7 +607,7 @@ const ProfileTab = ({ seller }) => {
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                     <label style={lbl}>IFSC Code</label>
-                                    <input type="text" name="bankIfsc" value={formData.bankIfsc} onChange={handleChange} style={{...inp, textTransform: 'uppercase'}} onFocus={focusStyle} onBlur={blurStyle} />
+                                    <input type="text" name="bankIfsc" value={formData.bankIfsc} onChange={handleChange} style={{ ...inp, textTransform: 'uppercase' }} onFocus={focusStyle} onBlur={blurStyle} />
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                     <label style={lbl}>UPI ID</label>
@@ -555,8 +617,8 @@ const ProfileTab = ({ seller }) => {
                         </div>
 
                         <div style={{ gridColumn: '1 / -1', marginTop: '16px' }}>
-                            <button type="submit" disabled={loading} style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #4f46e5, #3b82f6)', color: 'white', borderRadius: '14px', fontSize: '16px', fontWeight: 700, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 8px 15px rgba(59, 130, 246, 0.25)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} onMouseOver={(e) => { if(!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 20px rgba(59, 130, 246, 0.35)'; } }} onMouseOut={(e) => { if(!loading) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 15px rgba(59, 130, 246, 0.25)'; } }}>
-                                {loading ? <span className="spinner" style={{width: '20px', height: '20px', borderTopColor: '#fff', borderWidth: '3px'}}></span> : '💾'} 
+                            <button type="submit" disabled={loading} style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #4f46e5, #3b82f6)', color: 'white', borderRadius: '14px', fontSize: '16px', fontWeight: 700, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 8px 15px rgba(59, 130, 246, 0.25)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} onMouseOver={(e) => { if (!loading) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 20px rgba(59, 130, 246, 0.35)'; } }} onMouseOut={(e) => { if (!loading) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 15px rgba(59, 130, 246, 0.25)'; } }}>
+                                {loading ? <span className="spinner" style={{ width: '20px', height: '20px', borderTopColor: '#fff', borderWidth: '3px' }}></span> : '💾'}
                                 {loading ? 'Saving Profile...' : 'Save All Changes'}
                             </button>
                         </div>
@@ -568,12 +630,12 @@ const ProfileTab = ({ seller }) => {
             <div style={{ marginTop: '40px', borderTop: '1px solid #fee2e2', paddingTop: '32px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#ef4444', marginBottom: '8px' }}>Danger Zone</h3>
                 <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '16px' }}>Permanently hide your shop and deactivate your seller account.</p>
-                <button 
+                <button
                     onClick={handleDeactivate}
-                    style={{ 
-                        padding: '12px 24px', background: '#fef2f2', color: '#dc2626', 
-                        border: '1px solid #f87171', borderRadius: '12px', fontSize: '14px', 
-                        fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' 
+                    style={{
+                        padding: '12px 24px', background: '#fef2f2', color: '#dc2626',
+                        border: '1px solid #f87171', borderRadius: '12px', fontSize: '14px',
+                        fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
                     }}
                     onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
                     onMouseOut={(e) => e.currentTarget.style.background = '#fef2f2'}
