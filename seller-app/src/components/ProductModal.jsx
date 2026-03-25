@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../utils/api';
 
 const standardSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size'];
@@ -65,6 +65,7 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
     });
     const [files, setFiles] = useState([]);
     const [removedImages, setRemovedImages] = useState([]);
+    const fileInputRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [commission, setCommission] = useState(20);
@@ -455,7 +456,24 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
 
                     {/* ── 4. IMAGES ─────────────────────────────────────── */}
                     <div style={sec}>
-                        <h3 style={h3}>🖼️ Product Images</h3>
+                        <h3 style={h3}>🖼️ Product Images
+                            {(files.length + formData.images.length) > 0 && (
+                                <span style={{ fontSize: 12, background: '#e0e7ff', color: '#4f46e5', borderRadius: 20, padding: '2px 10px', fontWeight: 700 }}>
+                                    {files.length + formData.images.length} photo{files.length + formData.images.length !== 1 ? 's' : ''} added
+                                </span>
+                            )}
+                        </h3>
+
+                        {/* Hidden file input */}
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            style={{ display: 'none' }}
+                        />
+
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 10, marginBottom: 10 }}>
                             {formData.images.map((img, i) => (
                                 <div key={`ex-${i}`} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', border: '2px solid #e5e7eb' }}>
@@ -469,11 +487,18 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
                                     <button type="button" onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: 11 }}>✕</button>
                                 </div>
                             ))}
-                            <label style={{ aspectRatio: '1', border: '2px dashed #c7d2fe', borderRadius: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#f5f3ff', gap: 4 }}>
-                                <input type="file" multiple accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+
+                            {/* Add Photo button — uses ref instead of label wrapping */}
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                style={{ aspectRatio: '1', border: '2px dashed #c7d2fe', borderRadius: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#f5f3ff', gap: 4, transition: 'all 0.2s' }}
+                                onMouseOver={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.background = '#ede9fe'; }}
+                                onMouseOut={e => { e.currentTarget.style.borderColor = '#c7d2fe'; e.currentTarget.style.background = '#f5f3ff'; }}
+                            >
                                 <span style={{ fontSize: 28, color: '#6366f1' }}>＋</span>
                                 <span style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>Add Photo</span>
-                            </label>
+                            </button>
                         </div>
                         <small style={{ color: '#94a3b8', fontSize: 12 }}>Upload up to 10 images (front, back, side, detail views) • First image is the primary image</small>
                     </div>

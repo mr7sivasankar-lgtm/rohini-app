@@ -212,12 +212,26 @@ const ProductDetail = () => {
         : (product.subcategory?.name ? [product.subcategory.name] : []);
 
     const fabricDetails = [
-        { label: 'Fabric', value: product.fabric },
-        { label: 'Fit', value: product.fit },
-        { label: 'Pattern', value: product.pattern },
-        { label: 'Sleeve', value: product.sleeve },
-        { label: 'Neck', value: product.neck },
+        { label: 'Fabric / Material', value: product.fabric },
+        { label: 'Pattern / Design', value: product.pattern },
+        { label: 'Fit Type', value: product.fit },
+        { label: 'Sleeve Type', value: product.sleeve },
+        { label: 'Neck Type', value: product.neck },
+        { label: 'Occasion', value: product.occasion },
     ].filter(d => d.value);
+
+    // Map color names to hex for visual swatches
+    const COLOR_HEX = {
+        'White': '#FFFFFF', 'Off White': '#FAF7F0', 'Cream': '#FEF3C7', 'Beige': '#E8D5B7',
+        'Black': '#1a1a1a', 'Charcoal': '#374151', 'Grey': '#6B7280', 'Silver': '#D1D5DB',
+        'Red': '#EF4444', 'Maroon': '#7F1D1D', 'Dark Red': '#991B1B', 'Pink': '#EC4899',
+        'Baby Pink': '#FBCFE8', 'Hot Pink': '#F472B6', 'Orange': '#F97316', 'Peach': '#FDBA74',
+        'Yellow': '#EAB308', 'Gold': '#D97706', 'Mustard': '#CA8A04', 'Green': '#22C55E',
+        'Olive': '#65A30D', 'Dark Green': '#15803D', 'Teal': '#0D9488', 'Mint': '#A7F3D0',
+        'Cyan': '#06B6D4', 'Sky Blue': '#38BDF8', 'Blue': '#3B82F6', 'Navy': '#1E3A8A',
+        'Royal Blue': '#2563EB', 'Purple': '#A855F7', 'Lavender': '#C4B5FD', 'Violet': '#7C3AED',
+        'Brown': '#92400E', 'Tan': '#B45309', 'Copper': '#B87333',
+    };
 
     const getSimilarPrice = (p) => {
         return p.sellingPrice || 0;
@@ -311,22 +325,33 @@ const ProductDetail = () => {
                     {/* Color Selection */}
                     {product.colors && product.colors.length > 0 && (
                         <div className="option-group">
-                            <label>Color</label>
-                            <div className="color-options">
-                                {product.colors.map((color) => (
-                                    <div
-                                        key={color}
-                                        className={`color-swatch ${selectedColor === color ? 'active' : ''}`}
-                                        onClick={() => setSelectedColor(color)}
-                                        title={color}
-                                    >
-                                        <span
-                                            className="color-circle"
-                                            style={{ backgroundColor: color.toLowerCase() }}
-                                        ></span>
-                                        <span className="color-label">{color}</span>
-                                    </div>
-                                ))}
+                            <label>Color: <strong>{selectedColor}</strong></label>
+                            <div className="color-options" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 8 }}>
+                                {product.colors.map((color) => {
+                                    const hex = COLOR_HEX[color] || '#999999';
+                                    const isLight = ['White', 'Off White', 'Cream', 'Beige', 'Baby Pink', 'Mint', 'Lavender', 'Silver'].includes(color);
+                                    return (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            title={color}
+                                            onClick={() => setSelectedColor(color)}
+                                            style={{
+                                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                                                padding: '8px 6px', borderRadius: 10, cursor: 'pointer',
+                                                border: selectedColor === color ? '2px solid #4f46e5' : '2px solid transparent',
+                                                background: selectedColor === color ? '#eff6ff' : 'transparent'
+                                            }}
+                                        >
+                                            <div style={{
+                                                width: 32, height: 32, borderRadius: '50%', background: hex,
+                                                border: `1.5px solid ${isLight ? '#d1d5db' : 'transparent'}`,
+                                                boxShadow: selectedColor === color ? '0 0 0 2px #6366f1' : '0 1px 3px rgba(0,0,0,0.15)'
+                                            }} />
+                                            <span style={{ fontSize: 10, color: selectedColor === color ? '#4f46e5' : '#64748b', fontWeight: selectedColor === color ? 700 : 400, textAlign: 'center', maxWidth: 48, lineHeight: 1.2 }}>{color}</span>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
