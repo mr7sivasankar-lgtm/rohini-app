@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import api, { getImageUrl } from '../utils/api';
 import ProductModal from './ProductModal';
+import { useAuth } from '../contexts/AuthContext';
 
 const ProductsTab = () => {
+    const { seller } = useAuth();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -10,13 +12,14 @@ const ProductsTab = () => {
     const [activeTab, setActiveTab] = useState('All Products');
 
     useEffect(() => {
-        fetchProducts();
-    }, []);
+        if (seller?._id) fetchProducts();
+    }, [seller?._id]);
 
     const fetchProducts = async () => {
+        if (!seller?._id) return;
         try {
-            // Fetch products specifically for this logged in seller
-            const res = await api.get('/products/seller');
+            // Use the public route with sellerId — same route customer/admin use (works reliably)
+            const res = await api.get(`/products?sellerId=${seller._id}&limit=200`);
             if (res.data.success) {
                 setProducts(res.data.data);
             }
