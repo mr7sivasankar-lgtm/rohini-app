@@ -1,9 +1,30 @@
 import express from 'express';
 import User from '../models/User.js';
 import Seller from '../models/Seller.js';
+import Product from '../models/Product.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
+
+const annotateShops = async (shops) => {
+    return await Promise.all(shops.map(async shop => {
+        const obj = shop.toObject ? shop.toObject() : shop;
+        try {
+            const lowestProduct = await Product.findOne({ seller: obj._id, isActive: true, stock: { $gt: 0 } })
+                .sort({ sellingPrice: 1 })
+                .populate('category', 'name')
+                .lean();
+
+            if (lowestProduct) {
+                obj.startingPrice = lowestProduct.sellingPrice || lowestProduct.price;
+                obj.startingCategory = lowestProduct.category ? lowestProduct.category.name : 'Items';
+            }
+        } catch (err) {
+            console.error('Error fetching lowest product for favorite shop:', err);
+        }
+        return obj;
+    }));
+};
 
 // @route   GET /api/favorites
 // @desc    Get user favorite shops
@@ -13,9 +34,11 @@ router.get('/', protect, async (req, res) => {
         const user = await User.findById(req.user._id)
             .populate('favoriteShops', 'shopName shopAddress bannerImage shopLogo rating distanceText durationText');
 
+        const annotatedShops = await annotateShops(user.favoriteShops);
+
         res.status(200).json({
             success: true,
-            data: user.favoriteShops
+            data: annotatedShops
         });
     } catch (error) {
         console.error('Get favorites error:', error);
@@ -63,10 +86,12 @@ router.post('/', protect, async (req, res) => {
         await user.save();
         await user.populate('favoriteShops', 'shopName shopAddress bannerImage shopLogo rating distanceText durationText');
 
+        const annotatedShops = await annotateShops(user.favoriteShops);
+
         res.status(200).json({
             success: true,
             message: 'Shop added to favorites',
-            data: user.favoriteShops
+            data: annotatedShops
         });
     } catch (error) {
         console.error('Add to favorites error:', error);
@@ -91,10 +116,12 @@ router.delete('/:sellerId', protect, async (req, res) => {
         await user.save();
         await user.populate('favoriteShops', 'shopName shopAddress bannerImage shopLogo rating distanceText durationText');
 
+        const annotatedShops = await annotateShops(user.favoriteShops);
+
         res.status(200).json({
             success: true,
             message: 'Shop removed from favorites',
-            data: user.favoriteShops
+            data: annotatedShops
         });
     } catch (error) {
         console.error('Remove from favorites error:', error);

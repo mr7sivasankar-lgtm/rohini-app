@@ -600,6 +600,13 @@ const ShopCard = ({ shop, onClick, nearby }) => {
                 </p>
 
                 <div className="scc-footer">
+                    {shop.startingPrice ? (
+                        <span className="scc-deliver" style={{ background: '#f8fafc', color: '#64748b', fontSize: '10px', padding: '4px 8px', borderRadius: '6px' }}>
+                            {shop.startingCategory} starts at <span style={{ color: '#0f172a', fontWeight: '800' }}>₹{shop.startingPrice}</span>
+                        </span>
+                    ) : (
+                        <span />
+                    )}
                     <span className="scc-btn">Shop Now →</span>
                 </div>
             </div>

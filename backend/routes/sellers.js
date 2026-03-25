@@ -460,9 +460,9 @@ router.get('/nearby', async (req, res) => {
             }
         }).limit(parseInt(limit));
 
-        // Annotate each shop with distance_km and delivery_mins
+        // Annotate each shop with distance_km, delivery_mins, and starting price
         const DELIVERY_SPEED_KMPH = 20;
-        const annotated = shops.map(shop => {
+        const annotated = await Promise.all(shops.map(async shop => {
             const obj = shop.toObject();
             if (shop.location && shop.location.coordinates && shop.location.coordinates.length === 2) {
                 const [shopLng, shopLat] = shop.location.coordinates;
@@ -470,8 +470,24 @@ router.get('/nearby', async (req, res) => {
                 obj.distance_km = Math.round(km * 10) / 10;
                 obj.delivery_mins = Math.ceil((km / DELIVERY_SPEED_KMPH) * 60);
             }
+
+            // Get lowest price active product for "Starts from ₹X" tag
+            try {
+                const lowestProduct = await Product.findOne({ seller: shop._id, isActive: true, stock: { $gt: 0 } })
+                    .sort({ sellingPrice: 1 })
+                    .populate('category', 'name')
+                    .lean();
+
+                if (lowestProduct) {
+                    obj.startingPrice = lowestProduct.sellingPrice || lowestProduct.price;
+                    obj.startingCategory = lowestProduct.category ? lowestProduct.category.name : 'Items';
+                }
+            } catch (err) {
+                console.error('Error fetching lowest product for shop:', err);
+            }
+
             return obj;
-        });
+        }));
 
         res.json({ success: true, data: annotated });
     } catch (error) {
@@ -505,7 +521,26 @@ router.get('/top-rated', async (req, res) => {
         // 3. Merge and limit to 6
         const mergedShops = [...featuredShops, ...autoShops].slice(0, 6);
 
-        res.json({ success: true, data: mergedShops });
+        const annotated = await Promise.all(mergedShops.map(async shopDoc => {
+            const obj = shopDoc.toObject ? shopDoc.toObject() : shopDoc;
+            // Get lowest price active product for "Starts from ₹X" tag
+            try {
+                const lowestProduct = await Product.findOne({ seller: obj._id, isActive: true, stock: { $gt: 0 } })
+                    .sort({ sellingPrice: 1 })
+                    .populate('category', 'name')
+                    .lean();
+
+                if (lowestProduct) {
+                    obj.startingPrice = lowestProduct.sellingPrice || lowestProduct.price;
+                    obj.startingCategory = lowestProduct.category ? lowestProduct.category.name : 'Items';
+                }
+            } catch (err) {
+                console.error('Error fetching lowest product for shop:', err);
+            }
+            return obj;
+        }));
+
+        res.json({ success: true, data: annotated });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

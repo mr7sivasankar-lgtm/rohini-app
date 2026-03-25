@@ -132,6 +132,13 @@ const Favorites = () => {
                                             </svg>
                                             {shop.shopAddress || 'Local Market'}
                                         </p>
+                                        {shop.startingPrice && (
+                                            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ background: '#f8fafc', color: '#64748b', fontSize: '11px', padding: '4px 8px', borderRadius: '6px', fontWeight: '600' }}>
+                                                    {shop.startingCategory} from <span style={{ color: '#0f172a', fontWeight: '800' }}>₹{shop.startingPrice}</span>
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
