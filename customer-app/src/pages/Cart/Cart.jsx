@@ -20,12 +20,51 @@ const Cart = () => {
         name: '', phone: '', street: '', landmark: '', city: '', state: '', pincode: '', addressType: 'Home'
     });
 
-    const deliveryFee = 0; // Free delivery — admin can configure this
-    const total = cartTotal + deliveryFee;
+    const [adminConfig, setAdminConfig] = useState(null);
+
+    const calculateDistance = (lat1, lon1, lat2, lon2) => {
+        if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+        const R = 6371; // km
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+        const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+            Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+
+    let deliveryFee = 0;
+    let platformFee = adminConfig ? adminConfig.platformFee : 0;
+    let discount = 0;
+
+    if (adminConfig && selectedAddress && cart.length > 0) {
+        let dist = 0;
+        const sellerCoords = cart[0].product?.seller?.location?.coordinates;
+        // coordinates are [lng, lat]
+        if (selectedAddress.latitude && selectedAddress.longitude && sellerCoords?.length === 2) {
+            dist = calculateDistance(selectedAddress.latitude, selectedAddress.longitude, sellerCoords[1], sellerCoords[0]);
+        }
+        const extraKm = Math.max(0, dist - adminConfig.baseDeliveryDistance);
+        deliveryFee = adminConfig.baseDeliveryCharge + Math.ceil(extraKm) * adminConfig.deliveryChargePerKm;
+    }
+
+    const total = cartTotal + deliveryFee + platformFee - discount;
 
     useEffect(() => {
         fetchAddresses();
+        fetchConfig();
     }, []);
+
+    const fetchConfig = async () => {
+        try {
+            const res = await api.get('/config');
+            if (res.data.success) {
+                setAdminConfig(res.data.data);
+            }
+        } catch (err) {
+            console.error('Failed to fetch admin config', err);
+        }
+    };
 
     const fetchAddresses = async () => {
         try {
@@ -310,19 +349,28 @@ const Cart = () => {
                         <span>Subtotal</span>
                         <span>₹{cartTotal.toFixed(0)}</span>
                     </div>
-                    {deliveryFee > 0 && (
+                    {deliveryFee > 0 ? (
                         <div className="summary-row">
-                            <span>Delivery</span>
-                            <span>₹{deliveryFee}</span>
+                            <span>Delivery Fee</span>
+                            <span>₹{deliveryFee.toFixed(0)}</span>
                         </div>
-                    )}
-                    {deliveryFee === 0 && (
+                    ) : (
                         <div className="summary-row">
-                            <span>Delivery</span>
+                            <span>Delivery Fee</span>
                             <span style={{ color: '#2f9e44', fontWeight: 700 }}>FREE 🎉</span>
                         </div>
                     )}
-                    <div className="summary-divider" />
+                    <div className="summary-row">
+                        <span>Platform Fee</span>
+                        <span>₹{platformFee.toFixed(0)}</span>
+                    </div>
+                    {discount > 0 && (
+                        <div className="summary-row" style={{ color: '#2f9e44' }}>
+                            <span>Discount</span>
+                            <span>-₹{discount.toFixed(0)}</span>
+                        </div>
+                    )}
+                    <div className="summary-divider" style={{ borderTop: '1px dashed #e2e8f0', margin: '12px 0 8px 0', width: '100%' }} />
                     <div className="summary-row summary-total-row">
                         <span>Total</span>
                         <span>₹{total.toFixed(0)}</span>

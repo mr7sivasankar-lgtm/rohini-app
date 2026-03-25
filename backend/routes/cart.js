@@ -11,7 +11,7 @@ const router = express.Router();
 router.get('/', protect, async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
-            .populate({ path: 'cart.product', select: 'name images price discount stock colors sizes', populate: { path: 'seller', select: 'shopName' } });
+            .populate({ path: 'cart.product', select: 'name images sellingPrice mrpPrice discount stock colors sizes', populate: { path: 'seller', select: 'shopName location' } });
 
         if (!user) {
             return res.status(404).json({
@@ -109,7 +109,7 @@ router.post('/', protect, async (req, res) => {
         }
 
         await user.save();
-        await user.populate({ path: 'cart.product', select: 'name images price discount stock colors sizes', populate: { path: 'seller', select: 'shopName' } });
+        await user.populate({ path: 'cart.product', select: 'name images sellingPrice mrpPrice discount stock colors sizes', populate: { path: 'seller', select: 'shopName location' } });
 
         res.status(200).json({
             success: true,
@@ -160,7 +160,7 @@ router.put('/:itemId', protect, async (req, res) => {
 
         cartItem.quantity = quantity;
         await user.save();
-        await user.populate({ path: 'cart.product', select: 'name images price discount stock colors sizes', populate: { path: 'seller', select: 'shopName' } });
+        await user.populate({ path: 'cart.product', select: 'name images sellingPrice mrpPrice discount stock colors sizes', populate: { path: 'seller', select: 'shopName location' } });
 
         res.status(200).json({
             success: true,
@@ -185,7 +185,7 @@ router.delete('/:itemId', protect, async (req, res) => {
 
         user.cart = user.cart.filter(item => item._id.toString() !== req.params.itemId);
         await user.save();
-        await user.populate({ path: 'cart.product', select: 'name images price discount stock colors sizes', populate: { path: 'seller', select: 'shopName' } });
+        await user.populate({ path: 'cart.product', select: 'name images sellingPrice mrpPrice discount stock colors sizes', populate: { path: 'seller', select: 'shopName location' } });
 
         res.status(200).json({
             success: true,
