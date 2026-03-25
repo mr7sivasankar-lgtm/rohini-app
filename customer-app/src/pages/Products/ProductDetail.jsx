@@ -447,6 +447,31 @@ const ProductDetail = () => {
                         )}
                     </div>
 
+                    {/* Seller Profile Link */}
+                    {product.seller && (
+                        <div className="seller-profile-card" onClick={() => navigate(`/shop/${product.seller._id}`)}>
+                            <div className="seller-profile-avatar">
+                                {product.seller.logoImage ? (
+                                    <img src={getImageUrl(product.seller.logoImage)} alt={product.seller.shopName || 'Seller'} crossOrigin="anonymous" />
+                                ) : (
+                                    <div className="seller-profile-placeholder">🏪</div>
+                                )}
+                            </div>
+                            <div className="seller-profile-info">
+                                <span className="seller-profile-label">Sold by</span>
+                                <span className="seller-profile-name">{product.seller.shopName || product.seller.ownerName || 'Local Partner'}</span>
+                                {product.seller.shopAddress && product.seller.shopAddress.locality && (
+                                    <span className="seller-profile-location">📍 {product.seller.shopAddress.locality}</span>
+                                )}
+                            </div>
+                            <div className="seller-profile-arrow">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M9 18l6-6-6-6" />
+                                </svg>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Action Buttons */}
                     <div className="action-buttons">
                         <button
