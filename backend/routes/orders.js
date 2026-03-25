@@ -57,7 +57,7 @@ router.post('/', protect, async (req, res) => {
             const inServiceArea = activeAreas.some(area => {
                 if (area.type === 'city' && customerCity) {
                     return (area.city || '').toLowerCase() === customerCity.toLowerCase() ||
-                           (area.name || '').toLowerCase() === customerCity.toLowerCase();
+                        (area.name || '').toLowerCase() === customerCity.toLowerCase();
                 }
                 if (area.type === 'pincode' && customerPincode) {
                     return area.pincode === String(customerPincode);
@@ -73,12 +73,12 @@ router.post('/', protect, async (req, res) => {
                 });
             }
 
-            // Check if delivery partners are available in area
-            const hasDP = await DeliveryPartner.exists({ isActive: true });
-            if (!hasDP) {
+            // Check if any delivery partner is online and available in area
+            const hasOnlineDP = await DeliveryPartner.exists({ isActive: true, isOnline: true });
+            if (!hasOnlineDP) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Delivery is temporarily unavailable in your area. Please try again later.',
+                    message: 'No delivery partners are currently available. Please try again shortly.',
                     code: 'NO_DELIVERY_PARTNERS'
                 });
             }
@@ -183,7 +183,7 @@ router.post('/', protect, async (req, res) => {
         // === Commission System & Payout Math ===
         // Commission applies ONLY on the sellingPriceTotal (Admin receives this)
         const commissionAmount = Math.round(sellingPriceTotal * (commissionPercentage / 100));
-        
+
         // Seller gets selling price minus commission
         const sellerEarning = sellingPriceTotal - commissionAmount;
 
@@ -324,7 +324,7 @@ router.get('/seller/dashboard-stats', sellerProtect, async (req, res) => {
 
         orders.forEach(order => {
             const isToday = new Date(order.createdAt) >= today;
-            
+
             if (isToday) {
                 stats.ordersToday++;
             }
@@ -367,7 +367,7 @@ router.get('/seller/sales-analytics', sellerProtect, async (req, res) => {
     try {
         const now = new Date();
         const startOfDay = new Date(now.setHours(0, 0, 0, 0));
-        
+
         const startOfWeek = new Date(startOfDay);
         startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Sunday as start
 
@@ -476,9 +476,9 @@ router.put('/seller/:id/status', sellerProtect, async (req, res) => {
             const customer = await User.findById(order.user);
             if (customer?.pushSubscription) {
                 const msgMap = {
-                    'Accepted':        { title: '✅ Order Accepted!', body: 'Your order has been accepted by the seller.' },
-                    'Ready for Pickup':{ title: '🎁 Order Ready!',    body: 'Your order is packed and ready for pickup.' },
-                    'Cancelled':       { title: '❌ Order Cancelled', body: 'Your order was cancelled by the seller.' },
+                    'Accepted': { title: '✅ Order Accepted!', body: 'Your order has been accepted by the seller.' },
+                    'Ready for Pickup': { title: '🎁 Order Ready!', body: 'Your order is packed and ready for pickup.' },
+                    'Cancelled': { title: '❌ Order Cancelled', body: 'Your order was cancelled by the seller.' },
                 };
                 const msg = msgMap[status];
                 if (msg) {
@@ -549,38 +549,44 @@ router.get('/admin/revenue', protect, adminOnly, async (req, res) => {
         // Summary totals
         const [summary] = await Order.aggregate([
             { $match: matchDelivered },
-            { $group: {
-                _id: null,
-                totalOrders:      { $sum: 1 },
-                totalRevenue:     { $sum: '$totalAmount' },
-                totalCommission:  { $sum: '$commissionAmount' },
-                totalPlatformFees:{ $sum: '$platformFee' },
-                totalGatewayFees: { $sum: '$paymentGatewayFee' },
-                totalProfit:      { $sum: '$adminProfit' }
-            }}
+            {
+                $group: {
+                    _id: null,
+                    totalOrders: { $sum: 1 },
+                    totalRevenue: { $sum: '$totalAmount' },
+                    totalCommission: { $sum: '$commissionAmount' },
+                    totalPlatformFees: { $sum: '$platformFee' },
+                    totalGatewayFees: { $sum: '$paymentGatewayFee' },
+                    totalProfit: { $sum: '$adminProfit' }
+                }
+            }
         ]);
 
         // Daily chart data
         const dailyChart = await Order.aggregate([
             { $match: matchDelivered },
-            { $group: {
-                _id: { $dateToString: { format: '%Y-%m-%d', date: '$deliveredAt' } },
-                profit: { $sum: '$adminProfit' },
-                revenue: { $sum: '$totalAmount' },
-                orders:  { $sum: 1 }
-            }},
+            {
+                $group: {
+                    _id: { $dateToString: { format: '%Y-%m-%d', date: '$deliveredAt' } },
+                    profit: { $sum: '$adminProfit' },
+                    revenue: { $sum: '$totalAmount' },
+                    orders: { $sum: 1 }
+                }
+            },
             { $sort: { _id: 1 } }
         ]);
 
         // Monthly chart data
         const monthlyChart = await Order.aggregate([
             { $match: { status: 'Delivered', deliveredAt: { $exists: true } } },
-            { $group: {
-                _id: { $dateToString: { format: '%Y-%m', date: '$deliveredAt' } },
-                profit: { $sum: '$adminProfit' },
-                revenue: { $sum: '$totalAmount' },
-                orders:  { $sum: 1 }
-            }},
+            {
+                $group: {
+                    _id: { $dateToString: { format: '%Y-%m', date: '$deliveredAt' } },
+                    profit: { $sum: '$adminProfit' },
+                    revenue: { $sum: '$totalAmount' },
+                    orders: { $sum: 1 }
+                }
+            },
             { $sort: { _id: 1 } },
             { $limit: 12 }
         ]);
@@ -629,7 +635,7 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
         // Define 'Today' timeframe
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         // 7 Days Ago timeframe for charts
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
@@ -640,15 +646,19 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
 
         // Calculate Chart Data (Last 7 Days)
         const dailyStats = await Order.aggregate([
-            { $match: { 
-                createdAt: { $gte: sevenDaysAgo },
-                status: { $nin: ['Cancelled', 'Returned'] }
-            }},
-            { $group: {
-                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                revenue: { $sum: "$totalAmount" },
-                orders: { $sum: 1 }
-            }},
+            {
+                $match: {
+                    createdAt: { $gte: sevenDaysAgo },
+                    status: { $nin: ['Cancelled', 'Returned'] }
+                }
+            },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    revenue: { $sum: "$totalAmount" },
+                    orders: { $sum: 1 }
+                }
+            },
             { $sort: { _id: 1 } }
         ]);
 
@@ -672,12 +682,14 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
         const topProducts = await Order.aggregate([
             { $match: { status: { $nin: ['Cancelled', 'Returned'] } } },
             { $unwind: "$items" },
-            { $group: {
-                _id: "$items.productCode",
-                name: { $first: "$items.name" },
-                totalSold: { $sum: "$items.quantity" },
-                revenue: { $sum: { $multiply: ["$items.sellingPrice", "$items.quantity"] } }
-            }},
+            {
+                $group: {
+                    _id: "$items.productCode",
+                    name: { $first: "$items.name" },
+                    totalSold: { $sum: "$items.quantity" },
+                    revenue: { $sum: { $multiply: ["$items.sellingPrice", "$items.quantity"] } }
+                }
+            },
             { $sort: { totalSold: -1 } },
             { $limit: 5 }
         ]);
@@ -685,12 +697,14 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
         const topSellers = await Order.aggregate([
             { $match: { status: { $nin: ['Cancelled', 'Returned'] } } },
             { $unwind: "$items" },
-            { $group: {
-                _id: "$seller",
-                shopName: { $first: "$sellerShopName" },
-                totalSold: { $sum: "$items.quantity" },
-                revenue: { $sum: { $multiply: ["$items.sellingPrice", "$items.quantity"] } }
-            }},
+            {
+                $group: {
+                    _id: "$seller",
+                    shopName: { $first: "$sellerShopName" },
+                    totalSold: { $sum: "$items.quantity" },
+                    revenue: { $sum: { $multiply: ["$items.sellingPrice", "$items.quantity"] } }
+                }
+            },
             { $sort: { revenue: -1 } },
             { $limit: 5 }
         ]);
@@ -777,7 +791,7 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
                 const productId = item.product?._id || item.product;
                 console.log(`[Order Cancel] Checking item: ${item.name}, item.product: ${productId}`);
                 if (!productId) continue;
-                
+
                 const product = await Product.findById(productId);
                 if (product) {
                     console.log(`[Order Cancel] Found product ${product.name}. Old stock: ${product.stock}. Refunding +${item.quantity}`);
@@ -811,7 +825,7 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
             if (exchangedItems.length > 0) {
                 const exCount = await Order.countDocuments({ orderId: { $regex: new RegExp(`^${order.orderId}-EX`) } });
                 const newOrderId = `${order.orderId}-EX${exCount + 1}`;
-                
+
                 const replacementItems = exchangedItems.map(item => ({
                     product: item.product,
                     name: item.name,
@@ -823,7 +837,7 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
                     color: item.exchangeColor || item.color,
                     status: 'Active'
                 }));
-                
+
                 const replacementOrder = new Order({
                     orderId: newOrderId,
                     user: order.user,
@@ -836,9 +850,9 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
                     paymentMethod: order.paymentMethod,
                     status: 'Placed'
                 });
-                
+
                 await replacementOrder.save();
-                
+
                 for (const item of exchangedItems) {
                     item.status = 'Exchanged';
                 }
@@ -860,13 +874,13 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
         if (status === 'Delivered' && order.walletSettlementStatus === 'Pending') {
             order.deliveredAt = new Date();
             const SellerObj = (await import('../models/Seller.js')).default;
-            
+
             // 1. Credit Seller
             const sellerToCredit = await SellerObj.findById(order.seller);
             if (sellerToCredit) {
                 sellerToCredit.walletBalance += (order.sellerEarning || 0);
                 await sellerToCredit.save();
-                
+
                 await WalletTransaction.create({
                     userType: 'Seller',
                     userId: sellerToCredit._id,
@@ -961,7 +975,7 @@ router.delete('/admin/:id', protect, adminOnly, async (req, res) => {
 router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
     try {
         const { itemId, status } = req.body;
-        
+
         const order = await Order.findById(req.params.id);
         if (!order) {
             return res.status(404).json({ success: false, message: 'Order not found' });
@@ -976,12 +990,12 @@ router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
 
         // Stamp the right timestamp for each status transition
         const timestampMap = {
-            'Return Approved':           () => { item.returnApprovedAt = now; },
-            'Return Completed':          () => { item.returnCompletedAt = now; },
-            'Return Rejected':           () => { item.returnRejectedAt = now; },
-            'Exchange Approved':         () => { item.exchangeApprovedAt = now; },
-            'Exchange Completed':        () => { item.exchangeCompletedAt = now; },
-            'Exchange Rejected':         () => { item.exchangeRejectedAt = now; },
+            'Return Approved': () => { item.returnApprovedAt = now; },
+            'Return Completed': () => { item.returnCompletedAt = now; },
+            'Return Rejected': () => { item.returnRejectedAt = now; },
+            'Exchange Approved': () => { item.exchangeApprovedAt = now; },
+            'Exchange Completed': () => { item.exchangeCompletedAt = now; },
+            'Exchange Rejected': () => { item.exchangeRejectedAt = now; },
         };
         if (timestampMap[status]) timestampMap[status]();
 
@@ -1032,7 +1046,7 @@ router.put('/:id/item-action', protect, async (req, res) => {
     try {
         const { itemId, action, reason, exchangeSize, exchangeColor } = req.body;
         const validActions = ['cancel', 'return', 'exchange'];
-        
+
         if (!validActions.includes(action)) {
             return res.status(400).json({ success: false, message: 'Invalid action request' });
         }
@@ -1061,12 +1075,12 @@ router.put('/:id/item-action', protect, async (req, res) => {
         // Process based on action
         if (action === 'cancel') {
             if (order.status !== 'Placed' && order.status !== 'Accepted') {
-                return res.status(400).json({ success: false, message: 'Order has already progressed beyond cancellation. Please return it instead.'});
+                return res.status(400).json({ success: false, message: 'Order has already progressed beyond cancellation. Please return it instead.' });
             }
             item.status = 'Cancelled';
             item.cancelledBy = 'Customer';
             item.cancelledAt = new Date();
-            
+
             // Refund stock immediately for cancellations
             const productId = item.product?._id || item.product;
             if (productId) {
@@ -1089,7 +1103,7 @@ router.put('/:id/item-action', protect, async (req, res) => {
             }
         } else if (action === 'return') {
             if (order.status !== 'Delivered') {
-                return res.status(400).json({ success: false, message: 'Only delivered items can be returned.'});
+                return res.status(400).json({ success: false, message: 'Only delivered items can be returned.' });
             }
 
             // Enforce 3-hour limit
@@ -1097,7 +1111,7 @@ router.put('/:id/item-action', protect, async (req, res) => {
             if (deliveredStatus) {
                 const hoursSinceDelivery = (new Date() - new Date(deliveredStatus.timestamp)) / (1000 * 60 * 60);
                 if (hoursSinceDelivery >= 3) {
-                    return res.status(403).json({ success: false, message: 'Return window expired. Returns are only allowed within 3 hours of delivery.'});
+                    return res.status(403).json({ success: false, message: 'Return window expired. Returns are only allowed within 3 hours of delivery.' });
                 }
             }
 
@@ -1105,7 +1119,7 @@ router.put('/:id/item-action', protect, async (req, res) => {
             item.returnRequestedAt = new Date();
         } else if (action === 'exchange') {
             if (order.status !== 'Delivered') {
-                return res.status(400).json({ success: false, message: 'Only delivered items can be exchanged.'});
+                return res.status(400).json({ success: false, message: 'Only delivered items can be exchanged.' });
             }
 
             // Enforce 3-hour limit
@@ -1113,7 +1127,7 @@ router.put('/:id/item-action', protect, async (req, res) => {
             if (deliveredStatus) {
                 const hoursSinceDelivery = (new Date() - new Date(deliveredStatus.timestamp)) / (1000 * 60 * 60);
                 if (hoursSinceDelivery >= 3) {
-                    return res.status(403).json({ success: false, message: 'Exchange window expired. Exchanges are only allowed within 3 hours of delivery.'});
+                    return res.status(403).json({ success: false, message: 'Exchange window expired. Exchanges are only allowed within 3 hours of delivery.' });
                 }
             }
 

@@ -141,11 +141,9 @@ const Home = () => {
                         </svg>
                     </div>
                 </div>
-                <div className="shop-title">
-                    <span className="greeting-text">Hey </span>
-                    <span className="greeting-name">{user?.name?.split(' ')[0] || 'there'}</span>
-                    <span> 👋</span>
-                </div>
+                <span className="greeting-name">
+                    Hey {user?.name?.split(' ')[0] || 'there'} 👋
+                </span>
             </div>
 
             {/* Location Picker Modal */}
@@ -274,18 +272,18 @@ const Home = () => {
 
             {/* ── Main Content (only when serviceable or no area check) ── */}
             {serviceable !== false && (
-            <div className="discovery-block" style={{ marginTop: '16px' }}>
-                <div className="section-header" style={{ padding: '0 20px', marginBottom: '12px' }}>
-                    <h2 style={{ fontSize: '20px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        ⭐ Top Picks
-                    </h2>
+                <div className="discovery-block" style={{ marginTop: '16px' }}>
+                    <div className="section-header" style={{ padding: '0 20px', marginBottom: '12px' }}>
+                        <h2 style={{ fontSize: '20px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            ⭐ Top Picks
+                        </h2>
+                    </div>
+                    {loading ? (
+                        <div className="loading-state">Loading amazing shops...</div>
+                    ) : (
+                        <HeroSlideshow shops={topRatedShops} banners={banners} navigate={navigate} />
+                    )}
                 </div>
-                {loading ? (
-                    <div className="loading-state">Loading amazing shops...</div>
-                ) : (
-                    <HeroSlideshow shops={topRatedShops} banners={banners} navigate={navigate} />
-                )}
-            </div>
             )}
 
             <div className="categories-section">
@@ -425,15 +423,15 @@ const HeroSlideshow = ({ shops, banners, navigate }) => {
 
     return (
         <div className="slideshow-wrapper" style={{ margin: '0', padding: '0 20px', overflow: 'hidden' }}>
-            <div className="slideshow-track" style={{ 
-                transform: `translateX(-${active * 100}%)`, 
-                display: 'flex', 
+            <div className="slideshow-track" style={{
+                transform: `translateX(-${active * 100}%)`,
+                display: 'flex',
                 alignItems: 'stretch',
                 transition: 'transform 0.5s cubic-bezier(0.77, 0, 0.175, 1)'
             }}>
                 {slides.map((slide, index) => (
                     <div className="slideshow-slide" key={slide.type === 'shop' ? slide.data._id : slide.type === 'banner' ? slide.data._id : `welcome-${index}`} style={{ minWidth: '100%', flexBasis: '100%', padding: '0 4px', boxSizing: 'border-box', flexShrink: 0 }}>
-                        
+
                         {slide.type === 'welcome' && (
                             <div className="banner-placeholder" style={{ borderRadius: '16px', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', height: '180px', overflow: 'hidden', position: 'relative' }}>
                                 <div className="placeholder-content" style={{ zIndex: 2, padding: '24px' }}>
@@ -442,19 +440,19 @@ const HeroSlideshow = ({ shops, banners, navigate }) => {
                                 </div>
                             </div>
                         )}
-                        
+
                         {slide.type === 'banner' && (
                             <div className="banner-slide" style={{ borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', height: '180px' }}>
                                 <img src={getImageUrl(slide.data.image)} alt={slide.data.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                         )}
-                        
+
                         {slide.type === 'shop' && (
                             <div style={{ height: '100%' }}>
                                 <ShopCard shop={slide.data} onClick={() => navigate(`/shop/${slide.data._id}`)} />
                             </div>
                         )}
-                        
+
                     </div>
                 ))}
             </div>
