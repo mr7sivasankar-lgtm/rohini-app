@@ -53,8 +53,8 @@ const ShopProfile = () => {
                 const prods = productsRes.data.data;
                 setProducts(prods);
                 
-                // Extract unique categories from shop's products
-                const uniqueCats = ['All', ...new Set(prods.map(p => p.category).filter(Boolean))];
+                // Extract unique category names (p.category is a populated object, not a string)
+                const uniqueCats = ['All', ...new Set(prods.map(p => p.category?.name).filter(Boolean))];
                 setCategories(uniqueCats);
             }
         } catch (error) {
@@ -72,7 +72,7 @@ const ShopProfile = () => {
     
     // 1. Category Filter
     if (activeCategory !== 'All') {
-        displayProducts = displayProducts.filter(p => p.category === activeCategory);
+        displayProducts = displayProducts.filter(p => p.category?.name === activeCategory || p.category === activeCategory);
     }
     
     // 2. In Stock Filter

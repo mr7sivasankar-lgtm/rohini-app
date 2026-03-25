@@ -143,6 +143,27 @@ router.get('/', async (req, res) => {
     }
 });
 
+// @route   GET /api/products/seller
+// @desc    Get ALL products for the logged-in seller (including inactive)
+// @access  Private/Seller
+// IMPORTANT: this must be declared BEFORE /:id so Express doesn't treat "seller" as an ObjectId
+router.get('/seller', sellerOrAdmin, async (req, res) => {
+    try {
+        if (!req.seller) {
+            return res.status(403).json({ success: false, message: 'Only sellers can access this route' });
+        }
+        const products = await Product.find({ seller: req.seller._id })
+            .populate('category', 'name gender')
+            .populate('subcategory', 'name')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({ success: true, data: products });
+    } catch (error) {
+        console.error('Get seller products error:', error);
+        res.status(500).json({ success: false, message: 'Error fetching seller products' });
+    }
+});
+
 // @route   GET /api/products/:id
 // @desc    Get single product
 // @access  Public
