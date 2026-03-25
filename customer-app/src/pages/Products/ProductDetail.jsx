@@ -29,7 +29,6 @@ const ProductDetail = () => {
 
     // Dynamic Delivery Time logic
     const getDeliveryEstimate = () => {
-        if (product?.deliveryTime) return product.deliveryTime; // If seller explicitly set one
 
         const sellerLng = product?.seller?.location?.coordinates?.[0];
         const sellerLat = product?.seller?.location?.coordinates?.[1];
