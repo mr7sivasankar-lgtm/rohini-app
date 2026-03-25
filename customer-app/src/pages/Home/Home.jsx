@@ -596,7 +596,7 @@ const ShopCard = ({ shop, onClick, nearby }) => {
                 </div>
 
                 <p className="scc-addr">
-                    {tags.join(' • ')} • ₹150 for one
+                    <span className="scc-category-highlight">{shop.shopCategory || 'Fashion Store'}</span> • {tags.join(', ')}
                 </p>
 
                 <div className="scc-footer">

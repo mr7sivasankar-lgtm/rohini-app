@@ -31,7 +31,7 @@ const Favorites = () => {
     const getShopTags = (shop) => {
         if (!shop.shopCategory) return ['Mixed Fashion Store'];
         const cat = shop.shopCategory.toLowerCase();
-        
+
         const tagMap = {
             'women': ['Womenswear', 'Dresses', 'Tops', 'Kurtas'],
             'men': ['Menswear', 'Shirts', 'T-Shirts', 'Jeans'],
@@ -92,7 +92,7 @@ const Favorites = () => {
                         {favoriteShops.map((shop) => {
                             const tags = getShopTags(shop);
                             const isFav = favoriteIds.has(shop._id);
-                            
+
                             return (
                                 <div key={shop._id} className="fav-shop-card" onClick={() => navigate(`/shop/${shop._id}`)}>
                                     <div className="fav-shop-banner">
@@ -102,9 +102,9 @@ const Favorites = () => {
                                             <div className="fav-no-banner" />
                                         )}
                                         <div className="fav-banner-overlay" />
-                                        
-                                        <button 
-                                            className={`fav-heart-btn ${isFav ? 'active' : ''}`} 
+
+                                        <button
+                                            className={`fav-heart-btn ${isFav ? 'active' : ''}`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 toggleFavorite(shop._id);
@@ -123,7 +123,7 @@ const Favorites = () => {
                                             <span className="fav-rating">⭐ {shop.rating > 0 ? shop.rating.toFixed(1) : 'New'}</span>
                                         </div>
                                         <p className="fav-shop-tags">
-                                            {tags.join(' • ')}
+                                            <span style={{ color: '#0f172a', fontWeight: '600' }}>{shop.shopCategory || 'Fashion Store'}</span> • {tags.join(', ')}
                                         </p>
                                         <p className="fav-shop-address">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

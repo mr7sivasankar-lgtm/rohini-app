@@ -1316,6 +1316,11 @@
     text-overflow: ellipsis;
 }
 
+.scc-category-highlight {
+    color: #0f172a;
+    font-weight: 600;
+}
+
 .scc-footer {
     display: flex;
     justify-content: space-between;
