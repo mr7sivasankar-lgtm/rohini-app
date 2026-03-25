@@ -170,6 +170,26 @@ const ProfileTab = ({ seller }) => {
         }
     };
 
+    const handleKycUpload = async (e, field) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setErrorMsg('');
+        try {
+            const form = new FormData();
+            form.append('image', file);
+            const res = await api.post('/sellers/upload-image', form, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (res.data.success) {
+                setFormData(prev => ({ ...prev, [field]: res.data.url }));
+                setSuccessMsg(`✅ Document uploaded! Save to apply.`);
+                setTimeout(() => setSuccessMsg(''), 4000);
+            }
+        } catch (err) {
+            setErrorMsg('Upload failed: ' + (err.response?.data?.message || 'Please try again'));
+        }
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -613,6 +633,50 @@ const ProfileTab = ({ seller }) => {
                                     <label style={lbl}>UPI ID</label>
                                     <input type="text" name="upiId" value={formData.upiId} onChange={handleChange} placeholder="merchant@upi" style={inp} onFocus={focusStyle} onBlur={blurStyle} />
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* KYC Documents */}
+                        <div style={{ gridColumn: '1 / -1', borderTop: '2px dashed #e2e8f0', paddingTop: '24px', marginTop: '8px' }}>
+                            <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                🪪 KYC Documents
+                                <span style={{ fontSize: '12px', fontWeight: 400, color: '#64748b' }}>Aadhaar, PAN, Shop Photo, Cancelled Cheque</span>
+                            </h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px' }}>
+                                {[
+                                    { field: 'documentAadhaar', label: 'Aadhaar Card', icon: '🪪' },
+                                    { field: 'documentPan', label: 'PAN Card', icon: '📋' },
+                                    { field: 'documentShopPhoto', label: 'Shop Photo', icon: '🏪' },
+                                    { field: 'documentCancelledCheque', label: 'Cancelled Cheque', icon: '🏦' },
+                                ].map(({ field, label, icon }) => (
+                                    <div key={field} style={{ background: '#f8fafc', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{icon} {label}</div>
+                                        {formData[field] ? (
+                                            <>
+                                                <a href={formData[field]} target="_blank" rel="noopener noreferrer">
+                                                    <img src={formData[field]} alt={label}
+                                                        style={{ width: '100%', height: '90px', objectFit: 'cover', borderRadius: '8px', border: '2px solid #e2e8f0', display: 'block' }}
+                                                        onError={(e) => e.target.style.display = 'none'} />
+                                                </a>
+                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                                    <label style={{ flex: 1, padding: '7px', background: '#eff6ff', color: '#3b82f6', borderRadius: '8px', fontSize: '12px', fontWeight: 600, textAlign: 'center', cursor: 'pointer', border: '1px solid #bfdbfe' }}>
+                                                        🔄 Reupload
+                                                        <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={(e) => handleKycUpload(e, field)} />
+                                                    </label>
+                                                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, [field]: '' }))} style={{ flex: 1, padding: '7px', background: '#fef2f2', color: '#dc2626', borderRadius: '8px', fontSize: '12px', fontWeight: 600, border: '1px solid #fca5a5', cursor: 'pointer' }}>
+                                                        🗑️ Delete
+                                                    </button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '90px', border: '2px dashed #cbd5e1', borderRadius: '8px', cursor: 'pointer', gap: '6px', background: 'white' }}>
+                                                <span style={{ fontSize: '24px' }}>⬆️</span>
+                                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Upload {label}</span>
+                                                <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={(e) => handleKycUpload(e, field)} />
+                                            </label>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
