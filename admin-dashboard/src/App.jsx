@@ -258,24 +258,16 @@ function App() {
     }
   };
 
-  const handleDeleteProduct = async (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        await api.delete(`/products/${id}`);
-        fetchProducts();
-      } catch (error) {
-        alert('Failed to delete product');
-      }
+  const handleToggleProductVisibility = async (product) => {
+    try {
+      await api.put(`/products/${product._id}/toggle`);
+      fetchProducts();
+    } catch (error) {
+      alert('Failed to update product visibility');
     }
   };
 
-  const handleEditProduct = (product) => {
-    setEditingProduct(product);
-    setShowProductForm(true);
-  };
-
   const handleAddNewProduct = () => {
-    setEditingProduct(null);
     setShowProductForm(true);
   };
 
@@ -744,7 +736,7 @@ function App() {
                   <table className="table">
                     <thead>
                       <tr>
-                        <th>Image</th>
+                      <th>Image</th>
                         <th>Name</th>
                         <th>Brand</th>
                         <th>Gender</th>
@@ -752,7 +744,7 @@ function App() {
                         <th>Price</th>
                         <th>Stock</th>
                         <th>Category</th>
-                        <th>Actions</th>
+                        <th>Visibility</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -795,11 +787,27 @@ function App() {
                               </span>
                             </td>
                             <td>{product.category?.name || 'N/A'}</td>
-                            <td>
-                              <div className="action-buttons">
-                                <button className="btn btn-secondary" style={{ marginRight: 8, padding: '4px 8px', fontSize: 12 }} onClick={() => handleEditProduct(product)}>Edit</button>
-                                <button className="btn btn-danger" style={{ padding: '4px 8px', fontSize: 12, backgroundColor: '#ff4444', color: 'white', border: 'none', borderRadius: 4 }} onClick={() => handleDeleteProduct(product._id)}>Delete</button>
-                              </div>
+                            <td style={{ textAlign: 'center' }}>
+                              <select
+                                value={product.isActive ? 'visible' : 'hidden'}
+                                onChange={(e) => {
+                                  const wantHide = e.target.value === 'hidden';
+                                  const isCurrentlyActive = product.isActive;
+                                  if ((wantHide && isCurrentlyActive) || (!wantHide && !isCurrentlyActive)) {
+                                    handleToggleProductVisibility(product);
+                                  }
+                                }}
+                                style={{
+                                  padding: '6px 10px', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
+                                  border: `1.5px solid ${product.isActive ? '#86efac' : '#fca5a5'}`,
+                                  background: product.isActive ? '#f0fdf4' : '#fef2f2',
+                                  color: product.isActive ? '#15803d' : '#dc2626',
+                                  cursor: 'pointer', outline: 'none'
+                                }}
+                              >
+                                <option value="visible">✅ Show to Customers</option>
+                                <option value="hidden">🚫 Hide from Customers</option>
+                              </select>
                             </td>
                           </tr>
                         );
