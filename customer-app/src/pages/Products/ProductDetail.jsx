@@ -449,7 +449,10 @@ const ProductDetail = () => {
 
                     {/* Seller Profile Link */}
                     {product.seller && (
-                        <div className="seller-profile-card" onClick={() => navigate(`/shop/${product.seller._id}`)}>
+                        <div className="seller-profile-card" onClick={() => {
+                            const sellerId = typeof product.seller === 'object' ? product.seller._id : product.seller;
+                            if (sellerId) navigate(`/shop/${sellerId}`);
+                        }}>
                             <div className="seller-profile-avatar">
                                 {product.seller.logoImage ? (
                                     <img src={getImageUrl(product.seller.logoImage)} alt={product.seller.shopName || 'Seller'} crossOrigin="anonymous" />

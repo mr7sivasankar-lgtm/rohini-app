@@ -13,7 +13,7 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
     try {
-        const { 
+        const {
             category, gender, search, featured, limit = 20, page = 1,
             sort, minPrice, maxPrice, sizes, colors, inStock, sellerId
         } = req.query;
@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
         if (category) query.category = category;
         if (gender) query.gender = gender;
         if (featured) query.featured = true;
-        
+
         // Advanced Filters
         if (minPrice || maxPrice) {
             query.sellingPrice = {};
@@ -171,7 +171,8 @@ router.get('/:id', async (req, res) => {
     try {
         const product = await Product.findById(req.params.id)
             .populate('category', 'name gender')
-            .populate('subcategory', 'name');
+            .populate('subcategory', 'name')
+            .populate('seller', 'shopName ownerName logoImage shopAddress status');
 
         if (!product) {
             return res.status(404).json({
