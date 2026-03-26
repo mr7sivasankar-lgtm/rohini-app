@@ -24,7 +24,16 @@ const DashboardTab = ({ onTabChange }) => {
         try {
             const res = await api.get('/orders/seller/dashboard-stats');
             if (res.data.success) {
-                setStats(res.data.data);
+                setStats({
+                    ordersToday: 0,
+                    pendingOrders: 0,
+                    revenueToday: 0,
+                    delivered: 0,
+                    returned: 0,
+                    exchanged: 0,
+                    recentOrders: [],
+                    ...res.data.data   // spread API response so missing fields fall back to 0
+                });
             }
         } catch (error) {
             console.error('Failed to fetch dashboard stats:', error);
@@ -39,7 +48,7 @@ const DashboardTab = ({ onTabChange }) => {
         { title: 'Unique Visitors', value: seller?.profileViews || 0, icon: '👁️', bg: 'linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%)', color: '#c026d3', shadow: 'rgba(192, 38, 211, 0.15)', isVisitorStats: true },
         { title: 'Orders Today', value: stats.ordersToday, icon: '📦', bg: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', color: '#2563eb', shadow: 'rgba(37, 99, 235, 0.15)', tab: 'orders' },
         { title: 'Pending Orders', value: stats.pendingOrders, icon: '⏳', bg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', color: '#d97706', shadow: 'rgba(217, 119, 6, 0.15)', tab: 'orders' },
-        { title: 'Revenue Today', value: `₹${stats.revenueToday.toLocaleString('en-IN')}`, icon: '₹', bg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', color: '#16a34a', shadow: 'rgba(22, 163, 74, 0.15)', tab: 'sales' },
+        { title: 'Revenue Today', value: `₹${(stats.revenueToday ?? 0).toLocaleString('en-IN')}`, icon: '₹', bg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', color: '#16a34a', shadow: 'rgba(22, 163, 74, 0.15)', tab: 'sales' },
         { title: 'Delivered (Total)', value: stats.delivered, icon: '✅', bg: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', color: '#7c3aed', shadow: 'rgba(124, 58, 237, 0.15)', tab: 'orders' },
         { title: 'Returns/Exchanges', value: stats.returned + stats.exchanged, icon: '🔄', bg: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)', color: '#dc2626', shadow: 'rgba(220, 38, 38, 0.15)', tab: 'orders' }
     ];
@@ -211,7 +220,7 @@ const DashboardTab = ({ onTabChange }) => {
                                         </div>
                                     </td>
                                     <td style={{ padding: '20px 24px', fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>
-                                        ₹{order.total.toLocaleString('en-IN')}
+                                        ₹{(order.total ?? order.totalAmount ?? 0).toLocaleString('en-IN')}
                                     </td>
                                     <td style={{ padding: '20px 24px' }}>
                                         <span style={{
