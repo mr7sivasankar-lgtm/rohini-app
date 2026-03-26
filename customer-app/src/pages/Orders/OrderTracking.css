@@ -83,6 +83,12 @@
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.order-meta-left {
+    max-width: calc(100% - 110px);
 }
 
 .order-meta-left h2 {
@@ -91,6 +97,8 @@
     color: #0f172a;
     margin: 0 0 6px 0;
     letter-spacing: -0.5px;
+    word-wrap: break-word;
+    word-break: break-all;
 }
 
 .order-date {

@@ -428,6 +428,12 @@ const OrderTracking = () => {
                             <span>Delivery Fee</span>
                             <span>{order.deliveryFee > 0 ? `₹${(order.deliveryFee || 0).toFixed(2)}` : 'FREE'}</span>
                         </div>
+                        {order.platformFee > 0 && (
+                            <div className="summary-line">
+                                <span>Platform Fee</span>
+                                <span>₹{(order.platformFee || 0).toFixed(2)}</span>
+                            </div>
+                        )}
                         <div className="summary-divider"></div>
                         <div className="summary-line total-line">
                             <span>Total</span>
