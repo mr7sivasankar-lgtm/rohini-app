@@ -211,14 +211,21 @@ const Checkout = () => {
     let platformFee = adminConfig ? adminConfig.platformFee : 0;
     let discount = 0;
 
-    if (adminConfig && selectedAddress?.latitude && cart.length > 0) {
-        let dist = 0;
+    if (adminConfig && cart.length > 0) {
+        let dist = 5; // Default to 5km if coordinates missing
         const sellerCoords = cart[0].product?.seller?.location?.coordinates;
-        if (selectedAddress.latitude && selectedAddress.longitude && sellerCoords?.length === 2) {
-            dist = calculateDistance(selectedAddress.latitude, selectedAddress.longitude, sellerCoords[1], sellerCoords[0]);
+        
+        if (selectedAddress?.latitude && selectedAddress?.longitude && sellerCoords?.length === 2) {
+            dist = calculateDistance(
+                selectedAddress.latitude, 
+                selectedAddress.longitude, 
+                sellerCoords[1], 
+                sellerCoords[0]
+            );
         }
-        const extraKm = Math.max(0, dist - adminConfig.baseDeliveryDistance);
-        deliveryFee = adminConfig.baseDeliveryCharge + Math.ceil(extraKm) * adminConfig.deliveryChargePerKm;
+        
+        const extraKm = Math.max(0, dist - (adminConfig.baseDeliveryDistance || 2));
+        deliveryFee = (adminConfig.baseDeliveryCharge || 20) + Math.ceil(extraKm) * (adminConfig.deliveryChargePerKm || 5);
     }
 
     const totalMrp = cart.reduce((sum, item) => sum + ((item.product.mrp || item.product.price || item.product.sellingPrice || 0) * item.quantity), 0);
