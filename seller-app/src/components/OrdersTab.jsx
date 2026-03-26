@@ -158,53 +158,49 @@ const OrdersTab = () => {
                                         <div style={{ fontSize: '12px', color: '#64748b' }}>📞 {maskPhone(order.shippingAddress?.phone || order.contactInfo?.phone || order.user?.phone) || 'N/A'}</div>
                                     </div>
 
-                                    {/* Items inline */}
-                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '180px' }}>
+                                    {/* Items list */}
+                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '350px' }}>
                                         {order.items.map((item, idx) => (
-                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%' }}>
                                                 <img
                                                     src={getImageUrl(item.image)}
                                                     alt={item.name}
-                                                    style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0, cursor: 'pointer', border: '1px solid #e2e8f0' }}
+                                                    style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0, cursor: 'pointer', border: '1px solid #e2e8f0' }}
                                                     onClick={() => window.open(getImageUrl(item.image), '_blank')}
                                                     onError={(e) => { e.target.style.display = 'none'; }}
                                                 />
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
-                                                    <div style={{ display: 'flex', gap: '16px', marginTop: '6px', flexWrap: 'wrap' }}>
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Qty</span>
-                                                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{item.quantity}</span>
-                                                        </div>
-                                                        {item.size && (
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                                <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Size</span>
-                                                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{item.size}</span>
-                                                            </div>
-                                                        )}
-                                                        {item.color && (
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                                <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Color</span>
-                                                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{item.color}</span>
-                                                            </div>
-                                                        )}
-                                                        {item.productCode && (
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                                <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Code</span>
-                                                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b', fontFamily: 'monospace' }}>#{item.productCode}</span>
-                                                            </div>
-                                                        )}
+                                                {/* Title */}
+                                                <div style={{ width: '130px', fontSize: '13px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.name}>
+                                                    {item.name}
+                                                </div>
+                                                
+                                                {/* Attributes spread out */}
+                                                <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '50px' }}>
+                                                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Qty</span>
+                                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{item.quantity}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }}>
+                                                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Size</span>
+                                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{item.size || '-'}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '80px' }}>
+                                                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Color</span>
+                                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{item.color || '-'}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '80px' }}>
+                                                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Code</span>
+                                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', fontFamily: 'monospace', color: '#6366f1' }}>{item.productCode ? `#${item.productCode}` : '-'}</span>
+                                                    </div>
+                                                    
+                                                    {/* Item Value */}
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: '70px' }}>
+                                                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Value</span>
+                                                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>₹{((item.sellingPrice ?? 0) * item.quantity).toFixed(0)}</span>
                                                     </div>
                                                 </div>
-                                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', flexShrink: 0 }}>₹{((item.sellingPrice ?? 0) * item.quantity).toFixed(0)}</div>
                                             </div>
                                         ))}
-                                    </div>
-
-                                    {/* Total */}
-                                    <div style={{ textAlign: 'right', minWidth: '70px' }}>
-                                        <div style={{ fontSize: '11px', color: '#94a3b8' }}>Total</div>
-                                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b' }}>₹{(order.total ?? order.totalAmount ?? 0).toFixed(0)}</div>
                                     </div>
                                 </div>
 
