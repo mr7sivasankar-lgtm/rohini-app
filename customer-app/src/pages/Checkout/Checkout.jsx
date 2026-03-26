@@ -40,9 +40,14 @@ const Checkout = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('COD'); // 'COD' | 'Online'
+    const [adminConfig, setAdminConfig] = useState(null);
 
-    // Auto-fill address from passed addressId
+    // Auto-fill address from passed addressId and fetch config
     useEffect(() => {
+        api.get('/config').then(res => {
+            if (res.data.success) setAdminConfig(res.data.data);
+        }).catch(() => {});
+
         if (passedAddressId) {
             api.get('/addresses').then(res => {
                 if (res.data.success) {
@@ -64,10 +69,35 @@ const Checkout = () => {
         }
     }, [passedAddressId]);
 
-    const deliveryFee = 0;
+    const calculateDistance = (lat1, lon1, lat2, lon2) => {
+        if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+        const R = 6371; // km
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+        const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+            Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+
+    let deliveryFee = 0;
+    let platformFee = adminConfig ? adminConfig.platformFee : 0;
+    let discount = 0;
+
+    if (adminConfig && address.latitude && cart.length > 0) {
+        let dist = 0;
+        const sellerCoords = cart[0].product?.seller?.location?.coordinates;
+        // seller coordinates are [lng, lat]
+        if (address.latitude && address.longitude && sellerCoords?.length === 2) {
+            dist = calculateDistance(address.latitude, address.longitude, sellerCoords[1], sellerCoords[0]);
+        }
+        const extraKm = Math.max(0, dist - adminConfig.baseDeliveryDistance);
+        deliveryFee = adminConfig.baseDeliveryCharge + Math.ceil(extraKm) * adminConfig.deliveryChargePerKm;
+    }
+
     const totalMrp = cart.reduce((sum, item) => sum + ((item.product.mrp || item.product.price || item.product.sellingPrice || 0) * item.quantity), 0);
     const totalDiscount = totalMrp > cartTotal ? totalMrp - cartTotal : 0;
-    const total = cartTotal + deliveryFee;
+    const total = cartTotal + deliveryFee + platformFee - discount;
 
     const buildOrderPayload = () => ({
         items: cart.map(item => ({
@@ -78,7 +108,9 @@ const Checkout = () => {
         })),
         shippingAddress: address,
         contactInfo: { phone, email },
-        deliveryFee
+        deliveryFee,
+        platformFee,
+        discount
     });
 
     // ── COD Flow ───────────────────────────────────────────────────────────────
@@ -277,6 +309,10 @@ const Checkout = () => {
                         <div className="summary-row">
                             <span>Delivery Fee</span>
                             <span className={deliveryFee === 0 ? 'text-success' : ''}>{deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}</span>
+                        </div>
+                        <div className="summary-row">
+                            <span>Platform Fee</span>
+                            <span>₹{platformFee.toFixed(2)}</span>
                         </div>
                         <div className="summary-divider"></div>
                         <div className="summary-row summary-total">
