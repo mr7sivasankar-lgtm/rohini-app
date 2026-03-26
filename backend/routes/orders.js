@@ -264,7 +264,7 @@ router.get('/', protect, async (req, res) => {
     try {
         const orders = await Order.find({ user: req.user._id })
             .populate('seller', 'shopName bannerImage')
-            .populate('deliveryPartner', 'name phone')
+            .populate('deliveryPartner', 'name phone location')
             .sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -289,7 +289,7 @@ router.get('/seller', sellerProtect, async (req, res) => {
     try {
         const orders = await Order.find({ seller: req.seller._id })
             .populate('user', 'name phone email')
-            .populate('deliveryPartner', 'name phone')
+            .populate('deliveryPartner', 'name phone location')
             .sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -628,7 +628,7 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
         const orders = await Order.find(query)
             .populate('user', 'name phone email')
             .populate('seller', 'shopName phone location')
-            .populate('deliveryPartner', 'name phone')
+            .populate('deliveryPartner', 'name phone location')
             .sort({ createdAt: -1 })
             .limit(parseInt(limit));
 

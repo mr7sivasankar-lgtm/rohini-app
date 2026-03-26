@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Map, Marker, Overlay } from 'pigeon-maps';
 import api, { getImageUrl } from '../../utils/api';
 import './OrderTracking.css';
 
@@ -19,10 +20,6 @@ const OrderTracking = () => {
     // Timer state
     const [timeLeft, setTimeLeft] = useState(null);
     const [isExpired, setIsExpired] = useState(false);
-
-    useEffect(() => {
-        fetchOrder();
-    }, [orderId]);
 
     const fetchOrder = async () => {
         try {
@@ -45,6 +42,23 @@ const OrderTracking = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchOrder();
+    }, [orderId]);
+
+    // Live Map Polling (Fetch order every 10 seconds if Out for Delivery properties apply)
+    useEffect(() => {
+        let interval;
+        if (order && order.deliveryPartner && ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status)) {
+            interval = setInterval(() => {
+                fetchOrder();
+            }, 10000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [order?.status, order?.deliveryPartner]);
 
     // Calculate the remaining time within the 3-hour window
     const calculateTimeLeft = (deliveredTimestamp) => {
@@ -159,7 +173,7 @@ const OrderTracking = () => {
                 </div>
             )}
 
-            {/* Order Items List (Moved to top) */}
+            {/* Order Items List */}
             <div className="tracking-card">
                 <h3 className="section-title">
                     Items ({order.items.length}) 
@@ -172,7 +186,7 @@ const OrderTracking = () => {
                             <div className="item-info">
                                 <div className="item-name-row">
                                     <h4 className="item-name">{item.name}</h4>
-                                    <span className="item-price">₹{item.price.toFixed(2)}</span>
+                                    <span className="item-price">₹{(item.sellingPrice || 0).toFixed(2)}</span>
                                 </div>
                                 
                                 <div className="item-specs">
@@ -230,7 +244,7 @@ const OrderTracking = () => {
                 </div>
             </div>
 
-            {/* Order Tracking Details (Moved below items) */}
+            {/* Order Tracking Details */}
             <div className="tracking-card">
                 <div className="order-meta-header">
                     <div className="order-meta-left">
@@ -277,20 +291,67 @@ const OrderTracking = () => {
                 </div>
 
                 {/* Delivery Partner Info */}
-                {order.deliveryPartnerId && (
+                {order.deliveryPartner && (
                     <div className="delivery-partner-card" style={{ marginTop: '24px', padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ width: '40px', height: '40px', background: '#f97316', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '20px' }}>
                             🚚
                         </div>
                         <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Delivery Partner</div>
-                            <div style={{ fontSize: '15px', color: '#0f172a', fontWeight: 700 }}>{order.deliveryPartnerId.name}</div>
-                            <div style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>📞 +91 {order.deliveryPartnerId.phone}</div>
+                            <div style={{ fontSize: '15px', color: '#0f172a', fontWeight: 700 }}>{order.deliveryPartner.name}</div>
+                            <div style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>📞 +91 {order.deliveryPartner.phone}</div>
+                        </div>
+                    </div>
+                )}
+                
+                {/* 🛵 Live Delivery Tracking Map */}
+                {order.deliveryPartner && order.deliveryPartner.location && order.deliveryPartner.location.coordinates?.length >= 2 && ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status) && (
+                    <div className="tracking-map-container" style={{ height: '300px', borderRadius: '16px', overflow: 'hidden', marginTop: '24px', position: 'relative', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+                        <Map 
+                            height={300} 
+                            center={[order.deliveryPartner.location.coordinates[1], order.deliveryPartner.location.coordinates[0]]} 
+                            defaultZoom={15}
+                        >
+                            {/* Delivery Partner Scooter Marker */}
+                            <Overlay 
+                                anchor={[order.deliveryPartner.location.coordinates[1], order.deliveryPartner.location.coordinates[0]]}
+                                offset={[20, 20]}
+                            >
+                                <div style={{ 
+                                    fontSize: '32px', 
+                                    transform: 'scaleX(-1)', /* face scooter towards general right */
+                                    filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.3))',
+                                    transition: 'all 0.5s ease-in-out' // Smooth glide 
+                                }}>
+                                    🛵
+                                </div>
+                            </Overlay>
+                            
+                            {/* Customer Destination Marker */}
+                            {order.shippingAddress?.latitude && order.shippingAddress?.longitude && (
+                               <Overlay 
+                                   anchor={[order.shippingAddress.latitude, order.shippingAddress.longitude]}
+                                   offset={[16, 32]}
+                               >
+                                   <div style={{ 
+                                        fontSize: '28px', 
+                                        filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.3))'
+                                    }}>
+                                       📍
+                                   </div>
+                               </Overlay>
+                            )}
+                        </Map>
+                        
+                        {/* Live Update Ping Indicator */}
+                        <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(255,255,255,0.9)', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                            <span className="live-ping-dot" style={{ width: '8px', height: '8px', background: '#10b981', borderRadius: '50%', display: 'block' }}></span>
+                            Live Tracking
                         </div>
                     </div>
                 )}
 
-                {/* Mini Logistical Timeline for Returns & Exchanges (Moved here underneath original tracking) */}
+                {/* Mini Logistical Timeline for Returns & Exchanges */}
                 {order.items.map((item, index) => {
                     if ((item.status.includes('Return') || item.status.includes('Exchange')) && !item.status.includes('Rejected')) {
                         return (
@@ -361,16 +422,16 @@ const OrderTracking = () => {
                     <div className="payment-summary">
                         <div className="summary-line">
                             <span>Subtotal</span>
-                            <span>₹{order.subtotal.toFixed(2)}</span>
+                            <span>₹{(order.sellingPriceTotal || 0).toFixed(2)}</span>
                         </div>
                         <div className="summary-line">
                             <span>Delivery Fee</span>
-                            <span>{order.deliveryFee > 0 ? `₹${order.deliveryFee.toFixed(2)}` : 'FREE'}</span>
+                            <span>{order.deliveryFee > 0 ? `₹${(order.deliveryFee || 0).toFixed(2)}` : 'FREE'}</span>
                         </div>
                         <div className="summary-divider"></div>
                         <div className="summary-line total-line">
                             <span>Total</span>
-                            <span>₹{order.total.toFixed(2)}</span>
+                            <span>₹{(order.totalAmount || 0).toFixed(2)}</span>
                         </div>
                         <div className="payment-method-badge">
                             Payment: {order.paymentMethod}
@@ -458,3 +519,4 @@ const OrderTracking = () => {
 };
 
 export default OrderTracking;
+

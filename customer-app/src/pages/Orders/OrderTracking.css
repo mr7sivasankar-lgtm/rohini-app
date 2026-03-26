@@ -551,3 +551,15 @@
     .item-actions-row { flex-direction: column; align-items: stretch; }
     .btn-action { text-align: center; }
 }
+
+/* Map live ping animation */
+.live-ping-dot {
+    animation: livePing 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes livePing {
+    75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
