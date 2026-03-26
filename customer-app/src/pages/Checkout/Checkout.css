@@ -255,6 +255,277 @@
     border: 1px dashed #bbf7d0;
 }
 
+/* ── Address Card (Modern Checkout) ─────────────────────────── */
+.address-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.address-card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+    border-color: #cbd5e1;
+}
+
+.addr-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.addr-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    background: #f8fafc;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.addr-text {
+    flex: 1;
+}
+
+.addr-name {
+    font-weight: 700;
+    font-size: 16px;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 6px 0;
+}
+
+.addr-line {
+    font-size: 14px;
+    color: #475569;
+    margin: 0 0 4px 0;
+    line-height: 1.5;
+}
+
+.addr-edit {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    border-radius: 10px;
+    font-size: 16px;
+    color: #4f46e5;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.addr-edit:hover {
+    background: #eef2ff;
+    transform: scale(1.05);
+}
+
+.addr-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    color: #4f46e5;
+    font-weight: 600;
+    font-size: 15px;
+    background: #eef2ff;
+    border-radius: 12px;
+    transition: background 0.2s;
+}
+
+.addr-add:hover {
+    background: #e0e7ff;
+}
+
+.addr-loading {
+    color: #64748b;
+    font-size: 14px;
+    margin: 0;
+    text-align: center;
+    padding: 20px 0;
+}
+
+.addr-type-badge {
+    padding: 3px 10px;
+    background: #f1f5f9;
+    color: #334155;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ── Address Picker Modal ─────────────────── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 1100;
+    display: flex;
+    align-items: flex-end;
+}
+
+.addr-modal {
+    background: #ffffff;
+    border-radius: 28px 28px 0 0;
+    width: 100%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.addr-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.addr-modal-header h3 {
+    font-size: 19px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+
+.modal-close {
+    background: #f8fafc;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.modal-close:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.addr-modal-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 20px 24px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.no-addr-text {
+    font-size: 15px;
+    color: #64748b;
+    text-align: center;
+    padding: 30px 0;
+}
+
+.addr-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+    border-radius: 16px;
+    border: 2px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #ffffff;
+}
+
+.addr-option.selected {
+    border-color: #4f46e5;
+    background: #fafafa;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+}
+
+.addr-radio {
+    padding-top: 4px;
+}
+
+.radio-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    transition: all 0.2s;
+}
+
+.radio-dot.active {
+    border-width: 6px;
+    border-color: #4f46e5;
+}
+
+.addr-option-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.addr-option-line {
+    font-size: 14px;
+    color: #475569;
+    margin: 0 0 4px;
+    line-height: 1.5;
+}
+
+.default-badge {
+    padding: 3px 10px;
+    background: #dcfce7;
+    color: #16a34a;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.add-addr-btn {
+    margin: 0 24px 24px;
+    background: #ffffff;
+    border: 2px dashed #cbd5e1;
+    color: #4f46e5;
+    border-radius: 16px;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    width: calc(100% - 48px);
+    transition: all 0.2s;
+}
+
+.add-addr-btn:hover {
+    border-color: #a5b4fc;
+    background: #eef2ff;
+}
+
 /* Payment Method Selection Cards */
 .payment-options-grid {
     display: grid;
