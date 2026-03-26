@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
 import MapPicker from '../../components/MapPicker/MapPicker';
 import './AddressForm.css';
@@ -7,6 +8,7 @@ import './AddressForm.css';
 const AddressForm = () => {
     const navigate = useNavigate();
     const { id } = useParams();
+    const { user } = useAuth();
     const isEditMode = Boolean(id);
 
     const [loading, setLoading] = useState(false);
@@ -30,6 +32,17 @@ const AddressForm = () => {
         latitude: null,
         longitude: null
     });
+
+    // Pre-fill receiver details from user profile (only for new addresses)
+    useEffect(() => {
+        if (!isEditMode && user) {
+            setFormData(prev => ({
+                ...prev,
+                name: prev.name || user.name || '',
+                phone: prev.phone || user.phone || ''
+            }));
+        }
+    }, [user, isEditMode]);
     
     const [errors, setErrors] = useState({});
 
