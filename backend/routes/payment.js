@@ -72,7 +72,7 @@ router.post('/create-order', protect, async (req, res) => {
             sellerLocation = { lng: sellerObj.location.coordinates[0], lat: sellerObj.location.coordinates[1] };
         }
 
-        let calculatedDeliveryFee = config.baseDeliveryCharge || 20;
+        let calculatedDeliveryFee = config.baseDeliveryCharge ?? 20;
         if (shippingAddress?.latitude && shippingAddress?.longitude && sellerLocation) {
             const distanceKms = getDistanceFromLatLonInKm(
                 shippingAddress.latitude, shippingAddress.longitude,
@@ -187,7 +187,7 @@ router.post('/verify', protect, async (req, res) => {
             sellerLocation = { lng: sellerObj.location.coordinates[0], lat: sellerObj.location.coordinates[1] };
         }
 
-        let calculatedDeliveryFee = config.baseDeliveryCharge || 20;
+        let calculatedDeliveryFee = config.baseDeliveryCharge ?? 20;
         if (shippingAddress?.latitude && shippingAddress?.longitude && sellerLocation) {
             const distanceKms = getDistanceFromLatLonInKm(
                 shippingAddress.latitude, shippingAddress.longitude,

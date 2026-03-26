@@ -162,7 +162,7 @@ router.post('/', protect, async (req, res) => {
         }
 
         // === Delivery Fee Math ===
-        let calculatedDeliveryFee = config.baseDeliveryCharge || 20;
+        let calculatedDeliveryFee = config.baseDeliveryCharge ?? 20;
         let distanceKms = 5; // Default 5km
 
         if (shippingAddress.latitude && shippingAddress.longitude && sellerLocation) {
@@ -172,9 +172,9 @@ router.post('/', protect, async (req, res) => {
             );
         }
 
-        if (distanceKms > (config.baseDeliveryDistance || 2)) {
-            const extraKms = distanceKms - (config.baseDeliveryDistance || 2);
-            calculatedDeliveryFee += Math.ceil(extraKms) * (config.deliveryChargePerKm || 5);
+        if (distanceKms > (config.baseDeliveryDistance ?? 2)) {
+            const extraKms = distanceKms - (config.baseDeliveryDistance ?? 2);
+            calculatedDeliveryFee += Math.ceil(extraKms) * (config.deliveryChargePerKm ?? 5);
         }
 
         // Ensure we strictly adopt the backend calculation to mitigate client-side tampering

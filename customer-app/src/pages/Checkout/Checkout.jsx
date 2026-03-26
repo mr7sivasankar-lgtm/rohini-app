@@ -97,8 +97,8 @@ const Checkout = () => {
             );
         }
         
-        const extraKm = Math.max(0, dist - (adminConfig.baseDeliveryDistance || 2));
-        deliveryFee = (adminConfig.baseDeliveryCharge || 20) + Math.ceil(extraKm) * (adminConfig.deliveryChargePerKm || 5);
+        const extraKm = Math.max(0, dist - (adminConfig.baseDeliveryDistance ?? 2));
+        deliveryFee = (adminConfig.baseDeliveryCharge ?? 20) + Math.ceil(extraKm) * (adminConfig.deliveryChargePerKm ?? 5);
     }
 
     const totalMrp = cart.reduce((sum, item) => sum + ((item.product.mrp || item.product.price || item.product.sellingPrice || 0) * item.quantity), 0);
