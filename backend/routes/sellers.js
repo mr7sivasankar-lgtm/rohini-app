@@ -566,7 +566,10 @@ router.get('/:id', async (req, res) => {
 // @access  Public
 router.post('/:id/view', async (req, res) => {
     try {
-        await Seller.findByIdAndUpdate(req.params.id, { $inc: { profileViews: 1 } });
+        const { isUnique } = req.body;
+        const update = { $inc: { totalViews: 1 } };
+        if (isUnique) update.$inc.profileViews = 1;
+        await Seller.findByIdAndUpdate(req.params.id, update);
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
