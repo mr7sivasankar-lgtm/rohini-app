@@ -1,6 +1,21 @@
 import { useState, useEffect } from 'react';
 import api, { getImageUrl } from '../utils/api';
 
+// Privacy masking helpers
+const maskName = (name) => {
+    if (!name) return 'Customer';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase() + '***';
+    return parts[0] + ' ' + parts[parts.length - 1].charAt(0).toUpperCase() + '***';
+};
+
+const maskPhone = (phone) => {
+    if (!phone) return null;
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 6) return '****';
+    return digits.slice(0, 2) + '****' + digits.slice(-2);
+};
+
 const OrdersTab = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -113,8 +128,16 @@ const OrdersTab = () => {
 
                             {/* Customer Info */}
                             <div style={{ marginBottom: '16px', fontSize: '14px', background: '#f8fafc', borderRadius: '8px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <div><span style={{ color: '#64748b' }}>👤 Customer:</span> <strong>{order.shippingAddress?.fullName || order.contactInfo?.name || 'N/A'}</strong></div>
-                                <div><span style={{ color: '#64748b' }}>📞 Phone:</span> <strong>{order.shippingAddress?.phone || order.contactInfo?.phone || order.user?.phone || 'N/A'}</strong></div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ color: '#64748b' }}>👤 Customer:</span>
+                                    <strong>{maskName(order.shippingAddress?.fullName || order.contactInfo?.name)}</strong>
+                                    <span style={{ fontSize: '10px', background: '#fef3c7', color: '#92400e', borderRadius: '3px', padding: '1px 5px', fontWeight: 600 }}>MASKED</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ color: '#64748b' }}>📞 Phone:</span>
+                                    <strong>{maskPhone(order.shippingAddress?.phone || order.contactInfo?.phone || order.user?.phone) || 'N/A'}</strong>
+                                    <span style={{ fontSize: '10px', background: '#fef3c7', color: '#92400e', borderRadius: '3px', padding: '1px 5px', fontWeight: 600 }}>MASKED</span>
+                                </div>
                                 {order.shippingAddress?.fullAddress && (
                                     <div style={{ fontSize: '12px', color: '#475569' }}>📍 {order.shippingAddress.fullAddress}{order.shippingAddress.city ? `, ${order.shippingAddress.city}` : ''}</div>
                                 )}
