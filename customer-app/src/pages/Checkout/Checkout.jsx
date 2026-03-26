@@ -27,12 +27,6 @@ const Checkout = () => {
     const [selectedAddress, setSelectedAddress] = useState(null);
     const [showAddressPicker, setShowAddressPicker] = useState(false);
     const [addrLoading, setAddrLoading] = useState(true);
-    const [showInlineForm, setShowInlineForm] = useState(false);
-    const [savingAddr, setSavingAddr] = useState(false);
-    const [editingAddrId, setEditingAddrId] = useState(null);
-    const [newAddr, setNewAddr] = useState({
-        name: user?.name || '', phone: user?.phone || '', street: '', landmark: '', city: '', state: '', pincode: '', addressType: 'Home'
-    });
 
     const [email, setEmail] = useState(user?.email || '');
     const [loading, setLoading] = useState(false);
@@ -68,133 +62,12 @@ const Checkout = () => {
         }
     };
 
-    const handleNewAddrChange = (e) => {
-        const { name, value } = e.target;
-        setNewAddr(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleAutoDetect = () => {
-        if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
-        navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                try {
-                    const res = await api.get(`/geocode/reverse?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
-                    if (res.data.success && res.data.data) {
-                        const d = res.data.data;
-                        setNewAddr(prev => ({
-                            ...prev,
-                            city: d.city || prev.city,
-                            state: d.state || prev.state,
-                            pincode: d.pincode || prev.pincode,
-                            street: d.address || prev.street
-                        }));
-                    }
-                } catch { /* ignore */ }
-            },
-            () => alert('Unable to detect location')
-        );
-    };
-
-    const handleSaveAddr = async () => {
-        if (!newAddr.name || !newAddr.phone || !newAddr.street || !newAddr.city || !newAddr.state || !newAddr.pincode) {
-            alert('Please fill all required fields');
-            return;
-        }
-        try {
-            setSavingAddr(true);
-            let res;
-            if (editingAddrId) {
-                res = await api.put(`/addresses/${editingAddrId}`, newAddr);
-            } else {
-                res = await api.post('/addresses', newAddr);
-            }
-            if (res.data.success) {
-                await fetchAddresses();
-                setShowInlineForm(false);
-                setEditingAddrId(null);
-                setNewAddr({ name: '', phone: '', street: '', landmark: '', city: '', state: '', pincode: '', addressType: 'Home' });
-                
-                const refreshed = await api.get('/addresses');
-                if (refreshed.data.success) {
-                    const list = refreshed.data.data || [];
-                    setAddresses(list);
-                    if (!editingAddrId) {
-                        setSelectedAddress(list[list.length - 1] || null);
-                    } else {
-                        setSelectedAddress(list.find(a => a._id === editingAddrId) || list[0] || null);
-                    }
-                }
-            }
-        } catch (err) {
-            alert(err.response?.data?.message || 'Failed to save address');
-        } finally {
-            setSavingAddr(false);
-        }
-    };
-
     const handleEditClick = (e, addr) => {
         e.stopPropagation();
-        setNewAddr(addr);
-        setEditingAddrId(addr._id);
-        setShowInlineForm(true);
+        navigate(`/addresses/edit/${addr._id}`);
     };
 
-    const handleAddNewClick = () => {
-        setNewAddr({ name: user?.name || '', phone: user?.phone || '', street: '', landmark: '', city: '', state: '', pincode: '', addressType: 'Home' });
-        setEditingAddrId(null);
-        setShowInlineForm(true);
-    };
 
-    const inlineInputStyle = {
-        width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8,
-        fontSize: 13, marginBottom: 8, boxSizing: 'border-box', outline: 'none'
-    };
-
-    const renderAddressForm = () => (
-        <div className="inline-addr-form" style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '12px' }}>
-            <h4 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 700 }}>{editingAddrId ? 'Edit Address' : 'New Address'}</h4>
-            <button
-                type="button"
-                className="auto-detect-btn"
-                onClick={handleAutoDetect}
-                style={{ width: '100%', padding: 10, marginBottom: 10, background: '#f0f4ff', border: '1px solid #c7d2fe', borderRadius: 8, color: '#4f46e5', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}
-            >
-                📍 Auto-detect Location (optional)
-            </button>
-            <input name="name" value={newAddr.name} onChange={handleNewAddrChange} placeholder="Full Name *" style={inlineInputStyle} />
-            <input name="phone" value={newAddr.phone} onChange={handleNewAddrChange} placeholder="Phone (10 digits) *" maxLength={10} style={inlineInputStyle} />
-            <input name="street" value={newAddr.street} onChange={handleNewAddrChange} placeholder="Street Address *" style={inlineInputStyle} />
-            <input name="landmark" value={newAddr.landmark || ''} onChange={handleNewAddrChange} placeholder="Landmark (optional)" style={inlineInputStyle} />
-            <div style={{ display: 'flex', gap: 8 }}>
-                <input name="city" value={newAddr.city} onChange={handleNewAddrChange} placeholder="City *" style={{ ...inlineInputStyle, flex: 1 }} />
-                <input name="state" value={newAddr.state} onChange={handleNewAddrChange} placeholder="State *" style={{ ...inlineInputStyle, flex: 1 }} />
-            </div>
-            <input name="pincode" value={newAddr.pincode} onChange={handleNewAddrChange} placeholder="Pincode *" maxLength={6} style={inlineInputStyle} />
-            <div style={{ display: 'flex', gap: 8 }}>
-                {['Home', 'Work', 'Other'].map(t => (
-                    <button
-                        key={t}
-                        type="button"
-                        onClick={() => setNewAddr(prev => ({ ...prev, addressType: t }))}
-                        style={{ flex: 1, padding: '8px 0', border: newAddr.addressType === t ? '2px solid #4f46e5' : '1px solid #e2e8f0', borderRadius: 8, background: newAddr.addressType === t ? '#eef2ff' : '#fff', color: newAddr.addressType === t ? '#4f46e5' : '#64748b', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}
-                    >{t}</button>
-                ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                <button
-                    type="button"
-                    onClick={() => { setShowInlineForm(false); setEditingAddrId(null); }}
-                    style={{ flex: 1, padding: 10, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}
-                >Cancel</button>
-                <button
-                    type="button"
-                    onClick={handleSaveAddr}
-                    disabled={savingAddr}
-                    style={{ flex: 1, padding: 10, border: 'none', borderRadius: 8, background: 'linear-gradient(135deg, #667eea, #764ba2)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13, opacity: savingAddr ? 0.6 : 1 }}
-                >{savingAddr ? 'Saving...' : 'Save Address'}</button>
-            </div>
-        </div>
-    );
 
     const calculateDistance = (lat1, lon1, lat2, lon2) => {
         if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
@@ -537,52 +410,43 @@ const Checkout = () => {
                             ) : (
                                 addresses.map((addr) => (
                                     <div key={addr._id}>
-                                        {editingAddrId === addr._id && showInlineForm ? (
-                                            renderAddressForm()
-                                        ) : (
-                                            <div
-                                                className={`addr-option ${selectedAddress?._id === addr._id ? 'selected' : ''}`}
-                                                onClick={() => { setSelectedAddress(addr); setShowAddressPicker(false); }}
-                                            >
-                                                <div className="addr-radio">
-                                                    <div className={`radio-dot ${selectedAddress?._id === addr._id ? 'active' : ''}`} />
-                                                </div>
-                                                <div className="addr-option-text" style={{ flex: 1 }}>
-                                                    <p className="addr-option-name">
-                                                        {addr.name}
-                                                        <span className="addr-type-badge">{addr.addressType}</span>
-                                                        {addr.isDefault && <span className="default-badge">Default</span>}
-                                                    </p>
-                                                    <p className="addr-option-line">{addr.street}{addr.landmark ? `, ${addr.landmark}` : ''}</p>
-                                                    <p className="addr-option-line">{addr.city}, {addr.state} – {addr.pincode}</p>
-                                                </div>
-                                                <div 
-                                                    className="addr-edit" 
-                                                    onClick={(e) => handleEditClick(e, addr)}
-                                                    style={{ padding: '8px', cursor: 'pointer', fontSize: '14px', color: '#64748b', display: 'flex', alignItems: 'center' }}
-                                                >
-                                                    ✏️
-                                                </div>
+                                        <div
+                                            className={`addr-option ${selectedAddress?._id === addr._id ? 'selected' : ''}`}
+                                            onClick={() => { setSelectedAddress(addr); setShowAddressPicker(false); }}
+                                        >
+                                            <div className="addr-radio">
+                                                <div className={`radio-dot ${selectedAddress?._id === addr._id ? 'active' : ''}`} />
                                             </div>
-                                        )}
+                                            <div className="addr-option-text" style={{ flex: 1 }}>
+                                                <p className="addr-option-name">
+                                                    {addr.name}
+                                                    <span className="addr-type-badge">{addr.addressType}</span>
+                                                    {addr.isDefault && <span className="default-badge">Default</span>}
+                                                </p>
+                                                <p className="addr-option-line">{addr.street}{addr.landmark ? `, ${addr.landmark}` : ''}</p>
+                                                <p className="addr-option-line">{addr.city}, {addr.state} – {addr.pincode}</p>
+                                            </div>
+                                            <div 
+                                                className="addr-edit" 
+                                                onClick={(e) => handleEditClick(e, addr)}
+                                                style={{ padding: '8px', cursor: 'pointer', fontSize: '14px', color: '#64748b', display: 'flex', alignItems: 'center' }}
+                                            >
+                                                ✏️
+                                            </div>
+                                        </div>
                                     </div>
                                 ))
                             )}
 
-                            {/* Add Address Button - inside scrollable area */}
-                            {(!showInlineForm || editingAddrId !== null) && (
-                                <button
-                                    type="button"
-                                    className="add-addr-btn"
-                                    onClick={handleAddNewClick}
-                                    style={{ margin: '8px 0 0', width: '100%' }}
-                                >
-                                    ➕ Add New Address
-                                </button>
-                            )}
-
-                            {/* Inline Address Form for New Address */}
-                            {showInlineForm && editingAddrId === null && renderAddressForm()}
+                            {/* Add Address Button */}
+                            <button
+                                type="button"
+                                className="add-addr-btn"
+                                onClick={() => navigate('/addresses/new')}
+                                style={{ margin: '8px 0 0', width: '100%' }}
+                            >
+                                ➕ Add New Address
+                            </button>
                         </div>
                     </div>
                 </div>

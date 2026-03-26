@@ -579,7 +579,7 @@
     max-width: 130px;
 }
 
-/* Location Picker Modal */
+/* Location Picker Modal (Bottom Sheet Design) */
 .location-picker-overlay {
     position: fixed;
     top: 0;
@@ -588,35 +588,44 @@
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
     display: flex;
-    align-items: flex-start;
+    align-items: flex-end; /* Align to bottom */
     justify-content: center;
-    padding-top: 80px;
     z-index: 200;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn 0.3s ease;
 }
 
 .location-picker-modal {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    width: 90%;
-    max-width: 360px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    animation: slideDown 0.3s ease;
+    background: #f8fafc; /* slightly off white background like swiggy */
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px 0px 20px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh; /* Scrollable if there are many saved addresses */
+    overflow-y: auto;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+    animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
 }
 
 .location-picker-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
 }
 
 .location-picker-header h3 {
     margin: 0;
     font-size: 18px;
-    font-weight: 700;
-    color: #1a1a2e;
+    font-weight: 800;
+    color: #0f172a;
 }
 
 .location-picker-close {
@@ -628,26 +637,131 @@
     padding: 4px;
 }
 
-.location-auto-btn {
-    width: 100%;
+/* Drawer actions (Add address, Use current location) */
+.drawer-actions-container {
+    background: #fff;
+    border-radius: 16px;
+    padding: 12px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    margin-bottom: 20px;
+}
+
+.drawer-action-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 0;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.drawer-action-row:active {
+    opacity: 0.6;
+}
+
+/* Saved Addresses Section */
+.saved-addr-section {
+    padding-bottom: 24px;
+}
+
+.saved-addr-divider {
+    display: flex;
+    align-items: center;
+    margin: 12px 0 16px 0;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+}
+
+.saved-addr-divider::before,
+.saved-addr-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+}
+
+.saved-addr-divider span {
+    padding: 0 16px;
+}
+
+.saved-addr-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.saved-addr-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px 16px;
+    display: flex;
+    gap: 16px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    transition: transform 0.2s;
+}
+
+.saved-addr-card:active {
+    transform: scale(0.98);
+}
+
+.sac-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding-top: 2px;
+}
+
+.sac-dist {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.sac-body {
+    flex: 1;
+}
+
+.sac-title {
+    font-weight: 700;
+    font-size: 15px;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+
+.sac-text {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.sac-phone {
+    font-size: 12px;
+    color: #475569;
+    font-weight: 500;
+    margin-bottom: 12px;
+}
+
+.sac-actions {
+    display: flex;
+    gap: 16px;
+}
+
+.sac-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 14px;
-    border: 2px solid #667eea;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #667eea10, #764ba210);
-    color: #667eea;
-    font-size: 15px;
-    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
-}
-
-.location-auto-btn:hover {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
 }
 
 .location-divider {
