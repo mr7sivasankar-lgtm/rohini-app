@@ -46,7 +46,7 @@ const SalesTab = () => {
                 {cards.map((card, idx) => (
                     <div key={idx} style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                         <div style={{ color: '#64748b', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>{card.label}</div>
-                        <div style={{ color: '#0f172a', fontSize: '32px', fontWeight: 700, marginBottom: '4px' }}>₹{card.revenue.toLocaleString('en-IN')}</div>
+                        <div style={{ color: '#0f172a', fontSize: '32px', fontWeight: 700, marginBottom: '4px' }}>₹{(card.revenue ?? 0).toLocaleString('en-IN')}</div>
                         <div style={{ color: '#10b981', fontSize: '13px', fontWeight: 500 }}>{card.orders} Orders</div>
                     </div>
                 ))}
@@ -97,7 +97,7 @@ const SalesTab = () => {
                                         <div style={{ fontSize: '12px', color: '#64748b' }}>{prod.orders} Orders</div>
                                     </div>
                                     <div style={{ fontSize: '15px', fontWeight: 700, color: '#10b981' }}>
-                                        ₹{prod.revenue.toLocaleString('en-IN')}
+                                        ₹{(prod.revenue ?? 0).toLocaleString('en-IN')}
                                     </div>
                                 </div>
                             ))}

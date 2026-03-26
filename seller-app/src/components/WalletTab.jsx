@@ -58,7 +58,7 @@ const WalletTab = () => {
             <div style={{ background: 'linear-gradient(135deg, #4f46e5, #3b82f6)', color: 'white', padding: 30, borderRadius: 16, marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.3)' }}>
                 <div>
                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 500, opacity: 0.9 }}>Available Balance</h3>
-                    <h1 style={{ margin: '8px 0 0', fontSize: 36, fontWeight: 800 }}>₹{balance.toFixed(2)}</h1>
+                    <h1 style={{ margin: '8px 0 0', fontSize: 36, fontWeight: 800 }}>₹{(balance ?? 0).toFixed(2)}</h1>
                 </div>
                 <button 
                     onClick={() => setShowWithdrawModal(true)}
@@ -105,7 +105,7 @@ const WalletTab = () => {
                                         </span>
                                     </td>
                                     <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 700, textAlign: 'right', color: txn.type === 'CREDIT' ? '#16a34a' : '#dc2626' }}>
-                                        {txn.type === 'CREDIT' ? '+' : '-'}₹{txn.amount.toFixed(2)}
+                                        {txn.type === 'CREDIT' ? '+' : '-'}₹{(txn.amount ?? 0).toFixed(2)}
                                     </td>
                                 </tr>
                             ))}
@@ -131,7 +131,7 @@ const WalletTab = () => {
                                     required 
                                     style={{ width: '100%', padding: '10px', fontSize: 16, border: '1px solid #cbd5e1', borderRadius: 8, boxSizing: 'border-box' }}
                                 />
-                                <small style={{ color: '#64748b', display: 'block', marginTop: 6 }}>Available: ₹{balance.toFixed(2)}</small>
+                                <small style={{ color: '#64748b', display: 'block', marginTop: 6 }}>Available: ₹{(balance ?? 0).toFixed(2)}</small>
                             </div>
                             <div style={{ display: 'flex', gap: 12 }}>
                                 <button type="button" onClick={() => setShowWithdrawModal(false)} style={{ flex: 1, padding: '10px', border: '1px solid #e2e8f0', background: 'white', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Cancel</button>

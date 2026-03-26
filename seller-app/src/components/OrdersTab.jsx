@@ -131,7 +131,7 @@ const OrdersTab = () => {
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
                                 <div style={{ fontSize: '14px' }}>
-                                    Total: <strong style={{ fontSize: '18px' }}>₹{order.total.toFixed(0)}</strong>
+                                    Total: <strong style={{ fontSize: '18px' }}>₹{(order.total ?? order.totalAmount ?? 0).toFixed(0)}</strong>
                                 </div>
                                 <div className="order-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                     {order.status === 'Placed' && (
