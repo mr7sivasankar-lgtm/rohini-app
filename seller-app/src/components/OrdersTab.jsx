@@ -104,119 +104,123 @@ const OrdersTab = () => {
                      <p>When customers buy your products, they will appear here.</p>
                  </div>
             ) : (
-                <div className="orders-grid" style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))' }}>
-                    {filteredOrders.map(order => (
-                        <div key={order._id} className="order-card" style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-                                <div>
-                                    <h3 style={{ margin: '0 0 4px', fontSize: '16px' }}>#{(order.orderId || order._id?.toString())?.slice(-6)}</h3>
-                                    <span style={{ fontSize: '12px', color: '#64748b' }}>
-                                        {new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                                    </span>
-                                </div>
-                                <span className={`status-badge`} style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, height: 'fit-content', 
-                                    background: ['Placed', 'Return Requested'].includes(order.status) ? '#fef3c7' : 
-                                                ['Delivered', 'Return Completed'].includes(order.status) ? '#dcfce7' : 
-                                                ['Cancelled', 'Rejected'].includes(order.status) ? '#fee2e2' : '#eef2ff', 
-                                    color: ['Placed', 'Return Requested'].includes(order.status) ? '#b45309' : 
-                                           ['Delivered', 'Return Completed'].includes(order.status) ? '#16a34a' : 
-                                           ['Cancelled', 'Rejected'].includes(order.status) ? '#dc2626' : '#4f46e5' 
-                                }}>
-                                    {order.status}
-                                </span>
-                            </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {filteredOrders.map(order => {
+                        const statusColor =
+                            ['Placed', 'Return Requested'].includes(order.status) ? '#f59e0b' :
+                            ['Delivered', 'Return Completed'].includes(order.status) ? '#22c55e' :
+                            ['Cancelled', 'Rejected'].includes(order.status) ? '#ef4444' : '#6366f1';
 
-                            {/* Customer Info */}
-                            <div style={{ marginBottom: '16px', fontSize: '14px', background: '#f8fafc', borderRadius: '8px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ color: '#64748b' }}>👤 Customer:</span>
-                                    <strong>{maskName(order.shippingAddress?.fullName || order.contactInfo?.name)}</strong>
-                                    <span style={{ fontSize: '10px', background: '#fef3c7', color: '#92400e', borderRadius: '3px', padding: '1px 5px', fontWeight: 600 }}>MASKED</span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ color: '#64748b' }}>📞 Phone:</span>
-                                    <strong>{maskPhone(order.shippingAddress?.phone || order.contactInfo?.phone || order.user?.phone) || 'N/A'}</strong>
-                                    <span style={{ fontSize: '10px', background: '#fef3c7', color: '#92400e', borderRadius: '3px', padding: '1px 5px', fontWeight: 600 }}>MASKED</span>
-                                </div>
-                                {order.shippingAddress?.fullAddress && (
-                                    <div style={{ fontSize: '12px', color: '#475569' }}>📍 {order.shippingAddress.fullAddress}{order.shippingAddress.city ? `, ${order.shippingAddress.city}` : ''}</div>
-                                )}
-                            </div>
+                        const statusBg =
+                            ['Placed', 'Return Requested'].includes(order.status) ? '#fef3c7' :
+                            ['Delivered', 'Return Completed'].includes(order.status) ? '#dcfce7' :
+                            ['Cancelled', 'Rejected'].includes(order.status) ? '#fee2e2' : '#eef2ff';
 
-                            {/* Order Items */}
-                            <div className="order-items" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-                                {order.items.map((item, idx) => (
-                                    <div key={idx} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', background: '#fafbff', borderRadius: '10px', padding: '10px', border: '1px solid #e8ecf5' }}>
-                                        {/* Clickable image */}
-                                        <img
-                                            src={getImageUrl(item.image)}
-                                            alt={item.name}
-                                            style={{ width: '64px', height: '64px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0, cursor: 'pointer', border: '1px solid #e2e8f0' }}
-                                            onClick={() => window.open(getImageUrl(item.image), '_blank')}
-                                            onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }}
-                                        />
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b', marginBottom: '4px' }}>{item.name}</div>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
-                                                <span style={{ fontSize: '12px', background: '#e0e7ff', color: '#4338ca', borderRadius: '4px', padding: '2px 7px', fontWeight: 600 }}>Qty: {item.quantity}</span>
-                                                {item.size && <span style={{ fontSize: '12px', background: '#fef3c7', color: '#92400e', borderRadius: '4px', padding: '2px 7px', fontWeight: 600 }}>Size: {item.size}</span>}
-                                                {item.color && <span style={{ fontSize: '12px', background: '#fce7f3', color: '#9d174d', borderRadius: '4px', padding: '2px 7px', fontWeight: 600 }}>Color: {item.color}</span>}
-                                            </div>
-                                            {item.productCode && (
-                                                <div style={{ fontSize: '11px', color: '#6366f1', fontWeight: 600, fontFamily: 'monospace', background: '#eef2ff', display: 'inline-block', borderRadius: '4px', padding: '1px 6px' }}>
-                                                    Code: {item.productCode}
-                                                </div>
-                                            )}
+                        const statusText =
+                            ['Placed', 'Return Requested'].includes(order.status) ? '#b45309' :
+                            ['Delivered', 'Return Completed'].includes(order.status) ? '#16a34a' :
+                            ['Cancelled', 'Rejected'].includes(order.status) ? '#dc2626' : '#4f46e5';
+
+                        return (
+                            <div key={order._id} style={{
+                                display: 'flex',
+                                alignItems: 'stretch',
+                                background: 'white',
+                                borderRadius: '10px',
+                                border: '1px solid #e2e8f0',
+                                overflow: 'hidden',
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
+                            }}>
+                                {/* Left accent bar */}
+                                <div style={{ width: '5px', background: statusColor, flexShrink: 0 }} />
+
+                                {/* Main content */}
+                                <div style={{ flex: 1, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+
+                                    {/* Order ID + Date */}
+                                    <div style={{ minWidth: '90px' }}>
+                                        <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>
+                                            #{(order.orderId || order._id?.toString())?.slice(-6)}
                                         </div>
-                                        <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b', flexShrink: 0 }}>₹{((item.sellingPrice ?? 0) * item.quantity).toFixed(0)}</div>
+                                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                                            {new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
-                                <div style={{ fontSize: '14px' }}>
-                                    Total: <strong style={{ fontSize: '18px' }}>₹{(order.total ?? order.totalAmount ?? 0).toFixed(0)}</strong>
+                                    {/* Status badge */}
+                                    <span style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, background: statusBg, color: statusText, whiteSpace: 'nowrap' }}>
+                                        {order.status}
+                                    </span>
+
+                                    {/* Customer (masked) */}
+                                    <div style={{ minWidth: '110px' }}>
+                                        <div style={{ fontSize: '12px', color: '#64748b' }}>👤 {maskName(order.shippingAddress?.fullName || order.contactInfo?.name)}</div>
+                                        <div style={{ fontSize: '12px', color: '#64748b' }}>📞 {maskPhone(order.shippingAddress?.phone || order.contactInfo?.phone || order.user?.phone) || 'N/A'}</div>
+                                    </div>
+
+                                    {/* Items inline */}
+                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '180px' }}>
+                                        {order.items.map((item, idx) => (
+                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <img
+                                                    src={getImageUrl(item.image)}
+                                                    alt={item.name}
+                                                    style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0, cursor: 'pointer', border: '1px solid #e2e8f0' }}
+                                                    onClick={() => window.open(getImageUrl(item.image), '_blank')}
+                                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                                />
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
+                                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
+                                                        <span style={{ fontSize: '11px', background: '#e0e7ff', color: '#4338ca', borderRadius: '3px', padding: '1px 5px', fontWeight: 600 }}>x{item.quantity}</span>
+                                                        {item.size && <span style={{ fontSize: '11px', background: '#fef3c7', color: '#92400e', borderRadius: '3px', padding: '1px 5px', fontWeight: 600 }}>{item.size}</span>}
+                                                        {item.color && <span style={{ fontSize: '11px', background: '#fce7f3', color: '#9d174d', borderRadius: '3px', padding: '1px 5px', fontWeight: 600 }}>{item.color}</span>}
+                                                        {item.productCode && <span style={{ fontSize: '11px', background: '#eef2ff', color: '#6366f1', borderRadius: '3px', padding: '1px 5px', fontWeight: 600, fontFamily: 'monospace' }}>#{item.productCode}</span>}
+                                                    </div>
+                                                </div>
+                                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', flexShrink: 0 }}>₹{((item.sellingPrice ?? 0) * item.quantity).toFixed(0)}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Total */}
+                                    <div style={{ textAlign: 'right', minWidth: '70px' }}>
+                                        <div style={{ fontSize: '11px', color: '#94a3b8' }}>Total</div>
+                                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b' }}>₹{(order.total ?? order.totalAmount ?? 0).toFixed(0)}</div>
+                                    </div>
                                 </div>
-                                <div className="order-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                    {order.status === 'Placed' && (
-                                        <>
-                                            <button 
-                                                style={{ padding: '8px 16px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                                                onClick={() => updateOrderStatus(order._id, 'Accepted')}
-                                            >Accept</button>
-                                            <button 
-                                                style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                                                onClick={() => updateOrderStatus(order._id, 'Rejected')}
-                                            >Reject</button>
-                                        </>
-                                    )}
+
+                                {/* Right: Action buttons */}
+                                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px', padding: '12px', borderLeft: '1px solid #f1f5f9', background: '#fafafa', flexShrink: 0 }}>
+                                    {order.status === 'Placed' && (<>
+                                        <button style={{ padding: '7px 14px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                            onClick={() => updateOrderStatus(order._id, 'Accepted')}>✅ Accept</button>
+                                        <button style={{ padding: '7px 14px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                            onClick={() => updateOrderStatus(order._id, 'Rejected')}>❌ Reject</button>
+                                    </>)}
                                     {order.status === 'Accepted' && (
-                                        <button 
-                                            style={{ padding: '8px 16px', background: '#eab308', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                                            onClick={() => updateOrderStatus(order._id, 'Ready for Pickup')}
-                                            className="pulse-btn"
-                                        >Mark Ready</button>
+                                        <button style={{ padding: '7px 14px', background: '#eab308', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                            onClick={() => updateOrderStatus(order._id, 'Ready for Pickup')} className="pulse-btn">📦 Mark Ready</button>
                                     )}
-                                    {order.status === 'Return Requested' && (
-                                        <>
-                                            <button style={{ padding: '8px 16px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                                                onClick={() => updateOrderStatus(order._id, 'Return Approved')}>Approve Return</button>
-                                            <button style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                                                onClick={() => updateOrderStatus(order._id, 'Return Rejected')}>Reject Return</button>
-                                        </>
-                                    )}
-                                    {order.status === 'Exchange Requested' && (
-                                        <>
-                                            <button style={{ padding: '8px 16px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                                                onClick={() => updateOrderStatus(order._id, 'Exchange Approved')}>Approve Exchange</button>
-                                            <button style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                                                onClick={() => updateOrderStatus(order._id, 'Exchange Rejected')}>Reject Exchange</button>
-                                        </>
+                                    {order.status === 'Return Requested' && (<>
+                                        <button style={{ padding: '7px 14px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                            onClick={() => updateOrderStatus(order._id, 'Return Approved')}>✅ Approve</button>
+                                        <button style={{ padding: '7px 14px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                            onClick={() => updateOrderStatus(order._id, 'Return Rejected')}>❌ Reject</button>
+                                    </>)}
+                                    {order.status === 'Exchange Requested' && (<>
+                                        <button style={{ padding: '7px 14px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                            onClick={() => updateOrderStatus(order._id, 'Exchange Approved')}>✅ Approve</button>
+                                        <button style={{ padding: '7px 14px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                            onClick={() => updateOrderStatus(order._id, 'Exchange Rejected')}>❌ Reject</button>
+                                    </>)}
+                                    {!['Placed','Accepted','Return Requested','Exchange Requested'].includes(order.status) && (
+                                        <span style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', padding: '0 8px' }}>—</span>
                                     )}
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
             <style>{`
