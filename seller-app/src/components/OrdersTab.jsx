@@ -111,20 +111,41 @@ const OrdersTab = () => {
                                 </span>
                             </div>
 
-                            <div className="order-customer" style={{ marginBottom: '16px', fontSize: '14px' }}>
-                                <strong>Customer:</strong> {order.shippingAddress?.fullName} <br />
-                                <strong>Phone:</strong> {order.shippingAddress?.phone}
+                            {/* Customer Info */}
+                            <div style={{ marginBottom: '16px', fontSize: '14px', background: '#f8fafc', borderRadius: '8px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div><span style={{ color: '#64748b' }}>👤 Customer:</span> <strong>{order.shippingAddress?.fullName || order.contactInfo?.name || 'N/A'}</strong></div>
+                                <div><span style={{ color: '#64748b' }}>📞 Phone:</span> <strong>{order.shippingAddress?.phone || order.contactInfo?.phone || order.user?.phone || 'N/A'}</strong></div>
+                                {order.shippingAddress?.fullAddress && (
+                                    <div style={{ fontSize: '12px', color: '#475569' }}>📍 {order.shippingAddress.fullAddress}{order.shippingAddress.city ? `, ${order.shippingAddress.city}` : ''}</div>
+                                )}
                             </div>
 
-                            <div className="order-items" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+                            {/* Order Items */}
+                            <div className="order-items" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
                                 {order.items.map((item, idx) => (
-                                    <div key={idx} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                        <img src={getImageUrl(item.image)} alt={item.name} style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} onError={(e) => e.target.style.display = 'none'} />
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: '14px', fontWeight: 500 }}>{item.name}</div>
-                                            <div style={{ fontSize: '12px', color: '#64748b' }}>Qty: {item.quantity} | {item.size ? `Size: ${item.size}` : ''}</div>
+                                    <div key={idx} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', background: '#fafbff', borderRadius: '10px', padding: '10px', border: '1px solid #e8ecf5' }}>
+                                        {/* Clickable image */}
+                                        <img
+                                            src={getImageUrl(item.image)}
+                                            alt={item.name}
+                                            style={{ width: '64px', height: '64px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0, cursor: 'pointer', border: '1px solid #e2e8f0' }}
+                                            onClick={() => window.open(getImageUrl(item.image), '_blank')}
+                                            onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }}
+                                        />
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b', marginBottom: '4px' }}>{item.name}</div>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
+                                                <span style={{ fontSize: '12px', background: '#e0e7ff', color: '#4338ca', borderRadius: '4px', padding: '2px 7px', fontWeight: 600 }}>Qty: {item.quantity}</span>
+                                                {item.size && <span style={{ fontSize: '12px', background: '#fef3c7', color: '#92400e', borderRadius: '4px', padding: '2px 7px', fontWeight: 600 }}>Size: {item.size}</span>}
+                                                {item.color && <span style={{ fontSize: '12px', background: '#fce7f3', color: '#9d174d', borderRadius: '4px', padding: '2px 7px', fontWeight: 600 }}>Color: {item.color}</span>}
+                                            </div>
+                                            {item.productCode && (
+                                                <div style={{ fontSize: '11px', color: '#6366f1', fontWeight: 600, fontFamily: 'monospace', background: '#eef2ff', display: 'inline-block', borderRadius: '4px', padding: '1px 6px' }}>
+                                                    Code: {item.productCode}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div style={{ fontWeight: 600, fontSize: '14px' }}>₹{((item.sellingPrice || 0) * item.quantity).toFixed(0)}</div>
+                                        <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b', flexShrink: 0 }}>₹{((item.sellingPrice ?? 0) * item.quantity).toFixed(0)}</div>
                                     </div>
                                 ))}
                             </div>
