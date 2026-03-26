@@ -78,8 +78,8 @@ router.post('/create-order', protect, async (req, res) => {
                 shippingAddress.latitude, shippingAddress.longitude,
                 sellerLocation.lat, sellerLocation.lng
             );
-            if (distanceKms > (config.baseDeliveryDistance || 2)) {
-                calculatedDeliveryFee += Math.ceil(distanceKms - (config.baseDeliveryDistance || 2)) * (config.deliveryChargePerKm || 5);
+            if (distanceKms > (config.baseDeliveryDistance ?? 2)) {
+                calculatedDeliveryFee += Math.ceil(distanceKms - (config.baseDeliveryDistance ?? 2)) * (config.deliveryChargePerKm ?? 5);
             }
         }
         const finalDeliveryFee = Math.round(calculatedDeliveryFee);
@@ -193,8 +193,8 @@ router.post('/verify', protect, async (req, res) => {
                 shippingAddress.latitude, shippingAddress.longitude,
                 sellerLocation.lat, sellerLocation.lng
             );
-            if (distanceKms > (config.baseDeliveryDistance || 2)) {
-                calculatedDeliveryFee += Math.ceil(distanceKms - (config.baseDeliveryDistance || 2)) * (config.deliveryChargePerKm || 5);
+            if (distanceKms > (config.baseDeliveryDistance ?? 2)) {
+                calculatedDeliveryFee += Math.ceil(distanceKms - (config.baseDeliveryDistance ?? 2)) * (config.deliveryChargePerKm ?? 5);
             }
         }
         const finalDeliveryFee = Math.round(calculatedDeliveryFee);
