@@ -190,8 +190,8 @@ const OrdersTab = () => {
                                                     </div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '80px' }}>
                                                         <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Category</span>
-                                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }} title={item.product?.category}>
-                                                            {item.product?.category || '-'}
+                                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }} title={item.product?.category?.name}>
+                                                            {item.product?.category?.name || '-'}
                                                         </span>
                                                     </div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '80px' }}>

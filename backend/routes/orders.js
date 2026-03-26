@@ -290,7 +290,14 @@ router.get('/seller', sellerProtect, async (req, res) => {
         const orders = await Order.find({ seller: req.seller._id })
             .populate('user', 'name phone email')
             .populate('deliveryPartner', 'name phone location')
-            .populate('items.product', 'category')
+            .populate({
+                path: 'items.product',
+                select: 'category',
+                populate: {
+                    path: 'category',
+                    select: 'name'
+                }
+            })
             .sort({ createdAt: -1 });
 
         res.status(200).json({
