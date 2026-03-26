@@ -1164,10 +1164,10 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                     </a>
                   )}
                 </td>
-                <td style={{ fontWeight: 600 }}>₹{order.total.toFixed(2)}</td>
+                <td style={{ fontWeight: 600 }}>₹{(order.total ?? order.totalAmount ?? 0).toFixed(2)}</td>
                 <td>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
-                    <span className={`status-badge status-${order.status.toLowerCase().replace(/ /g, '-')}`}>
+                    <span className={`status-badge status-${order.status?.toLowerCase().replace(/ /g, '-')}`}>
                       {order.status === 'Delivered' ? '✔ Delivered' :
                         order.status === 'Cancelled' ? '❌ Cancelled' :
                           order.status}
