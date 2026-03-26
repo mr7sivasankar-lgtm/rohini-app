@@ -180,51 +180,59 @@ const Home = () => {
                     Hey {user?.name?.split(' ')[0] || 'there'} 👋
                 </span>
             </div>
-
             {/* Location Picker Modal (Swiggy UI Drawer) */}
             {showLocationPicker && (
                 <div className="location-picker-overlay" onClick={() => setShowLocationPicker(false)}>
                     <div className="location-picker-modal" onClick={(e) => e.stopPropagation()}>
+                        {/* Header */}
                         <div className="location-picker-header" style={{ marginBottom: '16px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => setShowLocationPicker(false)}>
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a1a2e" strokeWidth="2.5">
                                     <polyline points="6 9 12 15 18 9" />
                                 </svg>
-                                <h3 style={{ fontSize: '18px', fontWeight: '800' }}>Select a location</h3>
+                                <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>Select a location</h3>
                             </div>
                         </div>
 
-                        <div className="location-search-wrap" style={{ marginBottom: '24px' }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }}>
-                                <circle cx="11" cy="11" r="8" />
-                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                            </svg>
-                            <input
-                                type="text"
-                                className="location-search-input"
-                                style={{ paddingLeft: '44px', borderRadius: '14px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', height: '52px', fontSize: '15px' }}
-                                placeholder="Search for area, street name..."
-                                value={locSearch}
-                                onChange={(e) => handleLocSearchChange(e.target.value)}
-                                autoFocus
-                            />
-                            {locSearching && <div className="location-searching">Searching...</div>}
+                        {/* Search bar — renders in flow, suggestions push content down */}
+                        <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: locSuggestions.length > 0 ? '0' : '24px', overflow: 'hidden' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: '52px', gap: '12px' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                                <input
+                                    type="text"
+                                    style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', color: '#1a1a2e', background: 'transparent' }}
+                                    placeholder="Search for area, street name..."
+                                    value={locSearch}
+                                    onChange={(e) => handleLocSearchChange(e.target.value)}
+                                    autoFocus
+                                />
+                                {locSearch && (
+                                    <button onClick={() => { setLocSearch(''); setLocSuggestions([]); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '18px', padding: '4px' }}>✕</button>
+                                )}
+                            </div>
 
+                            {/* Suggestions in-flow: not absolute. They extend inside the white card. */}
+                            {locSearching && (
+                                <div style={{ padding: '12px 16px', color: '#94a3b8', fontSize: '14px', borderTop: '1px solid #f1f5f9' }}>Searching...</div>
+                            )}
                             {locSuggestions.length > 0 && (
-                                <div className="location-suggestions" style={{ position: 'absolute', width: '100%', zIndex: 10, background: '#fff', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+                                <div style={{ borderTop: '1px solid #f1f5f9', maxHeight: '240px', overflowY: 'auto' }}>
                                     {locSuggestions.map((item, idx) => (
                                         <div
                                             key={idx}
-                                            className="location-suggestion-item"
                                             onClick={() => handleSelectLocation(item)}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', cursor: 'pointer', borderBottom: idx < locSuggestions.length - 1 ? '1px solid #f8fafc' : 'none' }}
                                         >
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" style={{ flexShrink: 0 }}>
                                                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                                 <circle cx="12" cy="10" r="3" />
                                             </svg>
-                                            <div className="suggestion-details">
-                                                <div className="suggestion-name">{item.locality || item.city || item.displayName?.split(',')[0]}</div>
-                                                <div className="suggestion-sub">{[item.city, item.state, item.pincode].filter(Boolean).join(', ')}</div>
+                                            <div>
+                                                <div style={{ fontWeight: 600, fontSize: '14px', color: '#0f172a' }}>{item.locality || item.city || item.displayName?.split(',')[0]}</div>
+                                                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{[item.city, item.state, item.pincode].filter(Boolean).join(', ')}</div>
                                             </div>
                                         </div>
                                     ))}
@@ -232,65 +240,68 @@ const Home = () => {
                             )}
                         </div>
 
+                        {/* Only show quick-actions and saved addresses when not actively searching */}
                         {!locSearch && (
-                            <div className="drawer-actions-container">
-                                <div className="drawer-action-row" onClick={() => { setShowLocationPicker(false); navigate('/addresses/new'); }}>
-                                    <span style={{ color: '#ef4444', fontSize: '24px', fontWeight: '400', width: '24px', textAlign: 'center', lineHeight: 1 }}>+</span>
-                                    <span style={{ color: '#ef4444', fontWeight: '600', flex: 1, fontSize: '15px' }}>Add address</span>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
-                                </div>
+                            <>
+                                <div className="drawer-actions-container" style={{ marginTop: '24px' }}>
+                                    <div className="drawer-action-row" onClick={() => { setShowLocationPicker(false); navigate('/addresses/new'); }}>
+                                        <span style={{ color: '#ef4444', fontSize: '24px', fontWeight: '400', width: '24px', textAlign: 'center', lineHeight: 1 }}>+</span>
+                                        <span style={{ color: '#ef4444', fontWeight: '600', flex: 1, fontSize: '15px' }}>Add address</span>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+                                    </div>
 
-                                <div style={{ height: '1px', background: '#f1f5f9', margin: '0 0 0 44px' }} />
+                                    <div style={{ height: '1px', background: '#f1f5f9', margin: '0 0 0 44px' }} />
 
-                                <div className="drawer-action-row" onClick={handleAutoDetect} style={{ alignItems: 'flex-start' }}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" style={{ marginTop: '2px', width: '24px', flexShrink: 0 }}>
-                                        <circle cx="12" cy="12" r="10" />
-                                        <circle cx="12" cy="12" r="3" />
-                                        <line x1="12" y1="2" x2="12" y2="6" />
-                                        <line x1="12" y1="18" x2="12" y2="22" />
-                                        <line x1="2" y1="12" x2="6" y2="12" />
-                                        <line x1="18" y1="12" x2="22" y2="12" />
-                                    </svg>
-                                    <div style={{ flex: 1 }}>
-                                        <span style={{ color: '#ef4444', fontWeight: '600', display: 'block', marginBottom: '4px', fontSize: '15px' }}>Use your current location</span>
-                                        {fullAddress ? (
-                                            <span style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.4', display: 'block' }}>{fullAddress}</span>
-                                        ) : (
-                                            <span style={{ fontSize: '13px', color: '#64748b' }}>Tap to automatically detect</span>
-                                        )}
+                                    <div className="drawer-action-row" onClick={handleAutoDetect} style={{ alignItems: 'flex-start' }}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" style={{ marginTop: '2px', width: '24px', flexShrink: 0 }}>
+                                            <circle cx="12" cy="12" r="10" />
+                                            <circle cx="12" cy="12" r="3" />
+                                            <line x1="12" y1="2" x2="12" y2="6" />
+                                            <line x1="12" y1="18" x2="12" y2="22" />
+                                            <line x1="2" y1="12" x2="6" y2="12" />
+                                            <line x1="18" y1="12" x2="22" y2="12" />
+                                        </svg>
+                                        <div style={{ flex: 1 }}>
+                                            <span style={{ color: '#ef4444', fontWeight: '600', display: 'block', marginBottom: '4px', fontSize: '15px' }}>Use your current location</span>
+                                            {fullAddress ? (
+                                                <span style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.4', display: 'block' }}>{fullAddress}</span>
+                                            ) : (
+                                                <span style={{ fontSize: '13px', color: '#64748b' }}>Tap to automatically detect</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
 
-                        {!locSearch && user && savedAddresses.length > 0 && (
-                            <div className="saved-addr-section">
-                                <div className="saved-addr-divider">
-                                    <span>SAVED ADDRESSES</span>
-                                </div>
-                                <div className="saved-addr-list">
-                                    {savedAddresses.map(addr => (
-                                        <div key={addr._id} className="saved-addr-card" onClick={() => handleSavedAddressSelect(addr)}>
-                                            <div className="sac-icon">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.5">
-                                                    {addr.addressType === 'Home' ? <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /> : 
-                                                     addr.addressType === 'Work' ? <rect x="2" y="7" width="20" height="14" rx="2" ry="2" /> :
-                                                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />}
-                                                </svg>
-                                            </div>
-                                            <div className="sac-body">
-                                                <div className="sac-title">{addr.addressType}</div>
-                                                <div className="sac-text">{addr.street}, {addr.city}, {addr.state}</div>
-                                                <div className="sac-phone">Phone number: +91-{addr.phone}</div>
-                                                <div className="sac-actions">
-                                                    <button className="sac-btn" onClick={(e) => { e.stopPropagation(); navigate(`/addresses/edit/${addr._id}`); }}>...</button>
-                                                    <button className="sac-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
-                                                </div>
-                                            </div>
+                                {user && savedAddresses.length > 0 && (
+                                    <div className="saved-addr-section">
+                                        <div className="saved-addr-divider">
+                                            <span>SAVED ADDRESSES</span>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
+                                        <div className="saved-addr-list">
+                                            {savedAddresses.map(addr => (
+                                                <div key={addr._id} className="saved-addr-card" onClick={() => handleSavedAddressSelect(addr)}>
+                                                    <div className="sac-icon">
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.5">
+                                                            {addr.addressType === 'Home' ? <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /> :
+                                                             addr.addressType === 'Work' ? <rect x="2" y="7" width="20" height="14" rx="2" ry="2" /> :
+                                                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />}
+                                                        </svg>
+                                                    </div>
+                                                    <div className="sac-body">
+                                                        <div className="sac-title">{addr.addressType}</div>
+                                                        <div className="sac-text">{addr.street}, {addr.city}, {addr.state}</div>
+                                                        <div className="sac-phone">Phone number: +91-{addr.phone}</div>
+                                                        <div className="sac-actions">
+                                                            <button className="sac-btn" onClick={(e) => { e.stopPropagation(); navigate(`/addresses/edit/${addr._id}`); }}>...</button>
+                                                            <button className="sac-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
