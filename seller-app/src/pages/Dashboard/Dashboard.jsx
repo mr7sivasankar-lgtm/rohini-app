@@ -92,7 +92,7 @@ const Dashboard = () => {
                 </header>
 
                 <div className="dashboard-content">
-                    {activeTab === 'dashboard' && <DashboardTab />}
+                    {activeTab === 'dashboard' && <DashboardTab onTabChange={setActiveTab} />}
                     {activeTab === 'orders' && <OrdersTab />}
                     {activeTab === 'products' && <ProductsTab />}
                     {activeTab === 'sales' && <SalesTab />}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api, { getImageUrl } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 
-const DashboardTab = () => {
+const DashboardTab = ({ onTabChange }) => {
     const { seller } = useAuth();
     const [stats, setStats] = useState({
         ordersToday: 0,
@@ -35,12 +35,12 @@ const DashboardTab = () => {
     if (loading) return <div className="loading"><div className="spinner" style={{ borderTopColor: '#4f46e5' }}></div></div>;
 
     const statCards = [
-        { title: 'Unique Visitors', value: seller?.profileViews || 0, icon: '👁️', bg: 'linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%)', color: '#c026d3', shadow: 'rgba(192, 38, 211, 0.15)' },
-        { title: 'Orders Today', value: stats.ordersToday, icon: '📦', bg: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', color: '#2563eb', shadow: 'rgba(37, 99, 235, 0.15)' },
-        { title: 'Pending Orders', value: stats.pendingOrders, icon: '⏳', bg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', color: '#d97706', shadow: 'rgba(217, 119, 6, 0.15)' },
-        { title: 'Revenue Today', value: `₹${stats.revenueToday.toLocaleString('en-IN')}`, icon: '₹', bg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', color: '#16a34a', shadow: 'rgba(22, 163, 74, 0.15)' },
-        { title: 'Delivered (Total)', value: stats.delivered, icon: '✅', bg: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', color: '#7c3aed', shadow: 'rgba(124, 58, 237, 0.15)' },
-        { title: 'Returns/Exchanges', value: stats.returned + stats.exchanged, icon: '🔄', bg: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)', color: '#dc2626', shadow: 'rgba(220, 38, 38, 0.15)' }
+        { title: 'Unique Visitors', value: seller?.profileViews || 0, icon: '👁️', bg: 'linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%)', color: '#c026d3', shadow: 'rgba(192, 38, 211, 0.15)', tab: 'profile' },
+        { title: 'Orders Today', value: stats.ordersToday, icon: '📦', bg: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', color: '#2563eb', shadow: 'rgba(37, 99, 235, 0.15)', tab: 'orders' },
+        { title: 'Pending Orders', value: stats.pendingOrders, icon: '⏳', bg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', color: '#d97706', shadow: 'rgba(217, 119, 6, 0.15)', tab: 'orders' },
+        { title: 'Revenue Today', value: `₹${stats.revenueToday.toLocaleString('en-IN')}`, icon: '₹', bg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', color: '#16a34a', shadow: 'rgba(22, 163, 74, 0.15)', tab: 'sales' },
+        { title: 'Delivered (Total)', value: stats.delivered, icon: '✅', bg: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', color: '#7c3aed', shadow: 'rgba(124, 58, 237, 0.15)', tab: 'orders' },
+        { title: 'Returns/Exchanges', value: stats.returned + stats.exchanged, icon: '🔄', bg: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)', color: '#dc2626', shadow: 'rgba(220, 38, 38, 0.15)', tab: 'orders' }
     ];
 
     return (
@@ -72,31 +72,39 @@ const DashboardTab = () => {
             {/* Stat Cards Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '40px' }}>
                 {statCards.map((card, idx) => (
-                    <div key={idx} style={{
-                        background: 'white',
-                        padding: '24px',
-                        borderRadius: '20px',
-                        border: '1px solid rgba(226, 232, 240, 0.8)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '20px',
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                        cursor: 'default'
-                    }} onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-4px)';
-                        e.currentTarget.style.boxShadow = `0 12px 24px ${card.shadow}, 0 4px 8px rgba(0,0,0,0.04)`;
-                    }} onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)';
-                    }}>
+                    <div key={idx}
+                        onClick={() => card.tab && onTabChange && onTabChange(card.tab)}
+                        style={{
+                            background: 'white',
+                            padding: '24px',
+                            borderRadius: '20px',
+                            border: '1px solid rgba(226, 232, 240, 0.8)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '20px',
+                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)',
+                            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                            cursor: card.tab ? 'pointer' : 'default',
+                            position: 'relative', overflow: 'hidden'
+                        }} onMouseOver={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-4px)';
+                            e.currentTarget.style.boxShadow = `0 12px 24px ${card.shadow}, 0 4px 8px rgba(0,0,0,0.04)`;
+                            e.currentTarget.style.borderColor = card.color + '40';
+                        }} onMouseOut={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)';
+                            e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)';
+                        }}>
                         <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: card.bg, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', flexShrink: 0 }}>
                             {card.icon}
                         </div>
-                        <div>
+                        <div style={{ flex: 1 }}>
                             <div style={{ color: '#64748b', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>{card.title}</div>
                             <div style={{ color: '#0f172a', fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px' }}>{card.value}</div>
                         </div>
+                        {card.tab && (
+                            <span style={{ fontSize: 18, color: '#cbd5e1' }}>→</span>
+                        )}
                     </div>
                 ))}
             </div>
