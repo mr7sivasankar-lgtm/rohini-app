@@ -600,6 +600,7 @@
     padding: 24px 20px 0px 20px;
     width: 100%;
     max-width: 500px;
+    min-height: 55vh;
     max-height: 90vh; /* Scrollable if there are many saved addresses */
     overflow-y: auto;
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
