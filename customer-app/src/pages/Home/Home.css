@@ -590,7 +590,7 @@
     display: flex;
     align-items: flex-end; /* Align to bottom */
     justify-content: center;
-    z-index: 200;
+    z-index: 2000;
     animation: fadeIn 0.3s ease;
 }
 
