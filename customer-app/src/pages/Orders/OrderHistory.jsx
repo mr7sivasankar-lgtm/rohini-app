@@ -107,7 +107,7 @@ const OrderHistory = () => {
                         <div className="order-total">
                             <span>{order.items.length} item{order.items.length > 1 ? 's' : ''}</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span className="total-amount">₹{order.total.toFixed(2)}</span>
+                                <span className="total-amount">₹{(order.totalAmount || 0).toFixed(2)}</span>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="m9 18 6-6-6-6"/>
                                 </svg>
