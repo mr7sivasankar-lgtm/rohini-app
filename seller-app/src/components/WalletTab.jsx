@@ -12,7 +12,7 @@ const WalletTab = () => {
     const fetchWallet = async () => {
         try {
             setLoading(true);
-            const res = await api.get('/wallet');
+            const res = await api.get('/wallet/seller');
             if (res.data.success) {
                 setBalance(res.data.data.balance || 0);
                 setTransactions(res.data.data.transactions || []);
@@ -36,7 +36,7 @@ const WalletTab = () => {
 
         try {
             setWithdrawLoading(true);
-            const res = await api.post('/wallet/withdraw', { amount });
+            const res = await api.post('/wallet/seller/withdraw', { amount });
             if (res.data.success) {
                 alert('Withdrawal request submitted successfully');
                 setShowWithdrawModal(false);

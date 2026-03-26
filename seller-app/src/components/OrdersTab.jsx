@@ -45,7 +45,7 @@ const OrdersTab = () => {
             case 'Ready': return orders.filter(o => o.status === 'Ready for Pickup' || o.status === 'Out for Delivery');
             case 'Completed': return orders.filter(o => o.status === 'Delivered');
             case 'Cancelled': return orders.filter(o => o.status === 'Cancelled' || o.status === 'Rejected');
-            case 'Returns/Exchanges': return orders.filter(o => o.status.includes('Return') || o.status.includes('Exchange'));
+            case 'Returns/Exchanges': return orders.filter(o => o.status?.includes('Return') || o.status?.includes('Exchange'));
             default: return orders;
         }
     };
@@ -76,7 +76,7 @@ const OrdersTab = () => {
                             tab === 'Ready' ? orders.filter(o => o.status === 'Ready for Pickup' || o.status === 'Out for Delivery').length :
                             tab === 'Completed' ? orders.filter(o => o.status === 'Delivered').length :
                             tab === 'Cancelled' ? orders.filter(o => o.status === 'Cancelled' || o.status === 'Rejected').length :
-                            orders.filter(o => o.status.includes('Return') || o.status.includes('Exchange')).length
+                            orders.filter(o => o.status?.includes('Return') || o.status?.includes('Exchange')).length
                         })
                     </button>
                 ))}
@@ -94,7 +94,7 @@ const OrdersTab = () => {
                         <div key={order._id} className="order-card" style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
                                 <div>
-                                    <h3 style={{ margin: '0 0 4px', fontSize: '16px' }}>#{order.orderId.slice(-6)}</h3>
+                                    <h3 style={{ margin: '0 0 4px', fontSize: '16px' }}>#{(order.orderId || order._id?.toString())?.slice(-6)}</h3>
                                     <span style={{ fontSize: '12px', color: '#64748b' }}>
                                         {new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
                                     </span>
