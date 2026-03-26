@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
-import api from '../../utils/api';
+import api, { getImageUrl } from '../../utils/api';
 import './Checkout.css';
 
 // Inject Razorpay checkout script once
@@ -65,6 +65,8 @@ const Checkout = () => {
     }, [passedAddressId]);
 
     const deliveryFee = 0;
+    const totalMrp = cart.reduce((sum, item) => sum + ((item.product.mrp || item.product.price || item.product.sellingPrice || 0) * item.quantity), 0);
+    const totalDiscount = totalMrp > cartTotal ? totalMrp - cartTotal : 0;
     const total = cartTotal + deliveryFee;
 
     const buildOrderPayload = () => ({
@@ -198,11 +200,10 @@ const Checkout = () => {
         <div className="checkout-page">
             <div className="checkout-header">
                 <button className="back-btn" onClick={() => navigate('/cart')}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="19" y1="12" x2="5" y2="12"></line>
                         <polyline points="12 19 5 12 12 5"></polyline>
                     </svg>
-                    Back to Cart
                 </button>
                 <h1 className="page-title">Checkout</h1>
             </div>
@@ -239,18 +240,54 @@ const Checkout = () => {
                 {/* Order Summary */}
                 <div className="form-section">
                     <h2 className="section-title">Order Summary</h2>
-                    <div className="summary-row">
-                        <span>Items ({cart.length})</span>
-                        <span>₹{cartTotal.toFixed(2)}</span>
+                    
+                    <div className="checkout-items-list">
+                        {cart.map((item, idx) => (
+                            <div key={idx} className="checkout-item">
+                                <div className="checkout-item-image">
+                                    <img src={getImageUrl(item.product.images?.[0]) || 'https://via.placeholder.com/60'} alt={item.product.name} />
+                                    <span className="checkout-item-qty">{item.quantity}</span>
+                                </div>
+                                <div className="checkout-item-details">
+                                    <h4 className="checkout-item-name">{item.product.name}</h4>
+                                    <div className="checkout-item-variants">
+                                        {item.size && <span>Size: {item.size}</span>}
+                                        {item.color && <span>Color: {item.color}</span>}
+                                    </div>
+                                </div>
+                                <div className="checkout-item-price">
+                                    ₹{((item.product.sellingPrice || item.product.price) * item.quantity).toFixed(2)}
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                    <div className="summary-row">
-                        <span>Delivery Fee</span>
-                        <span>₹{deliveryFee.toFixed(2)}</span>
-                    </div>
-                    <div className="summary-divider"></div>
-                    <div className="summary-row summary-total">
-                        <span>Total</span>
-                        <span>₹{total.toFixed(2)}</span>
+
+                    <div className="billing-details">
+                        <h3 className="billing-title">Price Details ({cart.length} {cart.length === 1 ? 'Item' : 'Items'})</h3>
+                        <div className="summary-row">
+                            <span>Total MRP</span>
+                            <span>₹{totalMrp.toFixed(2)}</span>
+                        </div>
+                        {totalDiscount > 0 && (
+                            <div className="summary-row text-success">
+                                <span>Discount on MRP</span>
+                                <span>-₹{totalDiscount.toFixed(2)}</span>
+                            </div>
+                        )}
+                        <div className="summary-row">
+                            <span>Delivery Fee</span>
+                            <span className={deliveryFee === 0 ? 'text-success' : ''}>{deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}</span>
+                        </div>
+                        <div className="summary-divider"></div>
+                        <div className="summary-row summary-total">
+                            <span>Total Amount</span>
+                            <span>₹{total.toFixed(2)}</span>
+                        </div>
+                        {totalDiscount > 0 && (
+                            <div className="savings-badge">
+                                You will save ₹{totalDiscount.toFixed(2)} on this order
+                            </div>
+                        )}
                     </div>
                 </div>
 
