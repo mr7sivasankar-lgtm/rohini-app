@@ -41,7 +41,7 @@ const BottomNav = () => {
     return (
         <>
             {/* Active Order Tracker Banner */}
-            {activeOrder && (
+            {activeOrder && location.pathname === '/home' && (
                 <div 
                     className="active-order-nav-banner"
                     onClick={() => navigate(`/tracking/${activeOrder.orderId}`)}
