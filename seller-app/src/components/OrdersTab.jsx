@@ -184,9 +184,15 @@ const OrdersTab = () => {
                                                         <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Size</span>
                                                         <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{item.size || '-'}</span>
                                                     </div>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '80px' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }}>
                                                         <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Color</span>
                                                         <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{item.color || '-'}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '80px' }}>
+                                                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Category</span>
+                                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }} title={item.product?.category}>
+                                                            {item.product?.category || '-'}
+                                                        </span>
                                                     </div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '80px' }}>
                                                         <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Code</span>
