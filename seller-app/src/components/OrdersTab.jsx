@@ -74,27 +74,58 @@ const OrdersTab = () => {
                 <p>Track, accept, and prepare customer orders for pickup.</p>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '16px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0' }}>
-                {tabs.map(tab => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        style={{
-                            padding: '8px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: 600, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-                            background: activeTab === tab ? '#1e293b' : '#f1f5f9',
-                            color: activeTab === tab ? '#fff' : '#64748b'
-                        }}
-                    >
-                        {tab} ({
+            <style>{`
+                .tabs-container::-webkit-scrollbar { display: none; }
+                .tabs-container { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
+            
+            <div style={{ paddingBottom: '16px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0' }}>
+                <div className="tabs-container" style={{ 
+                    display: 'flex', gap: '8px', overflowX: 'auto', 
+                    background: '#f1f5f9', padding: '6px', borderRadius: '16px', 
+                    width: 'max-content', maxWidth: '100%' 
+                }}>
+                    {tabs.map(tab => {
+                        const count = 
                             tab === 'New' ? orders.filter(o => o.status === 'Placed').length :
                             tab === 'Accepted' ? orders.filter(o => o.status === 'Accepted' || o.status === 'Preparing').length :
                             tab === 'Ready' ? orders.filter(o => o.status === 'Ready for Pickup' || o.status === 'Out for Delivery').length :
                             tab === 'Completed' ? orders.filter(o => o.status === 'Delivered').length :
                             tab === 'Cancelled' ? orders.filter(o => o.status === 'Cancelled' || o.status === 'Rejected').length :
-                            orders.filter(o => o.status?.includes('Return') || o.status?.includes('Exchange')).length
-                        })
-                    </button>
-                ))}
+                            orders.filter(o => o.status?.includes('Return') || o.status?.includes('Exchange')).length;
+
+                        return (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    padding: '8px 16px', borderRadius: '12px', fontSize: '14px', 
+                                    fontWeight: 600, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    background: activeTab === tab ? '#ffffff' : 'transparent',
+                                    color: activeTab === tab ? '#4f46e5' : '#64748b',
+                                    boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                                }}
+                            >
+                                {tab}
+                                <span style={{
+                                    background: activeTab === tab ? '#eef2ff' : '#e2e8f0',
+                                    color: activeTab === tab ? '#4f46e5' : '#64748b',
+                                    padding: '2px 8px',
+                                    borderRadius: '10px',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    transition: 'all 0.2s',
+                                    minWidth: '24px',
+                                    textAlign: 'center'
+                                }}>
+                                    {count}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
             {filteredOrders.length === 0 ? (
