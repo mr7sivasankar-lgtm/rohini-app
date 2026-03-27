@@ -1,0 +1,128 @@
+.broadcast-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    animation: slideUp 0.3s ease-out;
+}
+
+.broadcast-card {
+    background: #ffffff;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    padding: 24px;
+    padding-bottom: env(safe-area-inset-bottom, 24px);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+}
+
+.broadcast-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.broadcast-earning {
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--success);
+    line-height: 1.2;
+}
+
+.broadcast-subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.broadcast-details {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.broadcast-detail-item {
+    flex: 1;
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+}
+
+.detail-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.detail-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.detail-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+.broadcast-shop {
+    background: var(--surface2);
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.shop-name {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 4px;
+    color: var(--text);
+}
+
+.shop-address {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.broadcast-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-accept {
+    flex: 2;
+    background: var(--success);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 18px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.btn-accept:active { transform: scale(0.98); }
+
+.btn-ignore {
+    flex: 1;
+    background: transparent;
+    border: 2px solid var(--border);
+    color: var(--muted);
+    border-radius: 14px;
+    padding: 18px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}

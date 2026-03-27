@@ -455,50 +455,144 @@ router.put('/admin/partners/:id/approve', async (req, res) => {
     }
 });
 
-// ── Utility: Auto-Assign ──────────────────────────────────────────────────────
-export const autoAssignDeliveryPartner = async (orderId, deliveryType = 'Normal') => {
+// Haversine formula
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 5;
+    const R = 6371;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+// ── Broadcast Endpoints ──────────────────────────────────────────────────────
+
+// GET /api/delivery/broadcasts
+router.get('/broadcasts', protectDelivery, async (req, res) => {
     try {
-        const partner = await DeliveryPartner.findOne({ isActive: true })
-            .sort({ activeOrdersCount: 1 });
+        const partner = req.partner;
+        if (!partner.isOnline) return res.json({ success: true, data: [] });
 
-        if (!partner) {
-            console.log('[AutoAssign] No available delivery partners');
-            return null;
+        const pLat = partner.location?.coordinates?.[1];
+        const pLng = partner.location?.coordinates?.[0];
+        
+        // Find unassigned orders that are Ready for Pickup
+        const orders = await Order.find({
+            deliveryStatus: '',
+            status: { $in: ['Ready for Pickup', 'Packed'] }
+        }).populate('seller', 'shopName shopAddress location phone');
+
+        const broadcasts = [];
+        const now = new Date();
+
+        for (const order of orders) {
+            let pickupKm = 5;
+            let deliveryKm = 5;
+            let isValid = false;
+
+            const sLat = order.seller?.location?.coordinates?.[1] || order.sellerLocation?.lat;
+            const sLng = order.seller?.location?.coordinates?.[0] || order.sellerLocation?.lng;
+            
+            if (pLat && pLng && sLat && sLng) {
+                pickupKm = getDistanceFromLatLonInKm(pLat, pLng, sLat, sLng);
+            }
+
+            const cLat = order.shippingAddress?.latitude;
+            const cLng = order.shippingAddress?.longitude;
+
+            if (sLat && sLng && cLat && cLng) {
+                deliveryKm = getDistanceFromLatLonInKm(sLat, sLng, cLat, cLng);
+            }
+
+            const timeSinceBroadcast = order.broadcastedAt ? (now - order.broadcastedAt) / 1000 : 0; // seconds
+            
+            // If within 10km or > 2 mins elapsed (fallback)
+            if (pickupKm <= 10 || timeSinceBroadcast > 120 || !pLat) {
+                isValid = true;
+            }
+
+            if (isValid) {
+                broadcasts.push({
+                    _id: order._id,
+                    orderId: order.orderId,
+                    sellerShopName: order.sellerShopName || order.seller?.shopName,
+                    sellerShopAddress: order.sellerShopAddress || order.seller?.shopAddress,
+                    pickupKm: parseFloat(pickupKm.toFixed(1)),
+                    deliveryKm: parseFloat(deliveryKm.toFixed(1)),
+                    deliveryFee: order.deliveryFee || 20,
+                    totalAmount: order.totalAmount,
+                    deliveryType: order.deliveryType || 'Normal',
+                    timeSinceBroadcast
+                });
+            }
         }
+        res.json({ success: true, data: broadcasts });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
-        await Order.findByIdAndUpdate(orderId, {
-            deliveryPartner: partner._id,
-            deliveryStatus: 'Assigned',
-            deliveryType: deliveryType
-        });
+// POST /api/delivery/broadcasts/:id/accept
+router.post('/broadcasts/:id/accept', protectDelivery, async (req, res) => {
+    try {
+        const partner = req.partner;
+        const orderId = req.params.id;
+
+        // Atomic update to prevent race conditions
+        const order = await Order.findOneAndUpdate(
+            { _id: orderId, deliveryStatus: '' },
+            { 
+                deliveryPartner: partner._id,
+                deliveryStatus: 'Assigned',
+                // Keep deliveryType as whatever it was
+            },
+            { new: true }
+        );
+
+        if (!order) {
+            return res.status(400).json({ success: false, message: 'Order already accepted by another partner or no longer available.' });
+        }
 
         await DeliveryPartner.findByIdAndUpdate(partner._id, {
             $inc: { activeOrdersCount: 1 }
         });
 
-        // ── Notify Delivery Partner: new assignment ──
-        try {
-            const freshPartner = await DeliveryPartner.findById(partner._id);
-            const assignedOrder = await Order.findById(orderId);
-            if (freshPartner?.pushSubscription) {
-                await sendPush(freshPartner.pushSubscription, {
-                    title: '🔔 New Delivery Assigned!',
-                    body: `Pick up from ${assignedOrder?.sellerShopName || 'the shop'}`,
-                    icon: '/icons/icon-192.png',
-                    vibrate: [300, 100, 300],
-                    tag: `assigned-${orderId}`,
-                    url: '/'
-                });
-            }
-        } catch (notifErr) {
-            console.error('[Push] Partner assignment notify error:', notifErr.message);
-        }
-
-        console.log(`[AutoAssign] Order ${orderId} assigned to partner ${partner.name} (type: ${deliveryType})`);
-        return partner;
+        res.json({ success: true, message: 'Order accepted successfully!', data: order });
     } catch (err) {
-        console.error('[AutoAssign] Error:', err.message);
-        return null;
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ── Utility: Broadcast ────────────────────────────────────────────────────────
+export const broadcastOrder = async (orderId, deliveryType = 'Normal') => {
+    try {
+        await Order.findByIdAndUpdate(orderId, {
+            broadcastedAt: new Date(),
+            deliveryType: deliveryType
+        });
+        
+        // Notify all online partners in general vicinity
+        const partners = await DeliveryPartner.find({ isActive: true, isOnline: true });
+        const assignedOrder = await Order.findById(orderId).populate('seller');
+        
+        for (const p of partners) {
+            if (p.pushSubscription) {
+                // Simple push
+                try {
+                    await sendPush(p.pushSubscription, {
+                        title: '🔔 New Delivery Request!',
+                        body: `Earn ₹${assignedOrder.deliveryFee || 20} - Pick up from ${assignedOrder?.sellerShopName || 'nearest shop'}`,
+                        icon: '/icons/icon-192.png',
+                        vibrate: [300, 100, 300],
+                        url: '/'
+                    });
+                } catch(e) { /* ignore single push fail */ }
+            }
+        }
+        console.log(`[Broadcast] Order ${orderId} broadcasted to ${partners.length} partners.`);
+    } catch (err) {
+        console.error('[Broadcast] Error:', err.message);
     }
 };
 

@@ -7,7 +7,7 @@ import DeliveryPartner from '../models/DeliveryPartner.js';
 import WalletTransaction from '../models/WalletTransaction.js';
 import { protect, adminOnly, sellerOrAdmin } from '../middleware/auth.js';
 import { sellerProtect } from './sellers.js';
-import { autoAssignDeliveryPartner } from './delivery.js';
+import { broadcastOrder } from './delivery.js';
 import AdminConfig from '../models/AdminConfig.js';
 import { sendPush } from '../utils/notify.js';
 
@@ -505,7 +505,7 @@ router.put('/seller/:id/status', sellerProtect, async (req, res) => {
         // Trigger Auto Assignment if the seller marks the order as "Ready for Pickup"
         if (status === 'Ready for Pickup') {
             try {
-                autoAssignDeliveryPartner(order._id).catch(console.error);
+                broadcastOrder(order._id).catch(console.error);
             } catch (err) {
                 console.error('Failed to trigger auto assignment:', err);
             }

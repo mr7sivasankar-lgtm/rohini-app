@@ -163,6 +163,10 @@ const orderSchema = new mongoose.Schema({
         enum: ['Normal', 'Return Pickup', 'Exchange Pickup'],
         default: 'Normal'
     },
+    broadcastedAt: {
+        type: Date,
+        default: null
+    },
     deliveredAt: {
         type: Date,
         default: null

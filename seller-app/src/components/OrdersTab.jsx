@@ -212,28 +212,34 @@ const OrdersTab = () => {
 
                                 {/* Right: Action buttons */}
                                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px', padding: '12px', borderLeft: '1px solid #f1f5f9', background: '#fafafa', flexShrink: 0 }}>
-                                    {order.status === 'Placed' && (<>
-                                        <button style={{ padding: '7px 14px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
-                                            onClick={() => updateOrderStatus(order._id, 'Accepted')}>✅ Accept</button>
-                                        <button style={{ padding: '7px 14px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
-                                            onClick={() => updateOrderStatus(order._id, 'Rejected')}>❌ Reject</button>
-                                    </>)}
+                                    {order.status === 'Placed' && (
+                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                            <button style={{ flex: 1, padding: '7px 10px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                                onClick={() => updateOrderStatus(order._id, 'Accepted')}>✅ Accept</button>
+                                            <button style={{ flex: 1, padding: '7px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                                onClick={() => updateOrderStatus(order._id, 'Rejected')}>❌ Reject</button>
+                                        </div>
+                                    )}
                                     {order.status === 'Accepted' && (
                                         <button style={{ padding: '7px 14px', background: '#eab308', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
                                             onClick={() => updateOrderStatus(order._id, 'Ready for Pickup')} className="pulse-btn">📦 Mark Ready</button>
                                     )}
-                                    {order.status === 'Return Requested' && (<>
-                                        <button style={{ padding: '7px 14px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
-                                            onClick={() => updateOrderStatus(order._id, 'Return Approved')}>✅ Approve</button>
-                                        <button style={{ padding: '7px 14px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
-                                            onClick={() => updateOrderStatus(order._id, 'Return Rejected')}>❌ Reject</button>
-                                    </>)}
-                                    {order.status === 'Exchange Requested' && (<>
-                                        <button style={{ padding: '7px 14px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
-                                            onClick={() => updateOrderStatus(order._id, 'Exchange Approved')}>✅ Approve</button>
-                                        <button style={{ padding: '7px 14px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
-                                            onClick={() => updateOrderStatus(order._id, 'Exchange Rejected')}>❌ Reject</button>
-                                    </>)}
+                                    {order.status === 'Return Requested' && (
+                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                            <button style={{ flex: 1, padding: '7px 10px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                                onClick={() => updateOrderStatus(order._id, 'Return Approved')}>✅ Approve</button>
+                                            <button style={{ flex: 1, padding: '7px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                                onClick={() => updateOrderStatus(order._id, 'Return Rejected')}>❌ Reject</button>
+                                        </div>
+                                    )}
+                                    {order.status === 'Exchange Requested' && (
+                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                            <button style={{ flex: 1, padding: '7px 10px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                                onClick={() => updateOrderStatus(order._id, 'Exchange Approved')}>✅ Approve</button>
+                                            <button style={{ flex: 1, padding: '7px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                                onClick={() => updateOrderStatus(order._id, 'Exchange Rejected')}>❌ Reject</button>
+                                        </div>
+                                    )}
                                     {!['Placed','Accepted','Return Requested','Exchange Requested'].includes(order.status) && (
                                         <span style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', padding: '0 8px' }}>—</span>
                                     )}

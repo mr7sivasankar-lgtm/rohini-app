@@ -8,6 +8,7 @@ import History from './pages/History';
 import Wallet from './pages/Wallet';
 
 import BottomNav from './components/BottomNav';
+import OrderBroadcastOverlay from './components/OrderBroadcastOverlay';
 
 const PrivateRoute = ({ children }) => {
     const { partner, loading } = useAuth();
@@ -16,6 +17,7 @@ const PrivateRoute = ({ children }) => {
         <>
             {children}
             <BottomNav />
+            <OrderBroadcastOverlay />
         </>
     ) : <Navigate to="/login" replace />;
 };
