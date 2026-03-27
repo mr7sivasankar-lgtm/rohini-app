@@ -523,7 +523,10 @@ router.get('/broadcasts', protectDelivery, async (req, res) => {
                     deliveryFee: order.deliveryFee || 20,
                     totalAmount: order.totalAmount,
                     deliveryType: order.deliveryType || 'Normal',
-                    timeSinceBroadcast
+                    timeSinceBroadcast,
+                    itemsSummary: order.items && order.items.length > 0 
+                        ? order.items.map(i => `${i.quantity}x ${i.name}`).join(', ') 
+                        : 'Delivery Items'
                 });
             }
         }

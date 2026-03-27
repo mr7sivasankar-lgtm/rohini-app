@@ -41,10 +41,18 @@ export default function OrderBroadcastOverlay() {
 
     const activeBroadcast = broadcasts.find(b => !ignoredIds.includes(b._id) && b._id !== acceptedId);
 
-    // Reset slider when broadcast changes
+    // Play sound and reset slider when broadcast changes
     useEffect(() => {
         setSlideProgress(0);
         setIsDragging(false);
+        
+        if (activeBroadcast) {
+            try {
+                // Play a bell notification sound
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                audio.play().catch(e => console.log('Autoplay prevented:', e));
+            } catch (err) {}
+        }
     }, [activeBroadcast?._id]);
 
     if (!activeBroadcast) return null;
@@ -126,20 +134,26 @@ export default function OrderBroadcastOverlay() {
                     </div>
                 </div>
 
+                {activeBroadcast.itemsSummary && (
+                    <div className="broadcast-shop" style={{ marginBottom: '12px', background: '#f8fafc', padding: '12px' }}>
+                        <div className="shop-name" style={{ fontSize: '13px', color: '#64748b' }}>Order Items</div>
+                        <div className="shop-address" style={{ fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>{activeBroadcast.itemsSummary}</div>
+                    </div>
+                )}
+
                 <div className="broadcast-shop">
                     <div className="shop-name">{activeBroadcast.sellerShopName}</div>
                     <div className="shop-address">{activeBroadcast.sellerShopAddress}</div>
                 </div>
 
                 <div className="broadcast-actions">
-                    <button className="btn-ignore" onClick={handleIgnore}>Pass</button>
-                    
                     <div 
                         className="swipe-container" 
                         ref={sliderRef}
                         style={{ 
                             position: 'relative', 
-                            flex: 2, 
+                            flex: 1, 
+                            height: '56px',
                             background: acceptedId === activeBroadcast._id ? 'var(--success)' : 'rgba(34, 197, 94, 0.1)',
                             borderRadius: '14px', 
                             overflow: 'hidden', 
