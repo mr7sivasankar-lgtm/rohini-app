@@ -41,13 +41,13 @@ export default function OrderBroadcastOverlay() {
 
     const activeBroadcast = broadcasts.find(b => !ignoredIds.includes(b._id) && b._id !== acceptedId);
 
-    if (!activeBroadcast) return null;
-
     // Reset slider when broadcast changes
     useEffect(() => {
         setSlideProgress(0);
         setIsDragging(false);
     }, [activeBroadcast?._id]);
+
+    if (!activeBroadcast) return null;
 
     const handleAccept = async () => {
         try {
