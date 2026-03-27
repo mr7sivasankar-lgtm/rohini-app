@@ -256,12 +256,15 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
         } else {
             // Normal delivery
             const statusMap = {
-                'Picked Up': 'Picked Up',
+                'Picked Up': null, // Do not modify main order status yet
                 'Out for Delivery': 'Out for Delivery',
                 'Delivered': 'Delivered'
             };
-            order.status = statusMap[deliveryStatus];
-            order.statusHistory.push({ status: statusMap[deliveryStatus], timestamp: new Date(), note: 'Updated by delivery partner' });
+            
+            if (statusMap[deliveryStatus]) {
+                order.status = statusMap[deliveryStatus];
+            }
+            order.statusHistory.push({ status: deliveryStatus, timestamp: new Date(), note: 'Updated by delivery partner' });
 
             if (deliveryStatus === 'Delivered') {
                 order.deliveredAt = new Date();
