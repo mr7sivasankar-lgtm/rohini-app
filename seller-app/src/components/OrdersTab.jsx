@@ -252,8 +252,12 @@ const OrdersTab = () => {
                                         </div>
                                     )}
                                     {order.status === 'Accepted' && (
-                                        <button style={{ padding: '7px 14px', background: '#eab308', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
-                                            onClick={() => updateOrderStatus(order._id, 'Ready for Pickup')} className="pulse-btn">📦 Mark Ready</button>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <button style={{ padding: '7px 14px', background: '#eab308', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                                onClick={() => updateOrderStatus(order._id, 'Ready for Pickup')} className="pulse-btn">📦 Mark Ready</button>
+                                            <button style={{ padding: '7px 14px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+                                                onClick={() => updateOrderStatus(order._id, 'Rejected')}>❌ Reject</button>
+                                        </div>
                                     )}
                                     {order.status === 'Return Requested' && (
                                         <div style={{ display: 'flex', gap: '6px' }}>

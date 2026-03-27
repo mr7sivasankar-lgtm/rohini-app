@@ -9,6 +9,7 @@ const BottomNav = () => {
     const navigate = useNavigate();
     const { cartCount } = useCart();
     const [activeOrder, setActiveOrder] = useState(null);
+    const [dismissed, setDismissed] = useState(false);
 
     const isActive = (path) => location.pathname === path;
 
@@ -21,10 +22,12 @@ const BottomNav = () => {
                 const response = await api.get('/orders');
                 if (response.data.success) {
                     const orders = response.data.data;
-                    // Find first order that is still active (not Delivered and not Cancelled)
-                    // If an item was returned/exchanged, it counts if the overall status isn't fully closed.
-                    const active = orders.find(o => o.status !== 'Delivered' && o.status !== 'Cancelled');
+                    // Sort by newest first, find the most recent active order
+                    const sorted = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    const active = sorted.find(o => o.status !== 'Delivered' && o.status !== 'Cancelled' && o.status !== 'Rejected');
                     setActiveOrder(active);
+                    // Reset dismissed when a NEW order appears
+                    setDismissed(false);
                 }
             } catch (error) {
                 console.error('Error fetching active order for nav banner', error);
@@ -41,7 +44,7 @@ const BottomNav = () => {
     return (
         <>
             {/* Active Order Tracker Banner */}
-            {activeOrder && location.pathname === '/home' && (
+            {activeOrder && !dismissed && location.pathname === '/home' && (
                 <div 
                     className="active-order-nav-banner"
                     onClick={() => navigate(`/tracking/${activeOrder.orderId}`)}
@@ -53,13 +56,18 @@ const BottomNav = () => {
                         </div>
                         <div className="banner-text">
                             <div className="banner-title">Track your order</div>
-                            <div className="banner-status">{activeOrder.status}</div>
+                            <div className="banner-status">{activeOrder.status?.toUpperCase()}</div>
                         </div>
                     </div>
-                    <div className="banner-right">
+                    <div className="banner-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setDismissed(true); }}
+                            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'inherit', fontSize: '14px', fontWeight: '700', flexShrink: 0 }}
+                            aria-label="Close banner"
+                        >✕</button>
                     </div>
                 </div>
             )}
