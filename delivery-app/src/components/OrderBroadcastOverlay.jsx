@@ -11,6 +11,11 @@ export default function OrderBroadcastOverlay() {
     const [ignoredIds, setIgnoredIds] = useState([]);
     const [acceptedId, setAcceptedId] = useState(null);
 
+    // Slider state
+    const [slideProgress, setSlideProgress] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const sliderRef = React.useRef(null);
+
     // Fetch broadcasts periodically
     useEffect(() => {
         let interval;
@@ -38,6 +43,12 @@ export default function OrderBroadcastOverlay() {
 
     if (!activeBroadcast) return null;
 
+    // Reset slider when broadcast changes
+    useEffect(() => {
+        setSlideProgress(0);
+        setIsDragging(false);
+    }, [activeBroadcast?._id]);
+
     const handleAccept = async () => {
         try {
             setAcceptedId(activeBroadcast._id);
@@ -60,6 +71,37 @@ export default function OrderBroadcastOverlay() {
 
     const handleIgnore = () => {
         setIgnoredIds(prev => [...prev, activeBroadcast._id]);
+    };
+
+    const handlePointerDown = (e) => {
+        if (acceptedId === activeBroadcast._id) return;
+        setIsDragging(true);
+        e.target.setPointerCapture(e.pointerId);
+    };
+
+    const handlePointerMove = (e) => {
+        if (!isDragging || !sliderRef.current) return;
+        const rect = sliderRef.current.getBoundingClientRect();
+        const thumbWidth = 56; // approximate thumb width
+        let newX = e.clientX - rect.left - thumbWidth / 2;
+        const maxX = rect.width - thumbWidth;
+        
+        if (newX < 0) newX = 0;
+        if (newX > maxX) newX = maxX;
+        
+        setSlideProgress(newX / maxX);
+    };
+
+    const handlePointerUp = (e) => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        e.target.releasePointerCapture(e.pointerId);
+        if (slideProgress > 0.8) {
+            setSlideProgress(1);
+            handleAccept();
+        } else {
+            setSlideProgress(0); // snap back
+        }
     };
 
     return (
@@ -91,9 +133,68 @@ export default function OrderBroadcastOverlay() {
 
                 <div className="broadcast-actions">
                     <button className="btn-ignore" onClick={handleIgnore}>Pass</button>
-                    <button className="btn-accept" onClick={handleAccept} disabled={acceptedId === activeBroadcast._id}>
-                        {acceptedId === activeBroadcast._id ? 'Accepting...' : 'Accept Order'}
-                    </button>
+                    
+                    <div 
+                        className="swipe-container" 
+                        ref={sliderRef}
+                        style={{ 
+                            position: 'relative', 
+                            flex: 2, 
+                            background: acceptedId === activeBroadcast._id ? 'var(--success)' : 'rgba(34, 197, 94, 0.1)',
+                            borderRadius: '14px', 
+                            overflow: 'hidden', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            border: `1px solid ${acceptedId === activeBroadcast._id ? 'var(--success)' : 'rgba(34, 197, 94, 0.3)'}`
+                        }}
+                    >
+                        {/* Background progress fill */}
+                        <div style={{
+                            position: 'absolute', left: 0, top: 0, bottom: 0,
+                            width: `${slideProgress * 100}%`,
+                            background: 'var(--success)',
+                            transition: isDragging ? 'none' : 'width 0.3s ease',
+                            zIndex: 1
+                        }} />
+                        
+                        {/* Text label */}
+                        <div style={{
+                            position: 'relative', zIndex: 2,
+                            color: (slideProgress > 0.5 || acceptedId === activeBroadcast._id) ? '#fff' : 'var(--success)',
+                            fontWeight: 700, fontSize: '16px',
+                            transition: 'color 0.2s ease',
+                            pointerEvents: 'none'
+                        }}>
+                            {acceptedId === activeBroadcast._id ? 'Accepting...' : 'Slide to Accept'}
+                        </div>
+                        
+                        {/* Draggable Thumb */}
+                        {acceptedId !== activeBroadcast._id && (
+                            <div 
+                                onPointerDown={handlePointerDown}
+                                onPointerMove={handlePointerMove}
+                                onPointerUp={handlePointerUp}
+                                onPointerCancel={handlePointerUp}
+                                style={{
+                                    position: 'absolute',
+                                    left: `calc(${slideProgress * 100}% - ${slideProgress * 56}px)`,
+                                    top: '4px', bottom: '4px',
+                                    width: '48px',
+                                    background: '#fff',
+                                    borderRadius: '10px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                    cursor: 'grab',
+                                    zIndex: 3,
+                                    transition: isDragging ? 'none' : 'left 0.3s ease',
+                                    touchAction: 'none'
+                                }}
+                            >
+                                <span style={{ color: 'var(--success)', fontWeight: 'bold', fontSize: '18px', pointerEvents: 'none' }}>→</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
