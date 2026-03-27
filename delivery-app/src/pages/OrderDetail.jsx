@@ -67,11 +67,16 @@ export default function OrderDetail() {
         if (phone) window.open(`tel:${phone}`);
     };
 
+    // Get partner's exact GPS location for routing origin
+    const originParam = (partner?.location?.coordinates) 
+        ? `&origin=${partner.location.coordinates[1]},${partner.location.coordinates[0]}` 
+        : '';
+
     // Navigate to seller pickup location
     const navigateToPickup = () => {
         const sel = order.sellerLocation;
         if (sel && sel.lat && sel.lng) {
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${sel.lat},${sel.lng}`);
+            window.open(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${sel.lat},${sel.lng}`);
         } else if (order.sellerShopAddress) {
             const addr = encodeURIComponent(order.sellerShopAddress);
             window.open(`https://www.google.com/maps/search/?api=1&query=${addr}`);
@@ -84,7 +89,7 @@ export default function OrderDetail() {
     const navigateToCustomer = () => {
         const { latitude, longitude, fullAddress, city } = order.shippingAddress || {};
         if (latitude && longitude) {
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`);
+            window.open(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${latitude},${longitude}`);
         } else {
             const addr = encodeURIComponent(`${fullAddress}, ${city}`);
             window.open(`https://www.google.com/maps/search/?api=1&query=${addr}`);
