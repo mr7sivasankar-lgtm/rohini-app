@@ -122,93 +122,52 @@ export default function OrderBroadcastOverlay() {
                 </div>
 
                 <div className="broadcast-details">
-                    <div className="broadcast-detail-item">
+                    <div className="broadcast-detail-item item-pickup">
                         <div className="detail-icon">🏪</div>
-                        <div className="detail-value">{activeBroadcast.pickupKm} km</div>
+                        <div className="detail-value">{activeBroadcast.pickupKm} <span style={{fontSize:'16px'}}>km</span></div>
                         <div className="detail-label">Pickup</div>
                     </div>
-                    <div className="broadcast-detail-item">
+                    <div className="broadcast-detail-item item-dropoff">
                         <div className="detail-icon">📍</div>
-                        <div className="detail-value">{activeBroadcast.deliveryKm} km</div>
+                        <div className="detail-value">{activeBroadcast.deliveryKm} <span style={{fontSize:'16px'}}>km</span></div>
                         <div className="detail-label">Drop-off</div>
                     </div>
                 </div>
 
                 {activeBroadcast.itemsSummary && (
-                    <div className="broadcast-shop" style={{ marginBottom: '12px', background: '#f8fafc', padding: '12px' }}>
-                        <div className="shop-name" style={{ fontSize: '13px', color: '#64748b' }}>Order Items</div>
-                        <div className="shop-address" style={{ fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>{activeBroadcast.itemsSummary}</div>
+                    <div className="broadcast-info-box">
+                        <div className="info-label">🛍️ Order Items</div>
+                        <div className="info-value">{activeBroadcast.itemsSummary}</div>
                     </div>
                 )}
 
-                <div className="broadcast-shop">
-                    <div className="shop-name">{activeBroadcast.sellerShopName}</div>
-                    <div className="shop-address">{activeBroadcast.sellerShopAddress}</div>
+                <div className="broadcast-info-box">
+                    <div className="info-label">🏬 Pickup Location</div>
+                    <div className="info-value">{activeBroadcast.sellerShopName}</div>
+                    <div className="info-sub">{activeBroadcast.sellerShopAddress}</div>
                 </div>
 
-                <div className="broadcast-actions">
-                    <div 
-                        className="swipe-container" 
-                        ref={sliderRef}
-                        style={{ 
-                            position: 'relative', 
-                            flex: 1, 
-                            height: '56px',
-                            background: acceptedId === activeBroadcast._id ? 'var(--success)' : 'rgba(34, 197, 94, 0.1)',
-                            borderRadius: '14px', 
-                            overflow: 'hidden', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            border: `1px solid ${acceptedId === activeBroadcast._id ? 'var(--success)' : 'rgba(34, 197, 94, 0.3)'}`
-                        }}
-                    >
-                        {/* Background progress fill */}
-                        <div style={{
-                            position: 'absolute', left: 0, top: 0, bottom: 0,
-                            width: `${slideProgress * 100}%`,
-                            background: 'var(--success)',
-                            transition: isDragging ? 'none' : 'width 0.3s ease',
-                            zIndex: 1
-                        }} />
-                        
-                        {/* Text label */}
-                        <div style={{
-                            position: 'relative', zIndex: 2,
-                            color: (slideProgress > 0.5 || acceptedId === activeBroadcast._id) ? '#fff' : 'var(--success)',
-                            fontWeight: 700, fontSize: '16px',
-                            transition: 'color 0.2s ease',
-                            pointerEvents: 'none'
-                        }}>
-                            {acceptedId === activeBroadcast._id ? 'Accepting...' : 'Slide to Accept'}
-                        </div>
-                        
-                        {/* Draggable Thumb */}
-                        {acceptedId !== activeBroadcast._id && (
-                            <div 
-                                onPointerDown={handlePointerDown}
-                                onPointerMove={handlePointerMove}
-                                onPointerUp={handlePointerUp}
-                                onPointerCancel={handlePointerUp}
-                                style={{
-                                    position: 'absolute',
-                                    left: `calc(${slideProgress * 100}% - ${slideProgress * 56}px)`,
-                                    top: '4px', bottom: '4px',
-                                    width: '48px',
-                                    background: '#fff',
-                                    borderRadius: '10px',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                                    cursor: 'grab',
-                                    zIndex: 3,
-                                    transition: isDragging ? 'none' : 'left 0.3s ease',
-                                    touchAction: 'none'
-                                }}
-                            >
-                                <span style={{ color: 'var(--success)', fontWeight: 'bold', fontSize: '18px', pointerEvents: 'none' }}>→</span>
-                            </div>
-                        )}
+                <div 
+                    className="swipe-container" 
+                    ref={sliderRef}
+                    style={{ border: acceptedId === activeBroadcast._id ? '2px solid #10b981' : 'none' }}
+                >
+                    <div className="swipe-fill" style={{ width: `${slideProgress * 100}%`, transition: isDragging ? 'none' : 'width 0.3s ease' }} />
+                    <div className="swipe-text" style={{ color: (slideProgress > 0.5 || acceptedId === activeBroadcast._id) ? '#fff' : '#10b981' }}>
+                        {acceptedId === activeBroadcast._id ? 'Accepting...' : 'Slide to Accept'}
                     </div>
+                    {acceptedId !== activeBroadcast._id && (
+                        <div className="swipe-thumb"
+                            onPointerDown={handlePointerDown}
+                            onPointerMove={handlePointerMove}
+                            onPointerUp={handlePointerUp}
+                            onPointerCancel={handlePointerUp}
+                            style={{
+                                left: `calc(${slideProgress * 100}% - ${slideProgress * 52}px)`,
+                                transition: isDragging ? 'none' : 'left 0.3s ease'
+                            }}
+                        />
+                    )}
                 </div>
             </div>
         </div>
