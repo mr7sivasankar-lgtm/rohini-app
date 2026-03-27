@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Map, Marker, Overlay } from 'pigeon-maps';
 import api, { getImageUrl } from '../../utils/api';
 import './OrderTracking.css';
 
@@ -150,28 +149,118 @@ const OrderTracking = () => {
     const statusSteps = ['Placed', 'Accepted', 'Packed', 'Picked Up', 'Out for Delivery', 'Delivered'];
     const currentStepIndex = statusSteps.indexOf(order.status);
 
+    const mapRef = useRef(null);
+    const leafletMapRef = useRef(null);
+    const dpMarkerRef = useRef(null);
+
+    const initMap = async (orderData) => {
+        if (!window.L || !orderData) return;
+        
+        const sellerLat = orderData.seller?.location?.coordinates?.[1] || 13.6288;
+        const sellerLng = orderData.seller?.location?.coordinates?.[0] || 79.4192;
+        
+        const custLat = orderData.shippingAddress?.latitude || 13.6288;
+        const custLng = orderData.shippingAddress?.longitude || 79.4192;
+        
+        const dpLat = orderData.deliveryPartner?.location?.coordinates?.[1] || sellerLat;
+        const dpLng = orderData.deliveryPartner?.location?.coordinates?.[0] || sellerLng;
+
+        const L = window.L;
+
+        if (!leafletMapRef.current && mapRef.current) {
+            // Initialize map
+            const map = L.map(mapRef.current, {
+                zoomControl: false,
+                attributionControl: false
+            });
+
+            // Minimal light map without labels/hospitals
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            // Fetch and draw route from Seller to Customer
+            try {
+                const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${sellerLng},${sellerLat};${custLng},${custLat}?overview=full&geometries=geojson`);
+                const data = await res.json();
+                if (data.routes && data.routes[0]) {
+                    const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                    // Draw a stylish blue route line
+                    L.polyline(coords, { color: '#3b82f6', weight: 4, opacity: 0.8, lineCap: 'round', lineJoin: 'round' }).addTo(map);
+                    map.fitBounds(L.polyline(coords).getBounds(), { padding: [50, 50] });
+                } else {
+                    map.setView([dpLat, dpLng], 14);
+                }
+            } catch (e) {
+                console.error("OSRM Route Error", e);
+                map.setView([dpLat, dpLng], 14);
+            }
+
+            // Customer Pin
+            const custIcon = L.divIcon({
+                html: `<div style="font-size: 28px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">📍</div>`,
+                className: '',
+                iconSize: [28, 28],
+                iconAnchor: [14, 28]
+            });
+            L.marker([custLat, custLng], { icon: custIcon }).addTo(map);
+
+            // Seller Pin
+            const sellerIcon = L.divIcon({
+                html: `<div style="font-size: 24px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">🏬</div>`,
+                className: '',
+                iconSize: [24, 24],
+                iconAnchor: [12, 24]
+            });
+            L.marker([sellerLat, sellerLng], { icon: sellerIcon }).addTo(map);
+
+            // Delivery Partner Animated Marker (Scooter)
+            const dpIcon = L.divIcon({
+                html: `<div class="animated-scooter-marker" style="font-size: 32px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: scaleX(-1);">🛵</div>`,
+                className: 'animated-scooter-icon',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+            dpMarkerRef.current = L.marker([dpLat, dpLng], { icon: dpIcon }).addTo(map);
+
+            leafletMapRef.current = map;
+        } else if (dpMarkerRef.current) {
+            // Update Delivery Partner Location Smoothly
+            dpMarkerRef.current.setLatLng([dpLat, dpLng]);
+            // If map exists, pan towards partner
+            leafletMapRef.current.panTo([dpLat, dpLng], { animate: true, duration: 1.5 });
+        }
+    };
+
+    useEffect(() => {
+        if (!order || !['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status)) return;
+
+        if (!document.getElementById('leaflet-css-tracking')) {
+            const link = document.createElement('link');
+            link.id = 'leaflet-css-tracking';
+            link.rel = 'stylesheet';
+            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+            document.head.appendChild(link);
+        }
+
+        if (window.L) {
+            initMap(order);
+        } else {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            script.onload = () => initMap(order);
+            document.head.appendChild(script);
+        }
+    }, [order]);
+
     return (
         <div className={`order-tracking-premium-page ${order.deliveryPartner && ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status) ? 'has-active-map' : 'no-map'}`}>
             
             {/* 🗺️ Background Map (Fixed at top/behind) */}
-            {order.deliveryPartner && order.deliveryPartner.location && order.deliveryPartner.location.coordinates?.length >= 2 && ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status) && (
+            {order.deliveryPartner && ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status) && (
                 <div className="premium-map-bg">
-                    <Map 
-                        center={[order.deliveryPartner.location.coordinates[1], order.deliveryPartner.location.coordinates[0]]} 
-                        defaultZoom={15}
-                    >
-                        <Overlay anchor={[order.deliveryPartner.location.coordinates[1], order.deliveryPartner.location.coordinates[0]]} offset={[20, 20]}>
-                            <div className="map-vehicle-marker">
-                                <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${order.deliveryPartner.name}&backgroundColor=f97316`} style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }} alt="Partner" />
-                            </div>
-                        </Overlay>
-                        
-                        {order.shippingAddress?.latitude && order.shippingAddress?.longitude && (
-                           <Overlay anchor={[order.shippingAddress.latitude, order.shippingAddress.longitude]} offset={[16, 32]}>
-                               <div className="map-destination-marker" style={{ fontSize: '32px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'}}>📍</div>
-                           </Overlay>
-                        )}
-                    </Map>
+                    <div ref={mapRef} style={{ width: '100%', height: '100%' }}></div>
                 </div>
             )}
 
