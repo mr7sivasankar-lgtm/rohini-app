@@ -8,7 +8,7 @@ import Product from '../models/Product.js';
 import AdminConfig from '../models/AdminConfig.js';
 import ServiceableArea from '../models/ServiceableArea.js';
 import DeliveryPartner from '../models/DeliveryPartner.js';
-import { autoAssignDeliveryPartner } from './delivery.js';
+// removed import
 
 const router = express.Router();
 
