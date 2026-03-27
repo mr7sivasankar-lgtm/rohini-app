@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
 import './OrderDetail.css';
 
 const NEXT_STATUS_NORMAL = {
@@ -20,6 +21,7 @@ const STATUS_STEPS_RETURN = ['Assigned', 'Picked Up', 'Collected'];
 export default function OrderDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { partner } = useAuth(); // ADDED THIS LINE
 
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
