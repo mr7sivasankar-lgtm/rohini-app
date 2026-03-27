@@ -154,9 +154,48 @@ const OrderTracking = () => {
         <div className="order-tracking-modern-page">
             <div className="tracking-header">
                 <button className="back-button" onClick={() => navigate('/orders')}>
-                    <span className="back-icon">←</span> Back
+                    <span className="back-icon">←</span>
                 </button>
-                <h1 className="page-title">Order Details</h1>
+                <h1 className="page-title">Order Summary</h1>
+            </div>
+
+            {/* 📍 Map Takes Top Section */}
+            {order.deliveryPartner && order.deliveryPartner.location && order.deliveryPartner.location.coordinates?.length >= 2 && ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status) && (
+                <div className="tracking-map-top">
+                    <Map 
+                        height={260} 
+                        center={[order.deliveryPartner.location.coordinates[1], order.deliveryPartner.location.coordinates[0]]} 
+                        defaultZoom={15}
+                    >
+                        {/* Delivery Partner Scooter Marker */}
+                        <Overlay 
+                            anchor={[order.deliveryPartner.location.coordinates[1], order.deliveryPartner.location.coordinates[0]]}
+                            offset={[20, 20]}
+                        >
+                            <div className="map-vehicle-marker">🛵</div>
+                        </Overlay>
+                        
+                        {/* Customer Destination Marker */}
+                        {order.shippingAddress?.latitude && order.shippingAddress?.longitude && (
+                           <Overlay 
+                               anchor={[order.shippingAddress.latitude, order.shippingAddress.longitude]}
+                               offset={[16, 32]}
+                           >
+                               <div className="map-destination-marker">📍</div>
+                           </Overlay>
+                        )}
+                    </Map>
+                    
+                    <div className="live-ping-badge">
+                        <span className="live-ping-dot"></span> Live Tracking
+                    </div>
+                </div>
+            )}
+
+            {/* Hero Status Banner */}
+            <div className="tracking-hero">
+                <h2>{order.status === 'Delivered' ? 'Delivered successfully' : order.status === 'Out for Delivery' ? 'Arriving soon' : order.status}</h2>
+                <p>Order #{order.orderId} • {new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
             </div>
 
             {/* Expired Window Banner */}
@@ -165,7 +204,7 @@ const OrderTracking = () => {
                     <div className="banner-icon">{isExpired ? '⏳' : '⏱️'}</div>
                     <div className="banner-text">
                         {isExpired ? (
-                            <p><strong>Return/Exchange window expired.</strong> Items can no longer be returned or exchanged.</p>
+                            <p><strong>Return window expired.</strong> Items can no longer be returned or exchanged.</p>
                         ) : (
                             <p>Return / Exchange available for: <strong>{timeLeft} remaining</strong></p>
                         )}
@@ -173,275 +212,154 @@ const OrderTracking = () => {
                 </div>
             )}
 
-            {/* Order Items List */}
-            <div className="tracking-card">
-                <h3 className="section-title">
-                    Items ({order.items.length}) 
-                    {order.seller && <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '500', marginLeft: '6px' }}>from {order.seller.shopName}</span>}
-                </h3>
-                <div className="items-grid">
-                    {order.items.map((item, index) => (
-                        <div key={index} className="modern-order-item">
-                            <img src={getImageUrl(item.image)} alt={item.name} className="item-img" />
-                            <div className="item-info">
-                                <div className="item-name-row">
-                                    <h4 className="item-name">{item.name}</h4>
-                                    <span className="item-price">₹{(item.sellingPrice || 0).toFixed(2)}</span>
-                                </div>
-                                
-                                <div className="item-specs">
-                                    <span>Qty: <strong>{item.quantity}</strong></span>
-                                    {item.productCode && (
-                                        <span className="item-code">Code: {item.productCode}</span>
-                                    )}
-                                </div>
-
-                                {(item.size || item.color) && (
-                                    <div className="item-variants">
-                                        {item.size && <span>Size: {item.size}</span>}
-                                        {item.color && <span>Color: {item.color}</span>}
-                                    </div>
-                                )}
-
-                                {/* Action Buttons Logic based on Item Status and Order Status */}
-                                <div className="item-actions-row">
-                                    {item.status !== 'Active' ? (
-                                        <div className={`item-status-flag flag-${item.status.replace(/ /g, '-').toLowerCase()}`}>
-                                            {item.status}
-                                        </div>
-                                    ) : (
-                                        <>
-                                            {/* CANCEL ITEM if Order is early stage */}
-                                            {(order.status === 'Placed' || order.status === 'Accepted') && (
-                                                <button className="btn-action action-cancel" onClick={() => openModal(item, 'cancel')}>
-                                                    Cancel Item
-                                                </button>
-                                            )}
-
-                                            {/* RETURN/EXCHANGE ITEM if Order is Delivered */}
-                                            {order.status === 'Delivered' && !isExpired && (
-                                                <div className="delivered-actions">
-                                                    <button className="btn-action action-return" onClick={() => openModal(item, 'return')}>
-                                                        Return
-                                                    </button>
-                                                    <button className="btn-action action-exchange" onClick={() => openModal(item, 'exchange')}>
-                                                        Exchange
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-
-                                    {order.status === 'Delivered' && item.status === 'Active' && (
-                                        <button className="btn-action action-review" onClick={() => navigate(`/product/${item.product._id || item.product}`)}>
-                                            ⭐ Review
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Order Tracking Details */}
-            <div className="tracking-card">
-                <div className="order-meta-header">
-                    <div className="order-meta-left">
-                        <h2>Order #{order.orderId}</h2>
-                        <span className="order-date">{new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            {/* Delivery Partner Compact Row */}
+            {order.deliveryPartner && (
+                <div className="dp-compact-row">
+                    <div className="dp-avatar">
+                        <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${order.deliveryPartner.name}&backgroundColor=f97316`} alt="Avatar" />
                     </div>
-                    <span className={`status-pill status-${order.status.toLowerCase().replace(/ /g, '-')}`}>
-                        {order.status}
-                    </span>
+                    <div className="dp-info">
+                        <h4>{order.deliveryPartner.name}</h4>
+                        <p>Your Delivery Partner</p>
+                    </div>
+                    <a href={`tel:${order.deliveryPartner.phone}`} className="dp-call-btn">📞</a>
                 </div>
+            )}
 
-                {/* Status Timeline */}
-                <div className="modern-timeline">
-                    {statusSteps.map((step, index) => {
-                        let dotClass = 'timeline-dot';
-                        // If we are at the very last step (Delivered/Cancelled), it should be a checkmark too because it's completely finished
-                        const isFinished = index === currentStepIndex && index === statusSteps.length - 1;
+            <div className="page-section-divider" />
 
-                        if (isFinished || index < currentStepIndex) dotClass += ' completed';
-                        else if (index === currentStepIndex) dotClass += ' current';
-                        
-                        // Find if this step is reached to show its timestamp
-                        let stepTimestamp = null;
-                        if (index <= currentStepIndex && order.statusHistory) {
-                            const historyItem = order.statusHistory.find(h => h.status === step);
-                            if (historyItem && historyItem.timestamp) {
-                                const d = new Date(historyItem.timestamp);
-                                stepTimestamp = `${d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-                            }
+            {/* Vertical Tracking Timeline */}
+            <div className="tracking-timeline-vertical">
+                {statusSteps.map((step, index) => {
+                    let dotClass = 'v-dot';
+                    const isFinished = index === currentStepIndex && index === statusSteps.length - 1;
+
+                    if (isFinished || index < currentStepIndex) dotClass += ' completed';
+                    else if (index === currentStepIndex) dotClass += ' current';
+                    
+                    let stepTimestamp = null;
+                    if (index <= currentStepIndex && order.statusHistory) {
+                        const historyItem = order.statusHistory.find(h => h.status === step);
+                        if (historyItem && historyItem.timestamp) {
+                            const d = new Date(historyItem.timestamp);
+                            stepTimestamp = `${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}, ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
                         }
-
-                        return (
-                            <div key={step} className={`timeline-block ${index <= currentStepIndex ? 'active' : ''}`}>
-                                <div className={dotClass}>
-                                    {(isFinished || index < currentStepIndex) && <span className="check-mark">✓</span>}
-                                </div>
-                                <div className="timeline-title">{step}</div>
-                                {stepTimestamp && (
-                                    <div className="timeline-timestamp">{stepTimestamp}</div>
-                                )}
-                            </div>
-                        )
-                    })}
-                </div>
-
-                {/* Delivery Partner Info */}
-                {order.deliveryPartner && (
-                    <div className="delivery-partner-card" style={{ marginTop: '24px', padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '40px', height: '40px', background: '#f97316', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '20px' }}>
-                            🚚
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Delivery Partner</div>
-                            <div style={{ fontSize: '15px', color: '#0f172a', fontWeight: 700 }}>{order.deliveryPartner.name}</div>
-                            <div style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>📞 +91 {order.deliveryPartner.phone}</div>
-                        </div>
-                    </div>
-                )}
-                
-                {/* 🛵 Live Delivery Tracking Map */}
-                {order.deliveryPartner && order.deliveryPartner.location && order.deliveryPartner.location.coordinates?.length >= 2 && ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status) && (
-                    <div className="tracking-map-container" style={{ height: '300px', borderRadius: '16px', overflow: 'hidden', marginTop: '24px', position: 'relative', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-                        <Map 
-                            height={300} 
-                            center={[order.deliveryPartner.location.coordinates[1], order.deliveryPartner.location.coordinates[0]]} 
-                            defaultZoom={15}
-                        >
-                            {/* Delivery Partner Scooter Marker */}
-                            <Overlay 
-                                anchor={[order.deliveryPartner.location.coordinates[1], order.deliveryPartner.location.coordinates[0]]}
-                                offset={[20, 20]}
-                            >
-                                <div style={{ 
-                                    fontSize: '32px', 
-                                    transform: 'scaleX(-1)', /* face scooter towards general right */
-                                    filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.3))',
-                                    transition: 'all 0.5s ease-in-out' // Smooth glide 
-                                }}>
-                                    🛵
-                                </div>
-                            </Overlay>
-                            
-                            {/* Customer Destination Marker */}
-                            {order.shippingAddress?.latitude && order.shippingAddress?.longitude && (
-                               <Overlay 
-                                   anchor={[order.shippingAddress.latitude, order.shippingAddress.longitude]}
-                                   offset={[16, 32]}
-                               >
-                                   <div style={{ 
-                                        fontSize: '28px', 
-                                        filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.3))'
-                                    }}>
-                                       📍
-                                   </div>
-                               </Overlay>
-                            )}
-                        </Map>
-                        
-                        {/* Live Update Ping Indicator */}
-                        <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(255,255,255,0.9)', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-                            <span className="live-ping-dot" style={{ width: '8px', height: '8px', background: '#10b981', borderRadius: '50%', display: 'block' }}></span>
-                            Live Tracking
-                        </div>
-                    </div>
-                )}
-
-                {/* Mini Logistical Timeline for Returns & Exchanges */}
-                {order.items.map((item, index) => {
-                    if ((item.status.includes('Return') || item.status.includes('Exchange')) && !item.status.includes('Rejected')) {
-                        return (
-                            <div key={`logistics-${index}`} className="mini-timeline-container" style={{ marginTop: '24px', borderTop: '2px dashed #e2e8f0', paddingTop: '20px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                    <h5 style={{ margin: 0, fontSize: '14px', color: '#334155', fontWeight: 600 }}>
-                                        {item.status.includes('Return') ? 'Return Status' : 'Exchange Status'}
-                                    </h5>
-                                    {order.items.length > 1 && (
-                                        <span style={{ fontSize: '12px', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '12px' }}>
-                                            For: {item.name.length > 20 ? item.name.substring(0, 20) + '...' : item.name}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="modern-timeline" style={{ padding: '0' }}>
-                                    {(() => {
-                                        const steps = item.status.includes('Return') 
-                                            ? ['Return Requested', 'Return Approved', 'Return Completed']
-                                            : ['Exchange Requested', 'Exchange Approved', 'Exchange Completed'];
-                                        
-                                        const currentIndex = steps.indexOf(item.status);
-                                        
-                                        return steps.map((step, idx) => {
-                                            let dotClass = 'timeline-dot';
-                                            const isFinished = idx === currentIndex && idx === steps.length - 1;
-
-                                            if (isFinished || idx < currentIndex) dotClass += ' completed';
-                                            else if (idx === currentIndex) dotClass += ' current';
-                                            
-                                            return (
-                                                <div key={step} className={`timeline-block ${idx <= currentIndex ? 'active' : ''}`} style={{ width: `${100 / steps.length}%` }}>
-                                                    <div className={dotClass} style={{ width: '28px', height: '28px', marginBottom: '8px' }}>
-                                                        {(isFinished || idx < currentIndex) && <span className="check-mark" style={{ fontSize: '12px' }}>✓</span>}
-                                                    </div>
-                                                    <div className="timeline-title" style={{ fontSize: '11px', fontWeight: 500 }}>{step.replace('Return', '').replace('Exchange', '').replace('(Exchange)', '').trim() || (item.status.includes('Return') ? 'Completed' : 'Completed')}</div>
-                                                </div>
-                                            )
-                                        });
-                                    })()}
-                                </div>
-                            </div>
-                        );
                     }
-                    return null;
+
+                    return (
+                        <div key={step} className={`v-step ${index <= currentStepIndex ? 'active' : ''}`}>
+                            <div className="v-line-container">
+                                <div className={dotClass}>
+                                    {(isFinished || index < currentStepIndex) && <span className="check">✓</span>}
+                                </div>
+                                {index < statusSteps.length - 1 && <div className="v-line" />}
+                            </div>
+                            <div className="v-content">
+                                <h4>{step}</h4>
+                                {stepTimestamp && <p>{stepTimestamp}</p>}
+                            </div>
+                        </div>
+                    );
                 })}
             </div>
 
-            <div className="split-cards">
-                {/* Delivery Address */}
-                <div className="tracking-card flex-half">
-                    <h3 className="section-title">Delivery Address</h3>
-                    <div className="address-box">
-                        <div className="address-icon">📍</div>
-                        <div className="address-details">
-                            <p className="address-name">{order.shippingAddress.fullName}</p>
-                            <p>{order.shippingAddress.fullAddress}</p>
-                            {(order.shippingAddress.city || order.shippingAddress.district) && (
-                                <p>{order.shippingAddress.city}{order.shippingAddress.city && ','} {order.shippingAddress.district}</p>
+            <div className="page-section-divider" />
+
+            {/* Compact Receipt / Bill Details */}
+            <div className="bill-details-container">
+                <h3 className="section-title">Bill Details</h3>
+                <div className="receipt-shop-name">From {order.seller?.shopName || 'Shop'}</div>
+                
+                <div className="receipt-items">
+                    {order.items.map((item, index) => (
+                        <div key={index} className="receipt-item">
+                            <div className="receipt-item-main">
+                                <div className="receipt-item-img-wrap">
+                                    {item.image ? <img src={getImageUrl(item.image)} alt={item.name} /> : <div className="receipt-placeholder">🛍️</div>}
+                                </div>
+                                <div className="receipt-item-info">
+                                    <div className="receipt-name-row">
+                                        <span className="receipt-name">{item.name}</span>
+                                        <span className="receipt-qty">x {item.quantity}</span>
+                                    </div>
+                                    <div className="receipt-variants">
+                                        {item.size && <span>Size: {item.size}</span>}
+                                        {item.color && <span>Color: {item.color}</span>}
+                                        {item.productCode && <span>| Code: {item.productCode}</span>}
+                                    </div>
+                                </div>
+                                <div className="receipt-price">
+                                    ₹{((item.sellingPrice || item.price) * item.quantity).toFixed(2)}
+                                </div>
+                            </div>
+
+                            {/* Conditional Item Actions aligned under the item */}
+                            <div className="receipt-actions-row">
+                                {item.status !== 'Active' ? (
+                                    <div className={`compact-status-flag flag-${item.status.replace(/ /g, '-').toLowerCase()}`}>
+                                        {item.status}
+                                    </div>
+                                ) : (
+                                    <div className="compact-action-buttons">
+                                        {(order.status === 'Placed' || order.status === 'Accepted') && (
+                                            <button className="link-action-btn cancel" onClick={() => openModal(item, 'cancel')}>Cancel</button>
+                                        )}
+                                        {order.status === 'Delivered' && !isExpired && (
+                                            <>
+                                                <button className="link-action-btn" onClick={() => openModal(item, 'return')}>Return</button>
+                                                <button className="link-action-btn" onClick={() => openModal(item, 'exchange')}>Exchange</button>
+                                            </>
+                                        )}
+                                        {order.status === 'Delivered' && (
+                                            <button className="link-action-btn review" onClick={() => navigate(`/product/${item.product._id || item.product}`)}>Review</button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Nested Mini Logistics Timeline inside the compact item */}
+                            {(item.status.includes('Return') || item.status.includes('Exchange')) && !item.status.includes('Rejected') && (
+                                <div className="mini-logistics-text">
+                                    <span className="mini-arrow">↳</span> 
+                                    <strong>{item.status}</strong> — tracking initiated
+                                </div>
                             )}
-                            {order.shippingAddress.pincode && <p>PIN: {order.shippingAddress.pincode}</p>}
                         </div>
+                    ))}
+                </div>
+
+                <div className="receipt-summary">
+                    <div className="receipt-line"><span>Item Total</span><span>₹{(order.sellingPriceTotal || 0).toFixed(2)}</span></div>
+                    <div className="receipt-line">
+                        <span>Delivery Fee</span>
+                        {order.deliveryFee > 0 ? <span>₹{(order.deliveryFee || 0).toFixed(2)}</span> : <span className="free-text">FREE</span>}
+                    </div>
+                    {order.platformFee > 0 && (
+                        <div className="receipt-line"><span>Platform Fee</span><span>₹{(order.platformFee || 0).toFixed(2)}</span></div>
+                    )}
+                    <div className="receipt-divider" />
+                    <div className="receipt-line grand-total">
+                        <span>Grand Total</span>
+                        <span>₹{(order.totalAmount || 0).toFixed(2)}</span>
                     </div>
                 </div>
 
-                {/* Order Summary */}
-                <div className="tracking-card flex-half">
-                    <h3 className="section-title">Payment Summary</h3>
-                    <div className="payment-summary">
-                        <div className="summary-line">
-                            <span>Subtotal</span>
-                            <span>₹{(order.sellingPriceTotal || 0).toFixed(2)}</span>
-                        </div>
-                        <div className="summary-line">
-                            <span>Delivery Fee</span>
-                            <span>{order.deliveryFee > 0 ? `₹${(order.deliveryFee || 0).toFixed(2)}` : 'FREE'}</span>
-                        </div>
-                        {order.platformFee > 0 && (
-                            <div className="summary-line">
-                                <span>Platform Fee</span>
-                                <span>₹{(order.platformFee || 0).toFixed(2)}</span>
-                            </div>
-                        )}
-                        <div className="summary-divider"></div>
-                        <div className="summary-line total-line">
-                            <span>Total</span>
-                            <span>₹{(order.totalAmount || 0).toFixed(2)}</span>
-                        </div>
-                        <div className="payment-method-badge">
-                            Payment: {order.paymentMethod}
-                        </div>
+                <div className="receipt-payment-mode">
+                    <span className="pay-icon">💳</span> PAID VIA {order.paymentMethod.toUpperCase()}
+                </div>
+            </div>
+
+            <div className="page-section-divider" />
+
+            {/* Customer Delivery Details */}
+            <div className="delivery-address-container">
+                <h3 className="section-title">Delivery Details</h3>
+                <div className="address-compact">
+                    <div className="address-icon">📍</div>
+                    <div className="address-content">
+                        <strong>Delivering to {order.shippingAddress.fullName || 'Home'}</strong>
+                        <p>{order.shippingAddress.fullAddress}, {order.shippingAddress.city} {order.shippingAddress.district && `, ${order.shippingAddress.district}`} - {order.shippingAddress.pincode}</p>
+                        <p className="address-phone">Phone: {order.contactInfo?.phone}</p>
                     </div>
                 </div>
             </div>
