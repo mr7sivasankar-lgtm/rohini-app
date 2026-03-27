@@ -148,6 +148,20 @@ const OrderTracking = () => {
                         <Overlay anchor={[dpLat, dpLng]} offset={[20, 20]}>
                             <div style={{ fontSize: '32px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))', transform: 'scaleX(-1)' }}>🛵</div>
                         </Overlay>
+                        {/* Seller / Shop marker */}
+                        {order.seller?.location?.coordinates?.length >= 2 && (
+                            <Overlay
+                                anchor={[order.seller.location.coordinates[1], order.seller.location.coordinates[0]]}
+                                offset={[16, 32]}
+                            >
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                    <div style={{ fontSize: '28px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))' }}>🏬</div>
+                                    <div style={{ background: '#f59e0b', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '6px', whiteSpace: 'nowrap', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>
+                                        {order.seller?.shopName || 'Shop'}
+                                    </div>
+                                </div>
+                            </Overlay>
+                        )}
                         {/* Customer destination marker */}
                         {order.shippingAddress?.latitude && order.shippingAddress?.longitude && (
                             <Overlay anchor={[order.shippingAddress.latitude, order.shippingAddress.longitude]} offset={[16, 32]}>
