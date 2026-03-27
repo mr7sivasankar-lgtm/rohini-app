@@ -115,6 +115,7 @@ export default function OrderBroadcastOverlay() {
     return (
         <div className="broadcast-overlay">
             <div className="broadcast-card">
+                <button className="btn-close-broadcast" onClick={handleIgnore}>✖</button>
                 <div className="broadcast-header">
                     <div className="broadcast-subtitle">New {activeBroadcast.deliveryType} Request</div>
                     <div className="broadcast-earning">₹{activeBroadcast.deliveryFee}</div>
