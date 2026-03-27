@@ -52,6 +52,29 @@
     height: 100%;
 }
 
+/* ETA inline badge */
+.eta-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #f97316, #ef4444);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.35);
+    margin-top: 2px;
+}
+.eta-inline strong {
+    font-weight: 800;
+}
+.eta-clock {
+    font-size: 13px;
+}
+
+
 /* Adjust page padding to let content scroll up over map */
 .order-tracking-premium-page.has-active-map {
     padding-top: 40vh; /* Content starts right below map center */

@@ -137,6 +137,24 @@ const OrderTracking = () => {
     const dpLat = showMap ? order.deliveryPartner.location.coordinates[1] : null;
     const dpLng = showMap ? order.deliveryPartner.location.coordinates[0] : null;
 
+    // ─── ETA Calculation (Haversine) ───
+    const calcEta = () => {
+        if (!showMap || !order.shippingAddress?.latitude || !order.shippingAddress?.longitude) return null;
+        const toRad = (v) => (v * Math.PI) / 180;
+        const R = 6371; // Earth radius km
+        const dLat = toRad(order.shippingAddress.latitude - dpLat);
+        const dLng = toRad(order.shippingAddress.longitude - dpLng);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRad(dpLat)) * Math.cos(toRad(order.shippingAddress.latitude)) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const avgSpeedKmH = 20; // local delivery speed estimate
+        const etaMins = Math.ceil((distKm / avgSpeedKmH) * 60);
+        return etaMins;
+    };
+    const etaMins = calcEta();
+
     return (
         <div className={`order-tracking-premium-page ${showMap ? 'has-active-map' : 'no-map'}`}>
 
@@ -200,7 +218,14 @@ const OrderTracking = () => {
                             <p>
                                 {order.status === 'Delivered'
                                     ? `Delivered at ${new Date(order.deliveredAt || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                                    : 'Coming soon to your location'}
+                                    : etaMins != null
+                                    ? (
+                                        <span className="eta-inline">
+                                            <span className="eta-clock">🕐</span>
+                                            Arriving in <strong>{etaMins <= 1 ? 'less than a minute' : `~${etaMins} min${etaMins > 1 ? 's' : ''}`}</strong>
+                                        </span>
+                                    )
+                                    : 'Preparing your order'}
                             </p>
                         </div>
                     </div>
