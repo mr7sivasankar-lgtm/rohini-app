@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Map, Overlay } from 'pigeon-maps';
 import api, { getImageUrl } from '../../utils/api';
 import './OrderTracking.css';
 
@@ -7,7 +8,7 @@ const OrderTracking = () => {
     const { orderId } = useParams();
     const navigate = useNavigate();
 
-    // ─── All useState hooks at top ───
+    // ─── All hooks at the very top (Rules of Hooks) ───
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [actionModal, setActionModal] = useState({ isOpen: false, type: '', item: null });
@@ -18,12 +19,6 @@ const OrderTracking = () => {
     const [timeLeft, setTimeLeft] = useState(null);
     const [isExpired, setIsExpired] = useState(false);
 
-    // ─── All useRef hooks at top ───
-    const mapRef = useRef(null);
-    const leafletMapRef = useRef(null);
-    const dpMarkerRef = useRef(null);
-
-    // ─── Helpers ───
     const calculateTimeLeft = (deliveredTimestamp) => {
         const checkTime = () => {
             const deliveredAt = new Date(deliveredTimestamp).getTime();
@@ -31,7 +26,6 @@ const OrderTracking = () => {
             const expiresAt = deliveredAt + threeHoursInMs;
             const now = new Date().getTime();
             const difference = expiresAt - now;
-
             if (difference <= 0) {
                 setIsExpired(true);
                 setTimeLeft('00:00:00');
@@ -58,9 +52,7 @@ const OrderTracking = () => {
                 setOrder(foundOrder);
                 if (foundOrder?.status === 'Delivered') {
                     const deliveredStatus = foundOrder.statusHistory.find(s => s.status === 'Delivered');
-                    if (deliveredStatus) {
-                        calculateTimeLeft(deliveredStatus.timestamp);
-                    }
+                    if (deliveredStatus) calculateTimeLeft(deliveredStatus.timestamp);
                 }
             }
         } catch (error) {
@@ -70,6 +62,18 @@ const OrderTracking = () => {
         }
     };
 
+    // ─── All useEffect hooks right after state declarations ───
+    useEffect(() => { fetchOrder(); }, [orderId]);
+
+    useEffect(() => {
+        let interval;
+        if (order && order.deliveryPartner && ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status)) {
+            interval = setInterval(() => fetchOrder(), 10000);
+        }
+        return () => { if (interval) clearInterval(interval); };
+    }, [order?.status, order?.deliveryPartner]);
+
+    // ─── Helper functions ───
     const openModal = (item, type) => {
         setActionModal({ isOpen: true, type, item });
         setActionReason('');
@@ -107,116 +111,7 @@ const OrderTracking = () => {
         }
     };
 
-    // ─── Map initializer (called only after Leaflet loads) ───
-    const initMap = async (orderData) => {
-        if (!window.L || !orderData || !mapRef.current) return;
-
-        const sellerLat = orderData.seller?.location?.coordinates?.[1] || 13.6288;
-        const sellerLng = orderData.seller?.location?.coordinates?.[0] || 79.4192;
-        const custLat = orderData.shippingAddress?.latitude || 13.6288;
-        const custLng = orderData.shippingAddress?.longitude || 79.4192;
-        const dpLat = orderData.deliveryPartner?.location?.coordinates?.[1] || sellerLat;
-        const dpLng = orderData.deliveryPartner?.location?.coordinates?.[0] || sellerLng;
-
-        const L = window.L;
-
-        if (!leafletMapRef.current) {
-            const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false });
-
-            // Minimal tile — no labels, no hospitals, just clean roads
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
-                subdomains: 'abcd', maxZoom: 20
-            }).addTo(map);
-
-            // Draw blue driving route via OSRM
-            try {
-                const res = await fetch(
-                    `https://router.project-osrm.org/route/v1/driving/${sellerLng},${sellerLat};${custLng},${custLat}?overview=full&geometries=geojson`
-                );
-                const data = await res.json();
-                if (data.routes && data.routes[0]) {
-                    const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-                    const poly = L.polyline(coords, { color: '#3b82f6', weight: 4, opacity: 0.85, lineCap: 'round' });
-                    poly.addTo(map);
-                    map.fitBounds(poly.getBounds(), { padding: [48, 48] });
-                } else {
-                    map.setView([dpLat, dpLng], 14);
-                }
-            } catch {
-                map.setView([dpLat, dpLng], 14);
-            }
-
-            // Customer pin
-            L.marker([custLat, custLng], {
-                icon: L.divIcon({ html: `<div style="font-size:28px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))">📍</div>`, className: '', iconSize: [28, 28], iconAnchor: [14, 28] })
-            }).addTo(map);
-
-            // Seller pin
-            L.marker([sellerLat, sellerLng], {
-                icon: L.divIcon({ html: `<div style="font-size:24px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))">🏬</div>`, className: '', iconSize: [24, 24], iconAnchor: [12, 24] })
-            }).addTo(map);
-
-            // Delivery partner scooter
-            dpMarkerRef.current = L.marker([dpLat, dpLng], {
-                icon: L.divIcon({
-                    html: `<div style="font-size:32px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3));transform:scaleX(-1)">🛵</div>`,
-                    className: 'animated-scooter-icon',
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 16]
-                })
-            }).addTo(map);
-
-            leafletMapRef.current = map;
-        } else if (dpMarkerRef.current) {
-            // Smoothly move scooter on location update
-            dpMarkerRef.current.setLatLng([dpLat, dpLng]);
-            leafletMapRef.current.panTo([dpLat, dpLng], { animate: true, duration: 1.5 });
-        }
-    };
-
-    // ─── All useEffect hooks ───
-    useEffect(() => {
-        fetchOrder();
-    }, [orderId]);
-
-    useEffect(() => {
-        let interval;
-        if (order && order.deliveryPartner && ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status)) {
-            interval = setInterval(() => { fetchOrder(); }, 10000);
-        }
-        return () => { if (interval) clearInterval(interval); };
-    }, [order?.status, order?.deliveryPartner]);
-
-    useEffect(() => {
-        if (!order || !['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status)) return;
-
-        if (!document.getElementById('leaflet-css-tracking')) {
-            const link = document.createElement('link');
-            link.id = 'leaflet-css-tracking';
-            link.rel = 'stylesheet';
-            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-            document.head.appendChild(link);
-        }
-
-        if (window.L) {
-            initMap(order);
-        } else {
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-            script.onload = () => initMap(order);
-            document.head.appendChild(script);
-        }
-
-        return () => {
-            if (leafletMapRef.current) {
-                leafletMapRef.current.remove();
-                leafletMapRef.current = null;
-                dpMarkerRef.current = null;
-            }
-        };
-    }, [order?.status]);
-
-    // ─── Conditional renderers (AFTER all hooks) ───
+    // ─── Conditional renders AFTER all hooks ───
     if (loading) {
         return <div className="tracking-loading"><div className="spinner"></div></div>;
     }
@@ -235,7 +130,12 @@ const OrderTracking = () => {
 
     const statusSteps = ['Placed', 'Accepted', 'Packed', 'Picked Up', 'Out for Delivery', 'Delivered'];
     const currentStepIndex = statusSteps.indexOf(order.status);
-    const showMap = order.deliveryPartner && ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status);
+    const showMap = order.deliveryPartner &&
+        order.deliveryPartner.location?.coordinates?.length >= 2 &&
+        ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status);
+
+    const dpLat = showMap ? order.deliveryPartner.location.coordinates[1] : null;
+    const dpLng = showMap ? order.deliveryPartner.location.coordinates[0] : null;
 
     return (
         <div className={`order-tracking-premium-page ${showMap ? 'has-active-map' : 'no-map'}`}>
@@ -243,7 +143,18 @@ const OrderTracking = () => {
             {/* 🗺️ Background Map */}
             {showMap && (
                 <div className="premium-map-bg">
-                    <div ref={mapRef} style={{ width: '100%', height: '100%' }}></div>
+                    <Map center={[dpLat, dpLng]} defaultZoom={15}>
+                        {/* Delivery Partner marker */}
+                        <Overlay anchor={[dpLat, dpLng]} offset={[20, 20]}>
+                            <div style={{ fontSize: '32px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))', transform: 'scaleX(-1)' }}>🛵</div>
+                        </Overlay>
+                        {/* Customer destination marker */}
+                        {order.shippingAddress?.latitude && order.shippingAddress?.longitude && (
+                            <Overlay anchor={[order.shippingAddress.latitude, order.shippingAddress.longitude]} offset={[16, 32]}>
+                                <div style={{ fontSize: '32px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))' }}>📍</div>
+                            </Overlay>
+                        )}
+                    </Map>
                 </div>
             )}
 
@@ -258,7 +169,7 @@ const OrderTracking = () => {
             {/* 🧊 Content Overlay */}
             <div className="premium-content-overlay">
 
-                {/* Card 1: Status & Quick Summary */}
+                {/* Card 1: Status */}
                 <div className="glass-card main-status-card">
                     <div className="status-hero-row">
                         <div className="status-icon-box">
@@ -279,9 +190,7 @@ const OrderTracking = () => {
                             </p>
                         </div>
                     </div>
-
                     <div className="thin-divider" />
-
                     <div className="status-quick-items-row">
                         <div className="quick-item-names">
                             <p className="item-names-text">
@@ -291,10 +200,8 @@ const OrderTracking = () => {
                             </p>
                             <p className="item-meta">₹{(order.totalAmount || 0).toFixed(2)} &nbsp;•&nbsp; {order.items.length} items</p>
                         </div>
-                        <button
-                            className="btn-detail-solid"
-                            onClick={() => document.getElementById('extended-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                        >
+                        <button className="btn-detail-solid"
+                            onClick={() => document.getElementById('extended-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
                             Detail
                         </button>
                     </div>
@@ -326,8 +233,7 @@ const OrderTracking = () => {
                             <div className="dp-contact-row">
                                 <img
                                     src={`https://api.dicebear.com/7.x/initials/svg?seed=${order.deliveryPartner.name}&backgroundColor=10b981`}
-                                    alt="DP"
-                                    className="dp-pic"
+                                    alt="DP" className="dp-pic"
                                 />
                                 <div className="dp-text">
                                     <strong>{order.deliveryPartner.name}</strong>
@@ -365,14 +271,13 @@ const OrderTracking = () => {
                                 const isFinished = index === currentStepIndex && index === statusSteps.length - 1;
                                 const isCompleted = isFinished || index < currentStepIndex;
                                 const isCurrent = index === currentStepIndex;
-
                                 if (isCompleted) dotClass += ' completed';
                                 else if (isCurrent) dotClass += ' current';
 
                                 let stepTimestamp = null;
                                 if (index <= currentStepIndex && order.statusHistory) {
                                     const historyItem = order.statusHistory.find(h => h.status === step);
-                                    if (historyItem && historyItem.timestamp) {
+                                    if (historyItem?.timestamp) {
                                         const d = new Date(historyItem.timestamp);
                                         stepTimestamp = `${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}\n${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
                                     }
@@ -493,40 +398,27 @@ const OrderTracking = () => {
                                 <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
                                     <div style={{ flex: 1 }}>
                                         <label>New Size (Optional)</label>
-                                        <select
-                                            value={actionExchangeSize}
-                                            onChange={(e) => setActionExchangeSize(e.target.value)}
-                                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                                        >
+                                        <select value={actionExchangeSize} onChange={(e) => setActionExchangeSize(e.target.value)}
+                                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                                             <option value="">Same Size</option>
-                                            <option value="XS">XS</option>
-                                            <option value="S">S</option>
-                                            <option value="M">M</option>
-                                            <option value="L">L</option>
-                                            <option value="XL">XL</option>
-                                            <option value="XXL">XXL</option>
+                                            <option value="XS">XS</option><option value="S">S</option>
+                                            <option value="M">M</option><option value="L">L</option>
+                                            <option value="XL">XL</option><option value="XXL">XXL</option>
                                         </select>
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <label>New Color (Optional)</label>
-                                        <input
-                                            type="text"
-                                            placeholder="e.g. Red"
-                                            value={actionExchangeColor}
+                                        <input type="text" placeholder="e.g. Red" value={actionExchangeColor}
                                             onChange={(e) => setActionExchangeColor(e.target.value)}
                                             style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                                         />
                                     </div>
                                 </div>
                             )}
-
                             <label>Reason / Comments (Optional)</label>
-                            <textarea
-                                placeholder={`Why are you requesting a ${actionModal.type}?`}
-                                value={actionReason}
-                                onChange={(e) => setActionReason(e.target.value)}
-                                rows={3}
-                            ></textarea>
+                            <textarea placeholder={`Why are you requesting a ${actionModal.type}?`}
+                                value={actionReason} onChange={(e) => setActionReason(e.target.value)} rows={3}>
+                            </textarea>
                             <p className="modal-warning">
                                 {actionModal.type === 'cancel'
                                     ? 'This item will be permanently cancelled'
@@ -535,14 +427,9 @@ const OrderTracking = () => {
                         </div>
 
                         <div className="modal-actions">
-                            <button className="btn-modern secondary" onClick={closeModal} disabled={isSubmitting}>
-                                No, Keep It
-                            </button>
-                            <button
-                                className={`btn-modern ${actionModal.type === 'cancel' ? 'danger' : 'warning'}`}
-                                onClick={handleActionItem}
-                                disabled={isSubmitting}
-                            >
+                            <button className="btn-modern secondary" onClick={closeModal} disabled={isSubmitting}>No, Keep It</button>
+                            <button className={`btn-modern ${actionModal.type === 'cancel' ? 'danger' : 'warning'}`}
+                                onClick={handleActionItem} disabled={isSubmitting}>
                                 {isSubmitting ? 'Processing...' : `Confirm ${actionModal.type}`}
                             </button>
                         </div>
