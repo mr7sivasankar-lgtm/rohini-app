@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-.order-tracking-modern-page {
+.order-tracking-premium-page {
     font-family: 'Inter', sans-serif;
     background-color: #f4f5f7;
     min-height: 100vh;
@@ -8,182 +8,313 @@
     max-width: 600px;
     margin: 0 auto;
     position: relative;
-    box-shadow: 0 0 20px rgba(0,0,0,0.05); /* simulate mobile view container on desktop */
 }
 
-/* Header */
-.tracking-header {
+/* Base without Map */
+.order-tracking-premium-page.no-map .premium-content-overlay {
+    padding: 16px;
+}
+.order-tracking-premium-page.no-map .floating-top-nav {
+    position: sticky;
+    top: 0;
     background: #ffffff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     padding: 16px 20px;
+}
+.order-tracking-premium-page.no-map .pill-back-btn {
+    background: #f1f5f9;
+}
+
+/* 🗺️ Fixed Background Map */
+.premium-map-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    height: 55vh;
+    z-index: 0;
+    background: #e2e8f0;
+}
+
+/* Adjust page padding to let content scroll up over map */
+.order-tracking-premium-page.has-active-map {
+    padding-top: 40vh; /* Content starts right below map center */
+}
+
+/* 🔴 Floating Top Nav */
+.floating-top-nav {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    z-index: 100;
     display: flex;
     align-items: center;
     gap: 16px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    max-width: 568px; /* 600 - 32 */
+    margin: 0 auto;
 }
 
-.back-button {
-    background: #f1f5f9;
+.pill-back-btn {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
     border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+    padding: 10px 16px;
+    border-radius: 30px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 6px;
     cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
     color: #0f172a;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     transition: all 0.2s ease;
 }
-.back-button:hover { background: #e2e8f0; }
-.back-icon { font-size: 18px; font-weight: bold; }
+.pill-back-btn:hover { background: #ffffff; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.15); }
 
-.page-title {
-    font-size: 18px;
+.pill-title {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    margin: 0;
+    padding: 10px 20px;
+    font-size: 15px;
     font-weight: 800;
     color: #0f172a;
-    margin: 0;
+    border-radius: 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     letter-spacing: -0.3px;
 }
 
-/* Tracking Map Top */
-.tracking-map-top {
+/* 🧊 Content Overlay */
+.premium-content-overlay {
     position: relative;
-    background: #e2e8f0;
-    height: 260px;
-    overflow: hidden;
-    /* Map covers full bleed of the container */
+    z-index: 10;
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.map-vehicle-marker {
-    font-size: 36px;
-    transform: scaleX(-1);
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
-    transition: all 0.5s ease-in-out;
-}
-
-.map-destination-marker {
-    font-size: 28px;
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
-}
-
-.live-ping-badge {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(8px);
-    padding: 8px 14px;
+/* Glass Cards */
+.glass-card {
+    background: #ffffff;
     border-radius: 20px;
-    font-size: 13px;
-    font-weight: 700;
-    color: #059669;
+    padding: 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+    border: 1px solid rgba(255,255,255,0.8);
+}
+
+.extended-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 24px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
+.thin-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 16px 0;
+    width: 100%;
+}
+
+.section-title {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.3px;
+}
+
+/* -------------------------------------
+   Card 1: Status Hero
+--------------------------------------*/
+.status-hero-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    gap: 16px;
 }
 
-.live-ping-dot {
-    width: 8px;
-    height: 8px;
-    background: #10b981;
-    border-radius: 50%;
-    animation: livePing 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-@keyframes livePing {
-    0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-    100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-
-/* Hero Status Banner */
-.tracking-hero {
-    background: #ffffff;
-    padding: 24px 20px;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.tracking-hero h2 {
+.status-icon-box {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 26px;
-    font-weight: 900;
-    color: #0f172a;
-    margin: 0 0 6px 0;
-    letter-spacing: -0.5px;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
-.tracking-hero p {
+.status-hero-text h3 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.3px;
+}
+
+.status-hero-text p {
+    margin: 0;
     font-size: 14px;
     color: #64748b;
-    margin: 0;
     font-weight: 500;
 }
 
-/* Delivery Partner Row */
-.dp-compact-row {
-    background: #ffffff;
-    padding: 16px 20px;
+.status-quick-items-row {
     display: flex;
     align-items: center;
-    gap: 14px;
+    justify-content: space-between;
+    gap: 16px;
 }
 
-.dp-avatar img {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid #f8fafc;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-
-.dp-info {
+.quick-item-names {
     flex: 1;
 }
 
-.dp-info h4 {
-    margin: 0 0 2px 0;
-    font-size: 16px;
+.item-names-text {
+    margin: 0 0 4px 0;
+    font-size: 14px;
     font-weight: 700;
-    color: #0f172a;
+    color: #1e293b;
 }
 
-.dp-info p {
+.item-meta {
     margin: 0;
     font-size: 13px;
-    color: #64748b;
-    font-weight: 500;
+    color: #f59e0b;
+    font-weight: 700;
 }
 
-.dp-call-btn {
+.btn-detail-solid {
+    background: #f59e0b;
+    color: #ffffff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+    transition: all 0.2s;
+}
+.btn-detail-solid:hover { background: #d97706; transform: translateY(-2px); }
+
+/* -------------------------------------
+   Card 2: Route & Partner
+--------------------------------------*/
+.route-path-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.route-node {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.node-icon {
+    width: 24px;
+    display: flex;
+    justify-content: center;
+    margin-top: 2px;
+}
+.node-icon.dot {
+    width: 14px;
+    height: 14px;
+    background: #f59e0b;
+    border-radius: 50%;
+    margin-left: 5px;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+}
+.node-icon.pin {
+    font-size: 18px;
+}
+
+.node-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.node-text strong { font-size: 15px; color: #0f172a; }
+.node-text span { font-size: 13px; color: #64748b; font-weight: 500; }
+
+.route-line-dashed {
+    height: 30px;
+    width: 2px;
+    background-image: linear-gradient(#cbd5e1 50%, rgba(255,255,255,0) 0%);
+    background-position: right;
+    background-size: 2px 8px;
+    background-repeat: repeat-y;
+    margin-left: 11px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.dp-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.dp-pic {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #f1f5f9;
+}
+
+.dp-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.dp-text strong { font-size: 16px; color: #0f172a; }
+.dp-text span { font-size: 13px; color: #64748b; font-weight: 500; }
+
+.dp-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.circle-btn {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: #eef2ff;
-    color: #4f46e5;
     display: flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    font-size: 20px;
-    transition: all 0.2s ease;
+    font-size: 18px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
-.dp-call-btn:hover { background: #e0e7ff; transform: scale(1.05); }
+.circle-btn.green { background: #10b981; color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+.circle-btn.green:hover { background: #059669; transform: scale(1.05); }
+.circle-btn.yellow { background: #fbbf24; color: white; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3); }
+.circle-btn.yellow:hover { background: #f59e0b; transform: scale(1.05); }
 
-/* Section Dividers */
-.page-section-divider {
-    height: 12px;
-    background: #f4f5f7;
-    width: 100%;
+
+/* -------------------------------------
+   Lower Section (Details, etc)
+--------------------------------------*/
+.extended-details-section {
+    margin-top: 24px;
 }
 
 /* Vertical Timeline */
 .tracking-timeline-vertical {
-    background: #ffffff;
-    padding: 24px 20px 10px 20px;
+    display: flex;
+    flex-direction: column;
 }
 
 .v-step {
@@ -238,7 +369,7 @@
 }
 
 .v-step.active .v-line {
-    background: #10b981;
+    background: #3b82f6; /* Modern blue instead of green for active track */
 }
 
 .v-content {
@@ -260,34 +391,10 @@
 }
 
 /* Bill Details / Receipt */
-.bill-details-container {
-    background: white;
-    padding: 24px 20px;
-}
-
-.section-title {
-    margin: 0 0 20px 0;
-    font-size: 18px;
-    font-weight: 800;
-    color: #0f172a;
-    letter-spacing: -0.3px;
-}
-
-.receipt-shop-name {
-    font-size: 12px;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px dashed #e2e8f0;
-}
-
 .receipt-items {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
     margin-bottom: 20px;
 }
 
@@ -370,9 +477,8 @@
     min-width: 60px;
 }
 
-/* Inline Actions */
 .receipt-actions-row {
-    padding-left: 60px; /* Align with text */
+    padding-left: 60px; 
 }
 
 .compact-action-buttons {
@@ -391,8 +497,8 @@
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 0.3px;
-    transition: color 0.2s;
 }
+
 .link-action-btn:hover { color: #2563eb; text-decoration: underline; }
 .link-action-btn.cancel { color: #ef4444; }
 .link-action-btn.cancel:hover { color: #dc2626; }
@@ -422,10 +528,10 @@
 /* Bill Summary Totals */
 .receipt-summary {
     border-top: 1px dashed #e2e8f0;
-    padding-top: 16px;
+    padding-top: 20px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .receipt-line {
@@ -435,10 +541,7 @@
     color: #475569;
 }
 
-.free-text {
-    color: #10b981;
-    font-weight: 700;
-}
+.free-text { color: #10b981; font-weight: 700; }
 
 .receipt-divider {
     height: 1px;
@@ -467,45 +570,6 @@
 }
 .pay-icon { font-size: 16px; }
 
-
-/* Delivery Address */
-.delivery-address-container {
-    background: #ffffff;
-    padding: 24px 20px;
-    margin-bottom: 40px;
-}
-
-.address-compact {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-}
-
-.address-icon {
-    font-size: 24px;
-    margin-top: 2px;
-}
-
-.address-content strong {
-    display: block;
-    font-size: 15px;
-    color: #0f172a;
-    margin-bottom: 4px;
-}
-
-.address-content p {
-    margin: 0;
-    font-size: 13px;
-    color: #64748b;
-    line-height: 1.5;
-}
-
-.address-phone {
-    margin-top: 4px !important;
-    font-weight: 600;
-    color: #3b4155 !important;
-}
-
 /* Expiry Banner */
 .time-window-banner {
     display: flex;
@@ -513,12 +577,12 @@
     gap: 12px;
     padding: 12px 20px;
     font-size: 13px;
-    border-bottom: 1px solid #f1f5f9;
+    border-radius: 12px;
 }
-.active-banner { background: #eff6ff; color: #1e40af; }
-.expired-banner { background: #fef2f2; color: #991b1b; }
+.active-banner { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+.expired-banner { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
-/* Reuse the existing highly polished modals */
+/* Modal Styles */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -550,11 +614,11 @@
 .modal-item-preview {
     display: flex;
     gap: 16px;
-    padding: 16px;
+    align-items: center;
     background: #f8fafc;
+    padding: 16px;
     border-radius: 12px;
     margin-bottom: 24px;
-    align-items: center;
 }
 
 .modal-item-preview img {
@@ -563,19 +627,15 @@
     border-radius: 8px;
     object-fit: cover;
 }
+.modal-item-preview h4 { margin: 0 0 6px 0; font-size: 14px; color: #0f172a; }
+.modal-item-preview span { font-size: 12px; color: #64748b; font-weight: 500; }
 
-.modal-item-preview h4 { margin: 0 0 4px 0; font-size: 14px; color: #0f172a; }
-.modal-item-preview span { font-size: 12px; color: #64748b; font-weight: 500;}
-
-.modal-form label {
-    display: block; font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 8px;
-}
+.modal-form label { display: block; font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 8px; }
 .modal-form textarea {
     width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 12px;
     font-family: inherit; font-size: 14px; resize: vertical; margin-bottom: 12px; background: #f8fafc;
 }
 .modal-warning { font-size: 12px; color: #64748b; margin: 0 0 24px 0; }
-
 .modal-actions { display: flex; gap: 12px; }
 .btn-modern {
     flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: 700; font-size: 14px;
