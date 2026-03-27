@@ -130,25 +130,6 @@ const OrderTracking = () => {
         setActionExchangeColor('');
     };
 
-    if (loading) {
-        return <div className="tracking-loading"><div className="spinner"></div></div>;
-    }
-
-    if (!order) {
-        return (
-            <div className="tracking-empty-state">
-                <div className="empty-icon">📦</div>
-                <h2>Order not found</h2>
-                <button className="btn-modern primary" onClick={() => navigate('/orders')}>
-                    View All Orders
-                </button>
-            </div>
-        );
-    }
-
-    const statusSteps = ['Placed', 'Accepted', 'Packed', 'Picked Up', 'Out for Delivery', 'Delivered'];
-    const currentStepIndex = statusSteps.indexOf(order.status);
-
     const mapRef = useRef(null);
     const leafletMapRef = useRef(null);
     const dpMarkerRef = useRef(null);
@@ -253,6 +234,25 @@ const OrderTracking = () => {
             document.head.appendChild(script);
         }
     }, [order]);
+
+    if (loading) {
+        return <div className="tracking-loading"><div className="spinner"></div></div>;
+    }
+
+    if (!order) {
+        return (
+            <div className="tracking-empty-state">
+                <div className="empty-icon">📦</div>
+                <h2>Order not found</h2>
+                <button className="btn-modern primary" onClick={() => navigate('/orders')}>
+                    View All Orders
+                </button>
+            </div>
+        );
+    }
+
+    const statusSteps = ['Placed', 'Accepted', 'Packed', 'Picked Up', 'Out for Delivery', 'Delivered'];
+    const currentStepIndex = statusSteps.indexOf(order.status);
 
     return (
         <div className={`order-tracking-premium-page ${order.deliveryPartner && ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status) ? 'has-active-map' : 'no-map'}`}>
