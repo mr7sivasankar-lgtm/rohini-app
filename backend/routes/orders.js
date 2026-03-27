@@ -931,9 +931,9 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
 
         await order.save();
 
-        // Auto-assign delivery partner when order becomes Packed
+        // Broadcast order when it becomes Packed (fallback if not broadcasted on Ready for Pickup)
         if (status === 'Packed' && !order.deliveryPartner) {
-            autoAssignDeliveryPartner(order._id).catch(e => console.error('[AutoAssign] Failed:', e.message));
+            broadcastOrder(order._id).catch(e => console.error('[Broadcast] Failed:', e.message));
         }
 
         res.status(200).json({
@@ -1024,13 +1024,13 @@ router.put('/admin/:id/item-status', protect, adminOnly, async (req, res) => {
 
         await order.save();
 
-        // Auto-assign a delivery partner for return pickups when admin approves
+        // Broadcast for return pickups when admin approves
         if (status === 'Return Approved') {
             try {
-                await autoAssignDeliveryPartner(order._id, 'Return Pickup');
-                console.log(`[Return Auto-Assign] Return pickup task created for order ${order._id}`);
+                await broadcastOrder(order._id, 'Return Pickup');
+                console.log(`[Return Broadcast] Return pickup task broadcasted for order ${order._id}`);
             } catch (assignErr) {
-                console.error('[Return Auto-Assign] Failed to assign delivery partner:', assignErr.message);
+                console.error('[Return Broadcast] Failed to broadcast return delivery:', assignErr.message);
             }
         }
 
