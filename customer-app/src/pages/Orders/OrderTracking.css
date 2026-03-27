@@ -311,30 +311,36 @@
     margin-top: 24px;
 }
 
-/* Vertical Timeline */
-.tracking-timeline-vertical {
+/* Horizontal Timeline */
+.tracking-timeline-horizontal {
     display: flex;
-    flex-direction: column;
-}
-
-.v-step {
-    display: flex;
-    gap: 16px;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-bottom: 4px;
     position: relative;
+    width: 100%;
 }
 
-.v-step.active .v-content h4 { color: #0f172a; font-weight: 700; }
-.v-step.active .v-content p { color: #64748b; }
-
-.v-line-container {
+.h-step {
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
+    flex: 1;
 }
 
-.v-dot {
-    width: 24px;
-    height: 24px;
+.h-indicator {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 8px;
+    position: relative;
+    justify-content: center;
+}
+
+.h-dot {
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: #f1f5f9;
     border: 2px solid #cbd5e1;
@@ -345,50 +351,59 @@
     transition: all 0.3s ease;
 }
 
-.v-dot.completed {
+.h-dot.completed {
     background: #10b981;
     border-color: #10b981;
 }
 
-.v-dot.current {
+.h-dot.current {
     background: #3b82f6;
     border-color: #3b82f6;
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
 }
 
-.v-dot .check { color: white; font-size: 12px; font-weight: bold; }
+.h-dot .check { color: white; font-size: 11px; font-weight: bold; }
 
-.v-line {
-    width: 3px;
+.h-line {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 3px;
     background: #e2e8f0;
-    flex-grow: 1;
-    margin-top: -2px;
-    margin-bottom: -2px;
-    min-height: 24px;
     z-index: 1;
+    transform: translateY(-50%);
 }
 
-.v-step.active .v-line {
-    background: #3b82f6; /* Modern blue instead of green for active track */
+.h-line.completed-line {
+    background: #10b981;
 }
 
-.v-content {
-    padding-bottom: 28px;
-    flex: 1;
+.h-content {
+    text-align: center;
+    width: 120%;
 }
 
-.v-content h4 {
+.h-content h4 {
     margin: 0 0 4px 0;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     color: #94a3b8;
+    line-height: 1.2;
 }
 
-.v-content p {
-    margin: 0;
-    font-size: 12px;
-    color: #cbd5e1;
+.h-step.active .h-content h4 {
+    color: #0f172a;
 }
+
+.h-content p {
+    margin: 0;
+    font-size: 9px;
+    color: #cbd5e1;
+    line-height: 1.25;
+    white-space: pre-line;
+}
+
 
 /* Bill Details / Receipt */
 .receipt-items {

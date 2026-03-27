@@ -270,35 +270,39 @@ const OrderTracking = () => {
                         </div>
                     )}
 
-                    {/* Timeline */}
                     <div className="extended-card timeline-card">
                         <h3 className="section-title">Order Timeline</h3>
-                        <div className="tracking-timeline-vertical">
+                        <div className="tracking-timeline-horizontal">
                             {statusSteps.map((step, index) => {
-                                let dotClass = 'v-dot';
+                                let dotClass = 'h-dot';
                                 const isFinished = index === currentStepIndex && index === statusSteps.length - 1;
+                                const isCompleted = isFinished || index < currentStepIndex;
+                                const isCurrent = index === currentStepIndex;
 
-                                if (isFinished || index < currentStepIndex) dotClass += ' completed';
-                                else if (index === currentStepIndex) dotClass += ' current';
+                                if (isCompleted) dotClass += ' completed';
+                                else if (isCurrent) dotClass += ' current';
                                 
                                 let stepTimestamp = null;
                                 if (index <= currentStepIndex && order.statusHistory) {
                                     const historyItem = order.statusHistory.find(h => h.status === step);
                                     if (historyItem && historyItem.timestamp) {
                                         const d = new Date(historyItem.timestamp);
-                                        stepTimestamp = `${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}, ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                                        stepTimestamp = `${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}\n${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
                                     }
                                 }
 
                                 return (
-                                    <div key={step} className={`v-step ${index <= currentStepIndex ? 'active' : ''}`}>
-                                        <div className="v-line-container">
+                                    <div key={step} className={`h-step ${index <= currentStepIndex ? 'active' : ''}`}>
+                                        <div className="h-indicator">
                                             <div className={dotClass}>
-                                                {(isFinished || index < currentStepIndex) && <span className="check">✓</span>}
+                                                {(isCompleted) && <span className="check">✓</span>}
                                             </div>
-                                            {index < statusSteps.length - 1 && <div className="v-line" />}
+                                            {/* Line extends to the right unless it's the last step */}
+                                            {index < statusSteps.length - 1 && (
+                                                <div className={`h-line ${isCompleted ? 'completed-line' : ''}`} />
+                                            )}
                                         </div>
-                                        <div className="v-content">
+                                        <div className="h-content">
                                             <h4>{step}</h4>
                                             {stepTimestamp && <p>{stepTimestamp}</p>}
                                         </div>
