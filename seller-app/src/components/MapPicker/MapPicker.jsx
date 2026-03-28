@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import './MapPicker.css';
 
-const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyCXNIpwQ6rNmeH6oLU0j7y1bMECzZ65BpA';
 const DEFAULT_LAT = 13.6288;
 const DEFAULT_LNG = 79.4192;
 
@@ -13,7 +13,7 @@ function loadGM(cb) {
     _loading = true;
     window.__gmSellerReady = () => { _loaded = true; _loading = false; _cbs.forEach(f => f()); _cbs = []; };
     const s = document.createElement('script');
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAP_KEY}&libraries=places&callback=__gmSellerReady`;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAP_KEY}&libraries=places&callback=__gmSellerReady&loading=async`;
     s.async = true; s.defer = true;
     document.head.appendChild(s);
 }

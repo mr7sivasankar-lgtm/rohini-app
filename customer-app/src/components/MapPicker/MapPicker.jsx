@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import './MapPicker.css';
 
-const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+// ── Key baked in at build time (also works without Vercel env vars) ──
+const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyCXNIpwQ6rNmeH6oLU0j7y1bMECzZ65BpA';
 const DEFAULT_LAT = 13.6288;
 const DEFAULT_LNG = 79.4192;
 
-/* ── Load Google Maps script once ── */
+/* ── Load Google Maps script once globally ── */
 let gmapsLoaded = false;
 let gmapsLoading = false;
 const gmapsCallbacks = [];
@@ -22,7 +23,7 @@ function loadGoogleMaps(callback) {
         gmapsCallbacks.length = 0;
     };
     const s = document.createElement('script');
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAP_KEY}&libraries=places&callback=__gmapsReady`;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAP_KEY}&libraries=places&callback=__gmapsReady&loading=async`;
     s.async = true;
     s.defer = true;
     document.head.appendChild(s);

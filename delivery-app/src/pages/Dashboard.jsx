@@ -2,12 +2,25 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import './Dashboard.css';
 
+const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyCXNIpwQ6rNmeH6oLU0j7y1bMECzZ65BpA';
 const DELIVERY_TYPE_LABELS = { Normal: '🚚 Normal', 'Return Pickup': '↩️ Return', 'Exchange Pickup': '🔄 Exchange' };
 const STATUS_COLORS = { Assigned: '#f59e0b', 'Picked Up': '#22c55e', 'Out for Delivery': '#16a34a' };
+
+/* ── Load Google Maps once ── */
+let _gmLoaded = false, _gmLoading = false, _gmCbs = [];
+function loadGM(cb) {
+    if (_gmLoaded) return cb();
+    _gmCbs.push(cb);
+    if (_gmLoading) return;
+    _gmLoading = true;
+    window.__gmDashReady = () => { _gmLoaded = true; _gmLoading = false; _gmCbs.forEach(f => f()); _gmCbs = []; };
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAP_KEY}&callback=__gmDashReady&loading=async`;
+    s.async = true; s.defer = true;
+    document.head.appendChild(s);
+}
 
 export default function Dashboard() {
     const { partner, updatePartner } = useAuth();
@@ -17,14 +30,21 @@ export default function Dashboard() {
     const [stats, setStats] = useState({ assigned: 0, pending: 0, deliveredToday: 0, returnPickups: 0, exchangePickups: 0 });
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeFilter, setActiveFilter] = useState(null); // null = All
+    const [activeFilter, setActiveFilter] = useState(null);
     const [dpPosition, setDpPosition] = useState(null);
+    const [showRelocate, setShowRelocate] = useState(false);
 
-    // Leaflet refs
+    // Google Maps refs
     const mapContainerRef = useRef(null);
-    const mapRef = useRef(null);
+    const googleMapRef = useRef(null);
     const dpMarkerRef = useRef(null);
+    const relocateMapRef = useRef(null);
+    const relocateGMapRef = useRef(null);
+    const relocateMarkerRef = useRef(null);
     const [mapReady, setMapReady] = useState(false);
+    const [relocatePos, setRelocatePos] = useState(null);
+    const [relocateAddr, setRelocateAddr] = useState('');
+    const [savingLocation, setSavingLocation] = useState(false);
 
     // ── Fetch stats + orders ──
     const fetchData = useCallback(async () => {
@@ -63,64 +83,143 @@ export default function Dashboard() {
         return () => navigator.geolocation.clearWatch(watchId);
     }, []);
 
-    // ── Init Leaflet map ──
+    // ── Init Google Map ──
     useEffect(() => {
-        if (!mapContainerRef.current || mapRef.current) return;
-
-        const map = L.map(mapContainerRef.current, {
-            zoomControl: true,
-            scrollWheelZoom: false,
-            dragging: true,
-            attributionControl: false,
+        if (!mapContainerRef.current || googleMapRef.current) return;
+        loadGM(() => {
+            if (!mapContainerRef.current || googleMapRef.current) return;
+            const map = new window.google.maps.Map(mapContainerRef.current, {
+                center: { lat: 20.5937, lng: 78.9629 },
+                zoom: 5,
+                disableDefaultUI: false,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+                gestureHandling: 'greedy',
+            });
+            googleMapRef.current = map;
+            setMapReady(true);
         });
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-        map.setView([20.5937, 78.9629], 5); // default India center
-
-        mapRef.current = map;
-        setMapReady(true);
-
-        return () => {
-            mapRef.current?.remove();
-            mapRef.current = null;
-            dpMarkerRef.current = null;
-            setMapReady(false);
-        };
+        return () => { googleMapRef.current = null; dpMarkerRef.current = null; setMapReady(false); };
     }, []);
 
     // ── Update scooter marker when GPS changes ──
     useEffect(() => {
-        const map = mapRef.current;
+        const map = googleMapRef.current;
         if (!mapReady || !map || !dpPosition) return;
         const { lat, lng } = dpPosition;
 
-        const scooterIcon = L.divIcon({
-            html: `<div class="dp-scooter-marker">🛵</div>`,
-            className: '',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20],
-        });
+        const scooterIcon = {
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+                `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 42 42"><text y="38" font-size="36">🛵</text></svg>`
+            ),
+            scaledSize: new window.google.maps.Size(42, 42),
+            anchor: new window.google.maps.Point(21, 21),
+        };
 
         if (!dpMarkerRef.current) {
-            dpMarkerRef.current = L.marker([lat, lng], { icon: scooterIcon }).addTo(map);
-            map.setView([lat, lng], 15);
+            dpMarkerRef.current = new window.google.maps.Marker({
+                position: { lat, lng },
+                map,
+                icon: scooterIcon,
+                title: 'Your Location',
+            });
+            map.setCenter({ lat, lng });
+            map.setZoom(15);
         } else {
-            dpMarkerRef.current.setLatLng([lat, lng]);
+            dpMarkerRef.current.setPosition({ lat, lng });
         }
     }, [mapReady, dpPosition]);
 
-    // ── Locate-me button ──
+    // ── Relocate map modal ──
+    useEffect(() => {
+        if (!showRelocate || !relocateMapRef.current || relocateGMapRef.current) return;
+        const startPos = dpPosition || { lat: 13.6288, lng: 79.4192 };
+
+        loadGM(() => {
+            if (!relocateMapRef.current || relocateGMapRef.current) return;
+            const map = new window.google.maps.Map(relocateMapRef.current, {
+                center: startPos,
+                zoom: 16,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+                gestureHandling: 'greedy',
+            });
+
+            const pinMarker = new window.google.maps.Marker({
+                position: startPos,
+                map,
+                draggable: true,
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="50" viewBox="0 0 40 50">
+                            <ellipse cx="20" cy="48" rx="8" ry="3" fill="rgba(0,0,0,0.2)"/>
+                            <path d="M20 2C12.27 2 6 8.27 6 16c0 10.5 14 32 14 32s14-21.5 14-32C34 8.27 27.73 2 20 2z" fill="#10b981" stroke="white" stroke-width="1.5"/>
+                            <circle cx="20" cy="16" r="6" fill="white"/>
+                            <circle cx="20" cy="16" r="3.5" fill="#10b981"/>
+                        </svg>
+                    `),
+                    scaledSize: new window.google.maps.Size(40, 50),
+                    anchor: new window.google.maps.Point(20, 50),
+                }
+            });
+
+            const updatePos = async (lat, lng) => {
+                setRelocatePos({ lat, lng });
+                try {
+                    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GMAP_KEY}`);
+                    const data = await res.json();
+                    if (data.status === 'OK' && data.results[0]) {
+                        setRelocateAddr(data.results[0].formatted_address);
+                    } else {
+                        setRelocateAddr(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+                    }
+                } catch { setRelocateAddr(`${lat.toFixed(5)}, ${lng.toFixed(5)}`); }
+            };
+
+            pinMarker.addListener('dragend', () => {
+                const p = pinMarker.getPosition();
+                updatePos(p.lat(), p.lng());
+            });
+            map.addListener('click', (e) => {
+                const lat = e.latLng.lat(); const lng = e.latLng.lng();
+                pinMarker.setPosition({ lat, lng });
+                updatePos(lat, lng);
+            });
+
+            relocateGMapRef.current = map;
+            relocateMarkerRef.current = pinMarker;
+            setRelocatePos(startPos);
+            updatePos(startPos.lat, startPos.lng);
+        });
+    }, [showRelocate]);
+
     const handleLocateMe = () => {
-        const map = mapRef.current;
+        const map = googleMapRef.current;
         if (!map) return;
         if (dpPosition) {
-            map.flyTo([dpPosition.lat, dpPosition.lng], 16, { animate: true, duration: 1.2 });
+            map.panTo({ lat: dpPosition.lat, lng: dpPosition.lng });
+            map.setZoom(16);
         } else {
             navigator.geolocation?.getCurrentPosition(
-                (pos) => map.flyTo([pos.coords.latitude, pos.coords.longitude], 16, { animate: true }),
+                (pos) => { map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }); map.setZoom(16); },
                 () => alert('Unable to get location. Please allow GPS access.')
             );
         }
+    };
+
+    const handleSaveRelocate = async () => {
+        if (!relocatePos) return;
+        setSavingLocation(true);
+        try {
+            await api.put('/delivery/location', { coordinates: [relocatePos.lng, relocatePos.lat] });
+            setDpPosition(relocatePos);
+            setShowRelocate(false);
+            relocateGMapRef.current = null;
+            relocateMarkerRef.current = null;
+        } catch { alert('Failed to save location. Please try again.'); }
+        finally { setSavingLocation(false); }
     };
 
     const toggleStatus = async () => {
@@ -149,7 +248,6 @@ export default function Dashboard() {
     };
 
     const filteredOrders = getFilteredOrders();
-
     const statTabs = [
         { key: null,              label: 'All',       value: orders.length,         color: '#10b981', icon: '🚚' },
         { key: 'assigned',        label: 'Assigned',  value: stats.assigned,        color: '#f59e0b', icon: '📦' },
@@ -158,14 +256,9 @@ export default function Dashboard() {
         { key: 'returnPickups',   label: 'Returns',   value: stats.returnPickups,   color: '#ef4444', icon: '↩️' },
         { key: 'exchangePickups', label: 'Exchange',  value: stats.exchangePickups, color: '#8b5cf6', icon: '🔄' },
     ];
-
     const SECTION_LABEL = {
-        null:           'Active Deliveries',
-        assigned:       'Assigned Orders',
-        pending:        'Pending Orders',
-        deliveredToday: 'Delivered Today',
-        returnPickups:  'Return Pickups',
-        exchangePickups:'Exchange Pickups',
+        null: 'Active Deliveries', assigned: 'Assigned Orders', pending: 'Pending Orders',
+        deliveredToday: 'Delivered Today', returnPickups: 'Return Pickups', exchangePickups: 'Exchange Pickups',
     };
 
     return (
@@ -190,12 +283,11 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ── Live Location Map ── */}
+            {/* ── Live Location Map (Google Maps) ── */}
             <div className="dp-map-section">
                 <div ref={mapContainerRef} className="dp-map" />
 
                 {dpPosition && <div className="dp-map-badge">📍 Live Location</div>}
-
                 {!dpPosition && (
                     <div className="dp-map-locating">
                         <span className="dp-map-locating-dot" />
@@ -215,9 +307,24 @@ export default function Dashboard() {
                     </svg>
                     Locate Me
                 </button>
+
+                {/* Change Location button */}
+                <button
+                    onClick={() => setShowRelocate(true)}
+                    style={{
+                        position: 'absolute', bottom: '12px', left: '12px', zIndex: 10,
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        background: 'white', border: '1px solid #e2e8f0',
+                        padding: '8px 14px', borderRadius: '20px',
+                        fontSize: '13px', fontWeight: 700, color: '#1e293b',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.12)', cursor: 'pointer',
+                    }}
+                >
+                    📌 Change Location
+                </button>
             </div>
 
-            {/* ── Stats Tabs (below map) ── */}
+            {/* ── Stats Tabs ── */}
             <div className="stats-tabs-row">
                 {statTabs.map(tab => {
                     const isActive = activeFilter === tab.key;
@@ -229,12 +336,8 @@ export default function Dashboard() {
                             onClick={() => setActiveFilter(tab.key)}
                         >
                             <span className="tab-icon">{tab.icon}</span>
-                            <span className="tab-value" style={{ color: isActive ? tab.color : '#1e293b' }}>
-                                {tab.value}
-                            </span>
-                            <span className="tab-label" style={{ color: isActive ? tab.color : '#64748b' }}>
-                                {tab.label}
-                            </span>
+                            <span className="tab-value" style={{ color: isActive ? tab.color : '#1e293b' }}>{tab.value}</span>
+                            <span className="tab-label" style={{ color: isActive ? tab.color : '#64748b' }}>{tab.label}</span>
                         </button>
                     );
                 })}
@@ -265,10 +368,7 @@ export default function Dashboard() {
                                 <div className="order-card-top">
                                     <div>
                                         <div className="order-id">#{order.orderId?.slice(-6)}</div>
-                                        <div
-                                            className="delivery-type-badge"
-                                            style={{ background: order.deliveryType === 'Normal' ? '#dcfce7' : '#fef3c7', color: order.deliveryType === 'Normal' ? '#16a34a' : '#b45309' }}
-                                        >
+                                        <div className="delivery-type-badge" style={{ background: order.deliveryType === 'Normal' ? '#dcfce7' : '#fef3c7', color: order.deliveryType === 'Normal' ? '#16a34a' : '#b45309' }}>
                                             {DELIVERY_TYPE_LABELS[order.deliveryType] || order.deliveryType}
                                         </div>
                                     </div>
@@ -290,6 +390,47 @@ export default function Dashboard() {
                     </div>
                 )}
             </div>
+
+            {/* ── Relocate Modal ── */}
+            {showRelocate && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 9999,
+                    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+                    display: 'flex', flexDirection: 'column',
+                }}>
+                    {/* Header */}
+                    <div style={{ background: 'white', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                            <div style={{ fontWeight: 700, fontSize: 16 }}>📌 Update My Location</div>
+                            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Tap or drag pin to set your position</div>
+                        </div>
+                        <button onClick={() => { setShowRelocate(false); relocateGMapRef.current = null; relocateMarkerRef.current = null; }}
+                            style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 36, height: 36, fontSize: 18, cursor: 'pointer' }}>✕</button>
+                    </div>
+
+                    {/* Map */}
+                    <div ref={relocateMapRef} style={{ flex: 1 }} />
+
+                    {/* Bottom confirm tray */}
+                    <div style={{ background: 'white', padding: '16px 20px', boxShadow: '0 -4px 12px rgba(0,0,0,0.1)' }}>
+                        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>Selected location:</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            📍 {relocateAddr || 'Detecting address...'}
+                        </div>
+                        <button
+                            onClick={handleSaveRelocate}
+                            disabled={savingLocation || !relocatePos}
+                            style={{
+                                width: '100%', padding: '14px', borderRadius: 12, border: 'none',
+                                background: savingLocation ? '#94a3b8' : '#10b981',
+                                color: 'white', fontWeight: 700, fontSize: 15, cursor: savingLocation ? 'not-allowed' : 'pointer',
+                            }}
+                        >
+                            {savingLocation ? '⏳ Saving...' : '✅ Confirm & Save Location'}
+                        </button>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

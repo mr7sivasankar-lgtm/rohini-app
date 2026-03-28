@@ -407,24 +407,38 @@ const ProfileTab = ({ seller }) => {
                             </div>
                         )}
 
-                        {/* Shop Location Map */}
-                        {formData.location?.coordinates?.[0] !== 0 && formData.location?.coordinates?.[1] !== 0 && (
-                            <div style={{ marginTop: '20px', background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
-                                <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>📍 Shop Location</h3>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', background: '#eff6ff', padding: '8px 12px', borderRadius: '8px' }}>
-                                    <span style={{ fontSize: '12px', color: '#3b82f6', fontWeight: 600, fontFamily: 'monospace' }}>
-                                        Lat: {formData.location.coordinates[1].toFixed(6)} | Lng: {formData.location.coordinates[0].toFixed(6)}
-                                    </span>
+                        {/* Shop Location Map - Google Maps */}
+                        {formData.location?.coordinates?.[0] !== 0 && formData.location?.coordinates?.[1] !== 0 && (() => {
+                            const lat = formData.location.coordinates[1];
+                            const lng = formData.location.coordinates[0];
+                            const gmKey = 'AIzaSyCXNIpwQ6rNmeH6oLU0j7y1bMECzZ65BpA';
+                            return (
+                                <div style={{ marginTop: '20px', background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                    <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>📍 Shop Location</h3>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', background: '#eff6ff', padding: '8px 12px', borderRadius: '8px' }}>
+                                        <span style={{ fontSize: '12px', color: '#3b82f6', fontWeight: 600, fontFamily: 'monospace' }}>
+                                            Lat: {lat.toFixed(6)} | Lng: {lng.toFixed(6)}
+                                        </span>
+                                    </div>
+                                    <iframe
+                                        title="Shop location"
+                                        width="100%"
+                                        height="260"
+                                        style={{ border: 'none', borderRadius: '12px' }}
+                                        loading="lazy"
+                                        referrerPolicy="no-referrer-when-downgrade"
+                                        src={`https://www.google.com/maps/embed/v1/place?key=${gmKey}&q=${lat},${lng}&zoom=16`}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowMapPicker(true)}
+                                        style={{ marginTop: '12px', padding: '8px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#2563eb', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                                    >
+                                        🗺️ Update Shop Location
+                                    </button>
                                 </div>
-                                <iframe
-                                    title="Shop location"
-                                    width="100%"
-                                    height="220"
-                                    style={{ border: 'none', borderRadius: '12px' }}
-                                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${formData.location.coordinates[0] - 0.005},${formData.location.coordinates[1] - 0.005},${formData.location.coordinates[0] + 0.005},${formData.location.coordinates[1] + 0.005}&layer=mapnik&marker=${formData.location.coordinates[1]},${formData.location.coordinates[0]}`}
-                                />
-                            </div>
-                        )}
+                            );
+                        })()}
 
                     </div>
                 </div>
