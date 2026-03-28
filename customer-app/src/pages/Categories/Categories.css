@@ -82,10 +82,10 @@
 }
 
 .gender-tab.active {
-    border-color: var(--tab-color, #3b82f6);
-    background: color-mix(in srgb, var(--tab-color, #3b82f6) 8%, white);
-    color: var(--tab-color, #3b82f6);
-    box-shadow: 0 2px 12px color-mix(in srgb, var(--tab-color, #3b82f6) 20%, transparent);
+    border-color: var(--tab-color, #22c55e);
+    background: color-mix(in srgb, var(--tab-color, #22c55e) 8%, white);
+    color: var(--tab-color, #22c55e);
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--tab-color, #22c55e) 20%, transparent);
     transform: translateY(-1px);
 }
 
@@ -201,7 +201,7 @@
 
 .chevron-wrap.expanded {
     background: #e0e7ff;
-    color: #6366f1;
+    color: #22c55e;
     transform: rotate(180deg);
 }
 
@@ -246,7 +246,7 @@
 .subcategory-chip:hover {
     background: #eef2ff;
     border-color: #818cf8;
-    color: #4f46e5;
+    color: #16a34a;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
 }
@@ -278,7 +278,7 @@
 }
 
 .subcategory-chip:hover .chip-arrow {
-    color: #6366f1;
+    color: #22c55e;
     transform: translateX(2px);
 }
 

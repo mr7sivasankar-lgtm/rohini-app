@@ -116,7 +116,7 @@ export default function Login() {
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '12px', color: '#64748b' }}>
             {[1, 2, 3, 4, 5].map(i => (
                 <div key={i} style={{ 
-                    flex: 1, height: '4px', background: step >= i ? '#2563eb' : '#e2e8f0', 
+                    flex: 1, height: '4px', background: step >= i ? '#22c55e' : '#e2e8f0', 
                     margin: '0 2px', borderRadius: '4px' 
                 }} />
             ))}
@@ -224,7 +224,7 @@ export default function Login() {
                                                 <button type="button" onClick={detectLocation} disabled={locationLoading} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>
                                                     {locationLoading ? 'Detecting...' : '📡 Auto-Detect GPS'}
                                                 </button>
-                                                <button type="button" onClick={() => setShowMapPicker(true)} style={{ flex: 1, padding: '8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                                                <button type="button" onClick={() => setShowMapPicker(true)} style={{ flex: 1, padding: '8px', background: '#f0fdf4', color: '#22c55e', border: '1px solid #bbf7d0', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>
                                                     📍 Pin on Map
                                                 </button>
                                             </div>
@@ -291,7 +291,7 @@ export default function Login() {
                                 )}
                                 
                                 {step < 5 ? (
-                                    <button type="button" onClick={nextStep} style={{ flex: 2, padding: '12px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                                    <button type="button" onClick={nextStep} style={{ flex: 2, padding: '12px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
                                         Next →
                                     </button>
                                 ) : (

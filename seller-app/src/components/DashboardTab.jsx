@@ -42,11 +42,11 @@ const DashboardTab = ({ onTabChange }) => {
         }
     };
 
-    if (loading) return <div className="loading"><div className="spinner" style={{ borderTopColor: '#4f46e5' }}></div></div>;
+    if (loading) return <div className="loading"><div className="spinner" style={{ borderTopColor: '#22c55e' }}></div></div>;
 
     const statCards = [
         { title: 'Unique Visitors', value: seller?.profileViews || 0, icon: '👁️', bg: 'linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%)', color: '#c026d3', shadow: 'rgba(192, 38, 211, 0.15)', isVisitorStats: true },
-        { title: 'Orders Today', value: stats.ordersToday, icon: '📦', bg: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', color: '#2563eb', shadow: 'rgba(37, 99, 235, 0.15)', tab: 'orders' },
+        { title: 'Orders Today', value: stats.ordersToday, icon: '📦', bg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', color: '#16a34a', shadow: 'rgba(22, 163, 74, 0.15)', tab: 'orders' },
         { title: 'Pending Orders', value: stats.pendingOrders, icon: '⏳', bg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', color: '#d97706', shadow: 'rgba(217, 119, 6, 0.15)', tab: 'orders' },
         { title: 'Revenue Today', value: `₹${(stats.revenueToday ?? 0).toLocaleString('en-IN')}`, icon: '₹', bg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', color: '#16a34a', shadow: 'rgba(22, 163, 74, 0.15)', tab: 'sales' },
         { title: 'Delivered (Total)', value: stats.delivered, icon: '✅', bg: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', color: '#7c3aed', shadow: 'rgba(124, 58, 237, 0.15)', tab: 'orders' },
@@ -57,14 +57,14 @@ const DashboardTab = ({ onTabChange }) => {
         <div style={{ padding: '0 0 40px 0', fontFamily: "'Inter', sans-serif" }}>
             {/* Elegant Welcome Banner */}
             <div style={{
-                background: 'linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #3b82f6 100%)',
+                background: 'linear-gradient(135deg, #052e16 0%, #15803d 50%, #16a34a 100%)',
                 borderRadius: '24px',
                 padding: '40px 32px',
                 color: 'white',
                 marginBottom: '40px',
                 position: 'relative',
                 overflow: 'hidden',
-                boxShadow: '0 20px 40px rgba(67, 56, 202, 0.2)'
+                boxShadow: '0 20px 40px rgba(22, 163, 74, 0.25)'
             }}>
                 <div style={{ position: 'absolute', top: '-50%', right: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)', borderRadius: '50%' }}></div>
                 <div style={{ position: 'absolute', bottom: '-30%', left: '10%', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)', borderRadius: '50%' }}></div>
@@ -203,14 +203,14 @@ const DashboardTab = ({ onTabChange }) => {
                                                 )}
                                             </div>
                                             <div>
-                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#4f46e5', marginBottom: '4px' }}>#{order.orderId.slice(-6).toUpperCase()}</div>
+                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#16a34a', marginBottom: '4px' }}>#{order.orderId.slice(-6).toUpperCase()}</div>
                                                 <div style={{ fontSize: '13px', color: '#64748b' }}>{order.items.length} item{order.items.length > 1 ? 's' : ''}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td style={{ padding: '20px 24px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700 }}>
+                                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700 }}>
                                                 {order.shippingAddress?.fullName ? order.shippingAddress.fullName.charAt(0).toUpperCase() : '👤'}
                                             </div>
                                             <div>

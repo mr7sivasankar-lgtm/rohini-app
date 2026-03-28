@@ -153,7 +153,7 @@
 
 .form-group input:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: #22c55e;
 }
 
 .form-group input.error {
@@ -179,7 +179,7 @@
 }
 
 .phone-input:focus-within {
-    border-color: #3b82f6;
+    border-color: #22c55e;
 }
 
 .phone-input.error {

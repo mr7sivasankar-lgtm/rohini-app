@@ -127,7 +127,7 @@
 }
 
 /* Base styles for all statuses */
-.status-placed { background: #eff6ff; color: #3b82f6; }
+.status-placed { background: #f0fdf4; color: #22c55e; }
 .status-accepted { background: #f0fdf4; color: #22c55e; }
 .status-packed { background: #fefce8; color: #eab308; }
 .status-out-for-delivery { background: #fff7ed; color: #f97316; }

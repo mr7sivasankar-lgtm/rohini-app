@@ -25,7 +25,7 @@
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 6px;
-    background: linear-gradient(90deg, #10b981, #3b82f6, #8b5cf6);
+    background: linear-gradient(90deg, #22c55e, #16a34a, #15803d);
 }
 
 .btn-close-broadcast {
@@ -98,8 +98,8 @@
 }
 
 .item-dropoff {
-    background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
-    border: 1px solid #bfdbfe;
+    background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #bbf7d0;
 }
 
 .detail-icon {

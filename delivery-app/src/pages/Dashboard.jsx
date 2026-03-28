@@ -5,7 +5,7 @@ import api from '../utils/api';
 import './Dashboard.css';
 
 const DELIVERY_TYPE_LABELS = { Normal: '🚚 Normal Delivery', 'Return Pickup': '↩️ Return Pickup', 'Exchange Pickup': '🔄 Exchange Pickup' };
-const STATUS_COLORS = { Assigned: '#f59e0b', 'Picked Up': '#3b82f6', 'Out for Delivery': '#8b5cf6' };
+const STATUS_COLORS = { Assigned: '#f59e0b', 'Picked Up': '#22c55e', 'Out for Delivery': '#16a34a' };
 
 export default function Dashboard() {
     const { partner, updatePartner } = useAuth();

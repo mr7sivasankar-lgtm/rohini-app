@@ -68,7 +68,7 @@ const Categories = () => {
 
     const genderMeta = {
         Female: { label: "Women", emoji: "👩", color: "#ec4899" },
-        Male: { label: "Men", emoji: "👨", color: "#3b82f6" },
+        Male: { label: "Men", emoji: "👨", color: "#22c55e" },
         Kids: { label: "Kids", emoji: "👶", color: "#f59e0b" }
     };
 

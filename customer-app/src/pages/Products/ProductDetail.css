@@ -250,7 +250,7 @@
 
 .color-swatch.active {
     border-color: var(--primary);
-    background: #eff6ff;
+    background: #f0fdf4;
 }
 
 .color-circle {
