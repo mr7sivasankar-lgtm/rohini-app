@@ -7,15 +7,91 @@ import ProfileTab from '../../components/ProfileTab';
 import SalesTab from '../../components/SalesTab';
 import ReviewsTab from '../../components/ReviewsTab';
 import WalletTab from '../../components/WalletTab';
+import SellerNotificationBanner from '../../components/SellerNotificationBanner';
 import './Dashboard.css';
+
+// Bottom nav config for mobile (max 5 items — "More" opens the drawer)
+const BOTTOM_NAV = [
+    { key: 'dashboard', icon: '📊', label: 'Overview' },
+    { key: 'orders',    icon: '📦', label: 'Orders'   },
+    { key: 'products',  icon: '👕', label: 'Products'  },
+    { key: 'wallet',    icon: '💰', label: 'Wallet'    },
+    { key: '__more',    icon: '☰',  label: 'More'      },
+];
+
+// Everything inside "More" drawer
+const MORE_ITEMS = [
+    { key: 'sales',   icon: '📈', label: 'Sales & Revenue' },
+    { key: 'reviews', icon: '⭐', label: 'Reviews'         },
+    { key: 'profile', icon: '⚙️', label: 'Shop Profile'    },
+];
+
+const TAB_LABELS = {
+    dashboard: 'Overview',
+    orders:    'Order Management',
+    products:  'Product Catalog',
+    sales:     'Sales Analytics',
+    wallet:    'Wallet & Payouts',
+    reviews:   'Customer Reviews',
+    profile:   'Shop Profile',
+};
 
 const Dashboard = () => {
     const { seller, logout } = useAuth();
-    const [activeTab, setActiveTab] = useState('dashboard');
+    const [activeTab, setActiveTab]   = useState('dashboard');
+    const [moreOpen, setMoreOpen]     = useState(false);
+
+    const handleNav = (key) => {
+        if (key === '__more') { setMoreOpen(true); return; }
+        setActiveTab(key);
+        setMoreOpen(false);
+    };
+
+    const handleNotifView = (goTo) => {
+        setActiveTab(goTo || 'orders');
+    };
+
+    const isMobileMoreTab = MORE_ITEMS.some(m => m.key === activeTab);
 
     return (
         <div className="seller-dashboard">
-            {/* Sidebar */}
+
+            {/* ── Global notification banners ── */}
+            <SellerNotificationBanner onView={handleNotifView} />
+
+            {/* ── More Drawer Overlay ── */}
+            {moreOpen && (
+                <>
+                    <div
+                        className="more-overlay"
+                        onClick={() => setMoreOpen(false)}
+                    />
+                    <div className="more-drawer">
+                        <div className="more-drawer-handle" />
+                        <p className="more-drawer-title">More Options</p>
+                        {MORE_ITEMS.map(item => (
+                            <button
+                                key={item.key}
+                                className={`more-drawer-item ${activeTab === item.key ? 'active' : ''}`}
+                                onClick={() => handleNav(item.key)}
+                            >
+                                <span className="more-item-icon">{item.icon}</span>
+                                <span className="more-item-label">{item.label}</span>
+                                <span className="more-item-arrow">›</span>
+                            </button>
+                        ))}
+                        <button
+                            className="more-drawer-item logout-row"
+                            onClick={() => { setMoreOpen(false); logout(); }}
+                        >
+                            <span className="more-item-icon">🚪</span>
+                            <span className="more-item-label">Logout</span>
+                        </button>
+                    </div>
+                </>
+            )}
+
+            {/* ── Sidebar (desktop) ── */}
             <aside className="sidebar">
                 <div className="sidebar-brand">
                     <span className="brand-icon">🏪</span>
@@ -26,48 +102,15 @@ const Dashboard = () => {
                 </div>
 
                 <nav className="sidebar-nav">
-                    <button 
-                        className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('dashboard')}
-                    >
-                        📊 Overview
-                    </button>
-                    <button 
-                        className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('orders')}
-                    >
-                        📦 Orders
-                    </button>
-                    <button 
-                        className={`nav-item ${activeTab === 'products' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('products')}
-                    >
-                        👕 Products
-                    </button>
-                    <button 
-                        className={`nav-item ${activeTab === 'sales' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('sales')}
-                    >
-                        📈 Sales
-                    </button>
-                    <button 
-                        className={`nav-item ${activeTab === 'wallet' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('wallet')}
-                    >
-                        💰 Wallet
-                    </button>
-                    <button 
-                        className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('reviews')}
-                    >
-                        ⭐ Reviews
-                    </button>
-                    <button 
-                        className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('profile')}
-                    >
-                        ⚙️ Profile
-                    </button>
+                    {[...BOTTOM_NAV.filter(n => n.key !== '__more'), ...MORE_ITEMS].map(item => (
+                        <button
+                            key={item.key}
+                            className={`nav-item ${activeTab === item.key ? 'active' : ''}`}
+                            onClick={() => setActiveTab(item.key)}
+                        >
+                            {item.icon} {item.label}
+                        </button>
+                    ))}
                 </nav>
 
                 <div className="sidebar-footer">
@@ -75,17 +118,10 @@ const Dashboard = () => {
                 </div>
             </aside>
 
-            {/* Main Content Area */}
+            {/* ── Main Content ── */}
             <main className="dashboard-main">
                 <header className="dashboard-header">
-                    <h1>
-                        {activeTab === 'dashboard' ? 'Overview' :
-                         activeTab === 'orders' ? 'Order Management' : 
-                         activeTab === 'products' ? 'Product Catalog' : 
-                         activeTab === 'sales' ? 'Sales Analytics' : 
-                         activeTab === 'wallet' ? 'Wallet & Payouts' : 
-                         activeTab === 'reviews' ? 'Customer Reviews' : 'Shop Profile'}
-                    </h1>
+                    <h1>{TAB_LABELS[activeTab] || 'Dashboard'}</h1>
                     <div className="mobile-header-actions">
                         <button className="mobile-logout-btn" onClick={logout} title="Logout">🚪</button>
                     </div>
@@ -93,14 +129,34 @@ const Dashboard = () => {
 
                 <div className="dashboard-content">
                     {activeTab === 'dashboard' && <DashboardTab onTabChange={setActiveTab} />}
-                    {activeTab === 'orders' && <OrdersTab />}
-                    {activeTab === 'products' && <ProductsTab />}
-                    {activeTab === 'sales' && <SalesTab />}
-                    {activeTab === 'wallet' && <WalletTab />}
-                    {activeTab === 'reviews' && <ReviewsTab />}
-                    {activeTab === 'profile' && <ProfileTab seller={seller} />}
+                    {activeTab === 'orders'    && <OrdersTab />}
+                    {activeTab === 'products'  && <ProductsTab />}
+                    {activeTab === 'sales'     && <SalesTab />}
+                    {activeTab === 'wallet'    && <WalletTab />}
+                    {activeTab === 'reviews'   && <ReviewsTab />}
+                    {activeTab === 'profile'   && <ProfileTab seller={seller} />}
                 </div>
             </main>
+
+            {/* ── Bottom Nav (mobile only — rendered via CSS) ── */}
+            <nav className="mobile-bottom-nav">
+                {BOTTOM_NAV.map(item => {
+                    const isActive =
+                        item.key === '__more'
+                            ? isMobileMoreTab || moreOpen
+                            : activeTab === item.key;
+                    return (
+                        <button
+                            key={item.key}
+                            className={`mobile-nav-item ${isActive ? 'active' : ''}`}
+                            onClick={() => handleNav(item.key)}
+                        >
+                            <span className="mobile-nav-icon">{item.icon}</span>
+                            <span className="mobile-nav-label">{item.label}</span>
+                        </button>
+                    );
+                })}
+            </nav>
         </div>
     );
 };

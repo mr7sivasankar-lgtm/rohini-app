@@ -282,6 +282,63 @@ router.get('/', protect, async (req, res) => {
 
 // ========== SELLER ROUTES ==========
 
+// @route   GET /api/orders/seller/alerts
+// @desc    Return actionable alerts: new unaccepted orders + pending return requests
+// @access  Private/Seller
+router.get('/seller/alerts', sellerProtect, async (req, res) => {
+    try {
+        const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000);
+
+        // New orders placed in last 30min that are still unaccepted
+        const newOrders = await Order.find({
+            seller: req.seller._id,
+            status: 'Placed',
+            createdAt: { $gte: thirtyMinsAgo }
+        }).select('_id orderId totalAmount createdAt items').lean();
+
+        // Orders with items pending return approval
+        const returnOrders = await Order.find({
+            seller: req.seller._id,
+            'items.status': 'Return Requested'
+        }).select('_id orderId items').lean();
+
+        const alerts = [];
+
+        newOrders.forEach(o => {
+            alerts.push({
+                id: `order_${o._id}`,
+                type: 'new_order',
+                orderId: o.orderId?.slice(-6) || o._id?.toString().slice(-6),
+                dbId: o._id,
+                message: `New order #${o.orderId?.slice(-6)} — ₹${o.totalAmount?.toFixed(0)} needs acceptance`,
+                icon: '🛍️',
+                goTo: 'orders',
+                createdAt: o.createdAt
+            });
+        });
+
+        returnOrders.forEach(o => {
+            const returnItems = o.items?.filter(i => i.status === 'Return Requested') || [];
+            returnItems.forEach(item => {
+                alerts.push({
+                    id: `return_${o._id}_${item._id}`,
+                    type: 'return_request',
+                    orderId: o.orderId?.slice(-6) || o._id?.toString().slice(-6),
+                    dbId: o._id,
+                    message: `↩️ Return requested for "${item.name}" in order #${o.orderId?.slice(-6)}`,
+                    icon: '↩️',
+                    goTo: 'orders',
+                });
+            });
+        });
+
+        res.json({ success: true, data: alerts });
+    } catch (e) {
+        console.error('Seller alerts error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 // @route   GET /api/orders/seller
 // @desc    Get orders for the logged in seller
 // @access  Private/Seller
