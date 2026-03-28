@@ -1,5 +1,5 @@
 /* ————————————————————————————————
-   BASE
+   BASE / CSS VARS
 ———————————————————————————————— */
 :root {
     --primary:       #22c55e;
@@ -9,21 +9,27 @@
     --text-muted:    #64748b;
     --border-color:  #e2e8f0;
     --bg-color:      #f8fafc;
+    --sidebar-w:     240px;
+    --bottom-nav-h:  64px;
 }
 * { box-sizing: border-box; }
 
+/* ————————————————————————————————
+   ROOT SHELL
+———————————————————————————————— */
 .seller-dashboard {
     display: flex;
     min-height: 100vh;
     background: var(--bg-color);
     font-family: 'Inter', system-ui, sans-serif;
+    overflow-x: hidden; /* prevent any horizontal bleed on mobile */
 }
 
 /* ————————————————————————————————
    DESKTOP SIDEBAR
 ———————————————————————————————— */
 .sidebar {
-    width: 240px;
+    width: var(--sidebar-w);
     background: #ffffff;
     border-right: 1px solid var(--border-color);
     display: flex;
@@ -32,6 +38,7 @@
     height: 100vh;
     left: 0; top: 0;
     z-index: 50;
+    /* sidebar is ONLY for desktop — hidden below via media query */
 }
 
 .sidebar-brand {
@@ -48,23 +55,21 @@
     font-size: 10px; background: #dcfce7; color: var(--primary-dark);
     padding: 2px 6px; border-radius: 4px; font-weight: 700;
 }
-
 .sidebar-nav {
-    padding: 14px 10px; display: flex; flex-direction: column; gap: 4px;
-    flex: 1; overflow-y: auto;
+    padding: 14px 10px; display: flex; flex-direction: column;
+    gap: 4px; flex: 1; overflow-y: auto;
 }
 .nav-item {
     padding: 10px 14px; border-radius: 10px; border: none;
     background: transparent; color: var(--text-muted);
-    font-size: 14px; font-weight: 600; text-align: left; cursor: pointer;
-    transition: all 0.15s; font-family: inherit;
+    font-size: 14px; font-weight: 600; text-align: left;
+    cursor: pointer; transition: all 0.15s; font-family: inherit;
 }
 .nav-item:hover { background: #f1f5f9; color: var(--text-main); }
 .nav-item.active {
     background: linear-gradient(135deg, #22c55e, #16a34a);
     color: white; box-shadow: 0 2px 8px rgba(34,197,94,0.3);
 }
-
 .sidebar-footer { padding: 16px; border-top: 1px solid var(--border-color); }
 .logout-btn {
     width: 100%; padding: 10px; border-radius: 8px;
@@ -74,11 +79,19 @@
 .logout-btn:hover { background: #fee2e2; }
 
 /* ————————————————————————————————
-   MAIN CONTENT
+   MAIN CONTENT — desktop
 ———————————————————————————————— */
-.dashboard-main { flex: 1; margin-left: 240px; display: flex; flex-direction: column; min-height: 100vh; }
+.dashboard-main {
+    flex: 1;
+    margin-left: var(--sidebar-w);   /* push right of sidebar */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-width: calc(100vw - var(--sidebar-w));
+}
 .dashboard-header {
-    background: #ffffff; padding: 18px 28px;
+    background: #ffffff;
+    padding: 18px 28px;
     border-bottom: 1px solid var(--border-color);
     position: sticky; top: 0; z-index: 10;
     display: flex; justify-content: space-between; align-items: center;
@@ -91,11 +104,10 @@
     border-radius: 8px; padding: 7px 12px; font-size: 14px; font-weight: 700;
     cursor: pointer; font-family: inherit;
 }
-
 .dashboard-content { padding: 28px; flex: 1; }
 
 /* ————————————————————————————————
-   SHARED / PLACEHOLDERS
+   SHARED
 ———————————————————————————————— */
 .temp-placeholder {
     background: white; padding: 40px; border-radius: 14px;
@@ -105,43 +117,119 @@
 .temp-placeholder p  { margin: 0; color: var(--text-muted); }
 
 /* ————————————————————————————————
-   MOBILE BOTTOM NAV (hidden on desktop)
+   MOBILE BOTTOM NAV — hidden on desktop
 ———————————————————————————————— */
-.mobile-bottom-nav {
-    display: none; /* hidden on desktop */
+.mobile-bottom-nav { display: none; }
+
+/* ————————————————————————————————
+   MORE DRAWER — hidden on desktop
+———————————————————————————————— */
+.more-overlay { display: none !important; }
+.more-drawer  { display: none !important; }
+
+/* ————————————————————————————————
+   MOBILE OVERRIDES  ≤ 768px
+———————————————————————————————— */
+@media screen and (max-width: 768px) {
+
+    /* 1. Layout: single column, no flex side-by-side */
+    .seller-dashboard {
+        display: block;  /* ← key fix: removes the flex row that causes flash */
+    }
+
+    /* 2. Hide desktop sidebar completely */
+    .sidebar {
+        display: none !important;
+    }
+
+    /* 3. Main takes full width + leaves room for bottom nav */
+    .dashboard-main {
+        margin-left: 0 !important;
+        max-width: 100vw;
+        padding-bottom: var(--bottom-nav-h);
+        min-height: 100dvh;
+    }
+
+    /* 4. Compact header */
+    .dashboard-header {
+        padding: 12px 14px;
+    }
+    .dashboard-header h1 { font-size: 17px; }
+    .mobile-header-actions { display: flex; align-items: center; gap: 8px; }
+
+    /* 5. Compact content */
+    .dashboard-content { padding: 12px; }
+
+    /* 6. Show mobile bottom nav */
+    .mobile-bottom-nav {
+        display: flex !important;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        height: var(--bottom-nav-h);
+        background: white;
+        border-top: 1px solid var(--border-color);
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+        z-index: 100;
+    }
+    .mobile-nav-item {
+        flex: 1;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 2px;
+        border: none; background: transparent;
+        cursor: pointer; font-family: inherit;
+        padding: 5px 2px;
+        color: #94a3b8;
+        border-top: 3px solid transparent;
+        transition: color 0.15s, border-color 0.15s;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-nav-item.active {
+        color: var(--primary-dark);
+        border-top-color: var(--primary);
+    }
+    .mobile-nav-icon { font-size: 19px; line-height: 1; }
+    .mobile-nav-label {
+        font-size: 9px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.3px;
+    }
+
+    /* 7. Show drawer & overlay */
+    .more-overlay {
+        display: block !important;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.35);
+        z-index: 200;
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+    }
+    .more-drawer {
+        display: block !important;
+        position: fixed;
+        bottom: var(--bottom-nav-h);
+        left: 0; right: 0;
+        background: white;
+        border-radius: 20px 20px 0 0;
+        padding: 6px 0 24px;
+        z-index: 201;
+        box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
+        animation: drawer-up 0.28s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes drawer-up {
+        from { transform: translateY(100%); }
+        to   { transform: translateY(0); }
+    }
 }
 
 /* ————————————————————————————————
-   MORE DRAWER (mobile)
+   MORE DRAWER INTERNALS (shared, visible only when .more-drawer is shown)
 ———————————————————————————————— */
-.more-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.35);
-    z-index: 200;
-    backdrop-filter: blur(2px);
-}
-.more-drawer {
-    display: none;
-    position: fixed;
-    bottom: 64px; left: 0; right: 0;
-    background: white;
-    border-radius: 20px 20px 0 0;
-    padding: 6px 0 24px;
-    z-index: 201;
-    box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
-    animation: drawer-up 0.28s cubic-bezier(0.16,1,0.3,1);
-}
-@keyframes drawer-up {
-    from { transform: translateY(100%); }
-    to   { transform: translateY(0); }
-}
 .more-drawer-handle {
     width: 36px; height: 4px; background: #e2e8f0;
-    border-radius: 2px; margin: 0 auto 12px;
+    border-radius: 2px; margin: 8px auto 12px;
 }
 .more-drawer-title {
-    font-size: 12px; font-weight: 700; color: #94a3b8;
+    font-size: 11px; font-weight: 700; color: #94a3b8;
     text-transform: uppercase; letter-spacing: 0.8px;
     padding: 0 20px; margin: 0 0 8px;
 }
@@ -150,76 +238,21 @@
     width: 100%; padding: 14px 20px;
     border: none; background: transparent; font-family: inherit;
     font-size: 15px; font-weight: 600; color: var(--text-main);
-    cursor: pointer; text-align: left;
-    transition: background 0.12s;
+    cursor: pointer; text-align: left; transition: background 0.12s;
+    -webkit-tap-highlight-color: transparent;
 }
 .more-drawer-item:hover  { background: #f8fafc; }
 .more-drawer-item.active { color: var(--primary-dark); }
-.more-item-icon { font-size: 20px; width: 28px; text-align: center; }
+.more-item-icon  { font-size: 20px; width: 28px; text-align: center; }
 .more-item-label { flex: 1; }
-.more-item-arrow { color: #cbd5e1; font-size: 18px; }
-.more-drawer-item.logout-row { color: #dc2626; border-top: 1px solid var(--border-color); margin-top: 4px; }
-
-/* ————————————————————————————————
-   MOBILE OVERRIDES
-———————————————————————————————— */
-@media (max-width: 768px) {
-    /* Hide desktop sidebar */
-    .sidebar { display: none; }
-
-    /* Main fills full width */
-    .dashboard-main {
-        margin-left: 0;
-        margin-bottom: 64px; /* space for bottom nav */
-        min-height: 100dvh;
-    }
-
-    .dashboard-header {
-        padding: 14px 16px;
-    }
-    .dashboard-header h1 { font-size: 17px; }
-    .mobile-header-actions { display: flex; align-items: center; gap: 8px; }
-    .dashboard-content { padding: 14px; }
-
-    /* Show mobile bottom nav */
-    .mobile-bottom-nav {
-        display: flex;
-        position: fixed;
-        bottom: 0; left: 0; right: 0;
-        height: 64px;
-        background: white;
-        border-top: 1px solid var(--border-color);
-        box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
-        z-index: 100;
-    }
-
-    .mobile-nav-item {
-        flex: 1;
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        gap: 3px;
-        border: none; background: transparent;
-        cursor: pointer; font-family: inherit;
-        padding: 6px 4px;
-        color: #94a3b8;
-        font-size: 9px; font-weight: 700;
-        text-transform: uppercase; letter-spacing: 0.3px;
-        border-top: 3px solid transparent;
-        transition: all 0.15s;
-    }
-    .mobile-nav-item.active {
-        color: var(--primary-dark);
-        border-top-color: var(--primary);
-    }
-    .mobile-nav-icon { font-size: 20px; line-height: 1; }
-    .mobile-nav-label { font-size: 9px; }
-
-    /* Show drawer elements */
-    .more-overlay { display: block; }
-    .more-drawer  { display: block; }
+.more-item-arrow { color: #cbd5e1; font-size: 18px; font-weight: 300; }
+.more-drawer-item.logout-row {
+    color: #dc2626;
+    border-top: 1px solid var(--border-color);
+    margin-top: 4px;
 }
 
-@media (max-width: 400px) {
+@media screen and (max-width: 380px) {
     .mobile-nav-label { font-size: 8px; }
-    .mobile-nav-icon  { font-size: 18px; }
+    .mobile-nav-icon  { font-size: 17px; }
 }
