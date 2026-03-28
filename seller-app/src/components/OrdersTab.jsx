@@ -155,6 +155,7 @@ const OrdersTab = () => {
                         return (
                             <div key={order._id} style={{
                                 display: 'flex',
+                                flexWrap: 'wrap',
                                 alignItems: 'stretch',
                                 background: 'white',
                                 borderRadius: '10px',
@@ -190,7 +191,7 @@ const OrdersTab = () => {
                                     </div>
 
                                     {/* Items list */}
-                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '350px' }}>
+                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 'min(100%, 350px)' }}>
                                         {order.items.map((item, idx) => (
                                             <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%' }}>
                                                 <img
@@ -241,8 +242,8 @@ const OrdersTab = () => {
                                     </div>
                                 </div>
 
-                                {/* Right: Action buttons */}
-                                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px', padding: '12px', borderLeft: '1px solid #f1f5f9', background: '#fafafa', flexShrink: 0 }}>
+                                {/* Action buttons */}
+                                <div style={{ display: 'flex', flexWrap: 'wrap', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '12px 16px', borderTop: '1px solid #f1f5f9', background: '#fafafa', width: '100%' }}>
                                     {order.status === 'Placed' && (
                                         <div style={{ display: 'flex', gap: '6px' }}>
                                             <button style={{ flex: 1, padding: '7px 10px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
