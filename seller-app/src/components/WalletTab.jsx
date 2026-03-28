@@ -96,16 +96,25 @@ const WalletTab = () => {
                                         {txn.orderId && <div style={{ fontSize: 11, color: '#94a3b8' }}>Order: {txn.orderId.substring(0,8)}...</div>}
                                     </td>
                                     <td style={{ padding: '12px 16px' }}>
-                                        <span style={{ 
-                                            background: txn.status === 'COMPLETED' ? '#dcfce7' : txn.status === 'PENDING' ? '#fef3c7' : '#fee2e2', 
-                                            color: txn.status === 'COMPLETED' ? '#166534' : txn.status === 'PENDING' ? '#b45309' : '#991b1b',
-                                            padding: '4px 8px', borderRadius: 6, fontSize: 12, fontWeight: 600 
+                                        <span style={{
+                                            background:
+                                                txn.status === 'Success' ? '#dcfce7' :
+                                                txn.status === 'Pending' ? '#fef3c7' : '#fee2e2',
+                                            color:
+                                                txn.status === 'Success' ? '#166534' :
+                                                txn.status === 'Pending' ? '#b45309' : '#991b1b',
+                                            padding: '4px 8px', borderRadius: 6, fontSize: 12, fontWeight: 600
                                         }}>
                                             {txn.status}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 700, textAlign: 'right', color: txn.type === 'CREDIT' ? '#16a34a' : '#dc2626' }}>
-                                        {txn.type === 'CREDIT' ? '+' : '-'}₹{(txn.amount ?? 0).toFixed(2)}
+                                    <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 700, textAlign: 'right' }}>
+                                        {/* amount > 0 = earnings (credit, green +), amount < 0 = payout (debit, red −) */}
+                                        {txn.amount >= 0 ? (
+                                            <span style={{ color: '#16a34a' }}>+₹{(txn.amount).toFixed(2)}</span>
+                                        ) : (
+                                            <span style={{ color: '#dc2626' }}>−₹{Math.abs(txn.amount).toFixed(2)}</span>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
