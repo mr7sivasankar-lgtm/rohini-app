@@ -114,6 +114,7 @@ router.post('/verify-otp', async (req, res) => {
         }
 
         // Mark user as verified and track login
+        const isNewUser = user.name === 'User' && !user.email; // Detect new/incomplete profiles
         user.isVerified = true;
         user.lastLogin = new Date();
         user.otp = undefined;
@@ -128,6 +129,7 @@ router.post('/verify-otp', async (req, res) => {
             message: 'Login successful',
             data: {
                 token,
+                isNewUser,
                 user: {
                     id: user._id,
                     name: user.name,
