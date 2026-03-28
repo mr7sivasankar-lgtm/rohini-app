@@ -8,6 +8,7 @@ import Seller from '../models/Seller.js';
 import WalletTransaction from '../models/WalletTransaction.js';
 import PartnerStatusLog from '../models/PartnerStatusLog.js';
 import { sendPush } from '../utils/notify.js';
+import { uploadSingle } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -110,6 +111,17 @@ router.get('/profile', protectDelivery, async (req, res) => {
 });
 
 // PUT /api/delivery/profile
+// POST /api/delivery/upload-image — upload profile/document images to Cloudinary
+router.post('/upload-image', protectDelivery, uploadSingle, async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, message: 'No image file provided' });
+        res.status(200).json({ success: true, url: req.file.path });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Error uploading image' });
+    }
+});
+
+// PUT /api/delivery/profile
 router.put('/profile', protectDelivery, async (req, res) => {
     try {
         const { 
@@ -128,6 +140,18 @@ router.put('/profile', protectDelivery, async (req, res) => {
         if (bankAccountNumber !== undefined) updateData.bankAccountNumber = bankAccountNumber.trim();
         if (bankIfsc !== undefined) updateData.bankIfsc = bankIfsc.trim().toUpperCase();
         if (bankName !== undefined) updateData.bankName = bankName.trim();
+        // Document image URLs
+        const { profileImage, documentAadhaar, documentPan, documentDrivingLicense, documentRC, address, city, state, pincode, location } = req.body;
+        if (profileImage !== undefined) updateData.profileImage = profileImage;
+        if (documentAadhaar !== undefined) updateData.documentAadhaar = documentAadhaar;
+        if (documentPan !== undefined) updateData.documentPan = documentPan;
+        if (documentDrivingLicense !== undefined) updateData.documentDrivingLicense = documentDrivingLicense;
+        if (documentRC !== undefined) updateData.documentRC = documentRC;
+        if (address !== undefined) updateData.address = address.trim();
+        if (city !== undefined) updateData.city = city.trim();
+        if (state !== undefined) updateData.state = state.trim();
+        if (pincode !== undefined) updateData.pincode = pincode.trim();
+        if (location && location.coordinates) updateData.location = { type: 'Point', coordinates: location.coordinates };
 
         const partner = await DeliveryPartner.findByIdAndUpdate(
             req.partner._id,

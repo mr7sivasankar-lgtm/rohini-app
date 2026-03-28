@@ -241,8 +241,7 @@ export default function Dashboard() {
                 const today = new Date().toDateString();
                 return orders.filter(o => o.deliveryStatus === 'Delivered' && new Date(o.updatedAt).toDateString() === today);
             }
-            case 'returnPickups':   return orders.filter(o => o.deliveryType === 'Return Pickup');
-            case 'exchangePickups': return orders.filter(o => o.deliveryType === 'Exchange Pickup');
+            case 'returnPickups': return orders.filter(o => o.deliveryType === 'Return Pickup');
             default: return orders;
         }
     };
@@ -254,11 +253,10 @@ export default function Dashboard() {
         { key: 'pending',         label: 'Pending',   value: stats.pending,         color: '#3b82f6', icon: '⏳' },
         { key: 'deliveredToday',  label: 'Delivered', value: stats.deliveredToday,  color: '#10b981', icon: '✅' },
         { key: 'returnPickups',   label: 'Returns',   value: stats.returnPickups,   color: '#ef4444', icon: '↩️' },
-        { key: 'exchangePickups', label: 'Exchange',  value: stats.exchangePickups, color: '#8b5cf6', icon: '🔄' },
     ];
     const SECTION_LABEL = {
         null: 'Active Deliveries', assigned: 'Assigned Orders', pending: 'Pending Orders',
-        deliveredToday: 'Delivered Today', returnPickups: 'Return Pickups', exchangePickups: 'Exchange Pickups',
+        deliveredToday: 'Delivered Today', returnPickups: 'Return Pickups',
     };
 
     return (
@@ -295,10 +293,20 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                {/* Locate-me button */}
-                <button className="dp-locate-btn" onClick={handleLocateMe}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" width="16" height="16">
-                        <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
+                {/* Locate Me button — prominent, top-right area of map */}
+                <button
+                    onClick={handleLocateMe}
+                    style={{
+                        position: 'absolute', top: '12px', right: '12px', zIndex: 10,
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        background: '#10b981', color: 'white', border: 'none',
+                        padding: '8px 14px', borderRadius: '20px',
+                        fontSize: '13px', fontWeight: 700,
+                        boxShadow: '0 2px 8px rgba(16,185,129,0.4)', cursor: 'pointer',
+                    }}
+                >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="15" height="15">
+                        <circle cx="12" cy="12" r="3" fill="white" stroke="none"/>
                         <circle cx="12" cy="12" r="7"/>
                         <line x1="12" y1="2" x2="12" y2="5"/>
                         <line x1="12" y1="19" x2="12" y2="22"/>
@@ -308,7 +316,7 @@ export default function Dashboard() {
                     Locate Me
                 </button>
 
-                {/* Change Location button */}
+                {/* Change Location button — bottom-left */}
                 <button
                     onClick={() => setShowRelocate(true)}
                     style={{
