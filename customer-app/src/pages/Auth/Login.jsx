@@ -45,7 +45,8 @@ const Login = () => {
     // Steps: 'phone' | 'otp' | 'name' | 'location'
     const [step, setStep] = useState('phone');
     const [phone, setPhone] = useState('');
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    const [otp, setOtp] = useState('');
+    const otpInputRef = useRef(null);
     const [name, setName] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -62,7 +63,7 @@ const Login = () => {
     const [locLoading, setLocLoading] = useState(false);
     const [detecting, setDetecting] = useState(false);
 
-    const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
+
 
     // Resend countdown
     useEffect(() => {
@@ -92,37 +93,32 @@ const Login = () => {
         finally { setLoading(false); }
     };
 
-    const handleOTPChange = (i, val) => {
-        // Normalize regional numerals (Devanagari, Arabic-Indic, etc.) to ASCII
-        const normalized = val.replace(/[\u0660-\u0669]/g, d => d.charCodeAt(0) - 0x0660)
-                              .replace(/[\u06F0-\u06F9]/g, d => d.charCodeAt(0) - 0x06F0)
-                              .replace(/[\u0966-\u096F]/g, d => d.charCodeAt(0) - 0x0966)
-                              .replace(/\D/g, '');
-        const digit = normalized.slice(-1); // take last char if somehow multiple
-        if (!/^\d?$/.test(digit)) return;
-        const next = [...otp];
-        next[i] = digit;
-        setOtp(next);
-        if (digit && i < 5) otpRefs[i + 1].current?.focus();
-        if (!digit && i > 0) otpRefs[i - 1].current?.focus();
+    const handleOTPInput = (e) => {
+        // Normalize any regional numerals to ASCII digits
+        const raw = e.target.value
+            .replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660))
+            .replace(/[\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) - 0x06F0))
+            .replace(/[\u0966-\u096F]/g, d => String(d.charCodeAt(0) - 0x0966))
+            .replace(/\D/g, '')
+            .slice(0, 6);
+        setOtp(raw);
     };
 
     const handleOTPPaste = (e) => {
-        const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-        if (paste.length === 6) {
-            setOtp(paste.split(''));
-            otpRefs[5].current?.focus();
-        }
+        e.preventDefault();
+        const paste = e.clipboardData.getData('text')
+            .replace(/\D/g, '').slice(0, 6);
+        setOtp(paste);
     };
+
 
     const handleVerifyOTP = async (e) => {
         e.preventDefault();
-        const otpVal = otp.join('');
-        if (otpVal.length !== 6) { setError('Enter all 6 digits'); return; }
+        if (otp.length !== 6) { setError('Enter all 6 digits'); return; }
         setError('');
         setLoading(true);
         try {
-            const res = await verifyOTP(`+91${phone}`, otpVal);
+            const res = await verifyOTP(`+91${phone}`, otp);
             if (res.success) {
                 if (res.data.isNewUser) {
                     setStep('name');
@@ -414,40 +410,68 @@ const Login = () => {
                             <div className="otp-phone">+91 {phone}</div>
                         </div>
 
-                        {/* 6-box OTP input */}
-                        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                            {otp.map((digit, i) => (
-                                <input
-                                    key={i}
-                                    ref={otpRefs[i]}
-                                    type="tel"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    maxLength={1}
-                                    value={digit}
-                                    onChange={e => handleOTPChange(i, e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Backspace' && !digit && i > 0) otpRefs[i - 1].current?.focus(); }}
-                                    onPaste={i === 0 ? handleOTPPaste : undefined}
-                                    autoComplete="one-time-code"
-                                    style={{
-                                        width: 46, height: 56, textAlign: 'center',
-                                        fontSize: 26, fontWeight: 800,
-                                        fontFamily: "'Inter', 'Roboto Mono', 'SF Mono', 'Courier New', monospace",
-                                        border: `2px solid ${digit ? '#16a34a' : '#d1d5db'}`,
-                                        borderRadius: 14, outline: 'none',
-                                        background: digit ? '#f0fdf4' : '#ffffff',
-                                        color: '#0a0a0a',
-                                        transition: 'border 0.2s, background 0.2s',
-                                        caretColor: '#22c55e',
-                                        WebkitTextFillColor: '#0a0a0a',
-                                        boxShadow: digit ? '0 0 0 3px rgba(34,197,94,0.15)' : 'none',
-                                    }}
-                                    autoFocus={i === 0}
-                                />
-                            ))}
+                        {/* OTP visual underline display + hidden input */}
+                        <div
+                            style={{ position: 'relative', display: 'flex', gap: 10, justifyContent: 'center', cursor: 'text' }}
+                            onClick={() => otpInputRef.current?.focus()}
+                        >
+                            {/* Hidden real input */}
+                            <input
+                                ref={otpInputRef}
+                                type="tel"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                autoComplete="one-time-code"
+                                maxLength={6}
+                                value={otp}
+                                onChange={handleOTPInput}
+                                onPaste={handleOTPPaste}
+                                autoFocus
+                                style={{
+                                    position: 'absolute', opacity: 0, width: '100%', height: '100%',
+                                    top: 0, left: 0, zIndex: 1, cursor: 'text',
+                                    fontSize: 16, // keeps mobile from zooming
+                                }}
+                            />
+
+                            {/* Visual digit slots */}
+                            {[0,1,2,3,4,5].map(i => {
+                                const filled = i < otp.length;
+                                const isCursor = i === otp.length;
+                                return (
+                                    <div key={i} style={{
+                                        width: 44, height: 56,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        borderBottom: `3px solid ${filled ? '#16a34a' : isCursor ? '#22c55e' : '#d1d5db'}`,
+                                        fontSize: 28,
+                                        fontWeight: 800,
+                                        fontFamily: "Arial, 'Helvetica Neue', sans-serif",
+                                        color: '#111827',
+                                        position: 'relative',
+                                        transition: 'border-color 0.15s',
+                                    }}>
+                                        {filled ? otp[i] : (
+                                            isCursor ? (
+                                                <span style={{
+                                                    width: 2, height: 28, background: '#22c55e',
+                                                    borderRadius: 2, display: 'block',
+                                                    animation: 'otpBlink 1s step-end infinite',
+                                                }} />
+                                            ) : null
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
 
-                        <button type="submit" className="login-btn login-btn-primary" disabled={loading || otp.join('').length !== 6}>
+                        <style>{`
+                            @keyframes otpBlink {
+                                0%, 100% { opacity: 1; } 50% { opacity: 0; }
+                            }
+                        `}</style>
+
+
+                        <button type="submit" className="login-btn login-btn-primary" disabled={loading || otp.length !== 6}>
                             {loading && <span className="btn-spinner" />}
                             {loading ? 'Verifying...' : 'Verify & Continue →'}
                         </button>
@@ -457,7 +481,7 @@ const Login = () => {
                                 <span style={{ fontSize: 13, color: '#9ca3af' }}>Resend OTP in <strong style={{ color: '#22c55e' }}>{resendTimer}s</strong></span>
                             ) : (
                                 <button type="button" style={{ background: 'none', border: 'none', color: '#22c55e', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                                    onClick={() => { setStep('phone'); setOtp(['', '', '', '', '', '']); setError(''); }}>
+                                    onClick={() => { setStep('phone'); setOtp(''); setError(''); }}>
                                     ← Change number or Resend OTP
                                 </button>
                             )}
