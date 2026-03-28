@@ -1,177 +1,255 @@
-.order-history-page {
-    padding: 16px;
+/* ── Page Shell ── */
+.oh-page {
     background: #f8fafc;
-    min-height: calc(100vh - 70px);
+    min-height: 100vh;
     padding-bottom: 90px;
 }
 
-.page-title {
+/* ── Header ── */
+.oh-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 20px 18px 12px;
+    background: white;
+    border-bottom: 1px solid #f1f5f9;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.oh-title {
     font-size: 20px;
-    font-weight: 700;
-    color: #1a1a2e;
-    margin: 0 0 16px;
-    letter-spacing: -0.3px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.4px;
+}
+.oh-count {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 600;
 }
 
-.orders-list {
+/* ── List ── */
+.oh-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    background: white;
+    margin-top: 8px;
 }
 
-.order-card-item {
-    background: #ffffff;
-    border-radius: 16px;
-    padding: 14px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-    cursor: pointer;
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
-    border: 1px solid #f1f5f9;
-}
-
-.order-card-item:hover,
-.order-card-item:active {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-}
-
-.order-card-header {
+/* ── Each Row ── */
+.oh-row {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px dashed #e2e8f0;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+.oh-row:active { background: #f8fafc; }
+.oh-row:last-child { border-bottom: none; }
+
+/* ── Thumbnail ── */
+.oh-thumb-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+.oh-thumb {
+    width: 56px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 10px;
+    background: #f1f5f9;
+    display: block;
+}
+.oh-thumb-placeholder {
+    width: 56px;
+    height: 64px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+.oh-extra-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -6px;
+    background: #0f172a;
+    color: white;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 5px;
+    border-radius: 6px;
+    border: 1.5px solid white;
+    white-space: nowrap;
 }
 
-.order-card-header > div:first-child {
+/* ── Info block ── */
+.oh-info {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
-
-.order-card-header h3 {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1e293b;
-    margin: 0;
-    letter-spacing: -0.2px;
-}
-
-.order-date {
-    font-size: 12px;
-    color: #94a3b8;
-    margin: 0;
-}
-
-.order-items-preview {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 14px;
-    align-items: center;
-}
-
-.order-items-preview img {
-    width: 48px;
-    height: 48px;
-    object-fit: cover;
-    border-radius: 10px;
-    background: #f1f5f9;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.more-items {
-    width: 48px;
-    height: 48px;
-    background: #f8fafc;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 700;
-    color: #64748b;
-    border: 1px solid #e2e8f0;
-}
-
-.order-total {
+.oh-info-top {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    background: #f8fafc;
-    padding: 10px 12px;
-    border-radius: 10px;
+    align-items: flex-start;
+    gap: 6px;
 }
-
-.order-total > span:first-child {
-    font-size: 12px;
+.oh-item-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+.oh-amount {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+    flex-shrink: 0;
+}
+.oh-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.oh-shop {
+    font-size: 11px;
     color: #64748b;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+.oh-bottom-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2px;
+}
+.oh-date {
+    font-size: 11px;
+    color: #94a3b8;
     font-weight: 500;
 }
 
-.total-amount {
-    font-size: 15px;
-    font-weight: 700;
-    color: #0f172a;
-}
-
-/* Status Badges */
-.status-badge {
-    padding: 4px 10px;
+/* ── Status chip ── */
+.oh-status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
     border-radius: 20px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
     white-space: nowrap;
+    letter-spacing: 0.2px;
+}
+.oh-status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
 }
 
-/* Base styles for all statuses */
-.status-placed { background: #f0fdf4; color: #22c55e; }
-.status-accepted { background: #f0fdf4; color: #22c55e; }
-.status-packed { background: #fefce8; color: #eab308; }
-.status-out-for-delivery { background: #fff7ed; color: #f97316; }
-.status-delivered { background: #f0fdf4; color: #16a34a; }
-.status-cancelled { background: #fef2f2; color: #ef4444; }
+/* ── Chevron ── */
+.oh-chevron {
+    width: 16px;
+    height: 16px;
+    color: #cbd5e1;
+    flex-shrink: 0;
+}
 
-/* Return statuses */
-.status-return-requested { background: #fff1f2; color: #e11d48; }
-.status-return-approved { background: #fdf4ff; color: #c026d3; }
-.status-return-completed { background: #f0fdfa; color: #0d9488; }
-.status-return-rejected { background: #fef2f2; color: #dc2626; }
-
-/* Exchange statuses */
-.status-exchange-requested { background: #f0f9ff; color: #0284c7; }
-.status-exchange-approved { background: #eef2ff; color: #4f46e5; }
-.status-exchange-completed { background: #f5f3ff; color: #7c3aed; }
-.status-exchange-rejected { background: #fef2f2; color: #dc2626; }
-
-/* Empty State */
-.empty-state {
+/* ── Empty State ── */
+.oh-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 20px;
+    padding: 80px 24px 40px;
     text-align: center;
-    height: 60vh;
 }
-
-.empty-state-icon {
-    font-size: 48px;
+.oh-empty-icon {
+    font-size: 52px;
     margin-bottom: 16px;
-    opacity: 0.8;
+    opacity: 0.85;
 }
-
-.empty-state-title {
+.oh-empty h2 {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 800;
     color: #1e293b;
-    margin: 0 0 8px;
+    margin: 0 0 6px;
+}
+.oh-empty p {
+    font-size: 13px;
+    color: #94a3b8;
+    margin: 0 0 24px;
+}
+.oh-shop-btn {
+    padding: 12px 28px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 12px rgba(34,197,94,0.35);
 }
 
-.empty-state-text {
-    font-size: 14px;
-    color: #64748b;
-    margin: 0 0 24px;
+/* ── Skeleton Loader ── */
+.oh-skeleton-list {
+    padding: 8px 0;
+    background: white;
+    margin-top: 8px;
+}
+.oh-skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid #f8fafc;
+}
+.oh-sk-img {
+    width: 56px;
+    height: 64px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #f1f5f9 25%, #e8edf2 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    flex-shrink: 0;
+}
+.oh-sk-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.oh-sk-line {
+    height: 10px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #f1f5f9 25%, #e8edf2 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+}
+.oh-sk-line.w70 { width: 70%; }
+.oh-sk-line.w45 { width: 45%; }
+.oh-sk-line.w55 { width: 55%; }
+
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
