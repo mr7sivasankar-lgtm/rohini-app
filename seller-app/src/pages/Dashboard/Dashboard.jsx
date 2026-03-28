@@ -30,7 +30,7 @@ const Dashboard = () => {
                         className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
                         onClick={() => setActiveTab('dashboard')}
                     >
-                        📊 Dashboard
+                        📊 Overview
                     </button>
                     <button 
                         className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
@@ -48,13 +48,13 @@ const Dashboard = () => {
                         className={`nav-item ${activeTab === 'sales' ? 'active' : ''}`}
                         onClick={() => setActiveTab('sales')}
                     >
-                        📈 Sales & Revenue
+                        📈 Sales
                     </button>
                     <button 
                         className={`nav-item ${activeTab === 'wallet' ? 'active' : ''}`}
                         onClick={() => setActiveTab('wallet')}
                     >
-                        💰 Wallet & Payouts
+                        💰 Wallet
                     </button>
                     <button 
                         className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`}
@@ -66,7 +66,7 @@ const Dashboard = () => {
                         className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
                         onClick={() => setActiveTab('profile')}
                     >
-                        ⚙️ Shop Profile
+                        ⚙️ Profile
                     </button>
                 </nav>
 

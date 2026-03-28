@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import api, { getImageUrl } from '../utils/api';
 
-// Privacy masking helpers
 const maskName = (name) => {
     if (!name) return 'Customer';
     const parts = name.trim().split(' ');
@@ -16,267 +15,415 @@ const maskPhone = (phone) => {
     return digits.slice(0, 2) + '****' + digits.slice(-2);
 };
 
-const OrdersTab = () => {
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('New');
+const STATUS_CONFIG = {
+    'Placed':            { color: '#f59e0b', bg: '#fef3c7', text: '#b45309' },
+    'Accepted':          { color: '#6366f1', bg: '#eef2ff', text: '#4338ca' },
+    'Preparing':         { color: '#6366f1', bg: '#eef2ff', text: '#4338ca' },
+    'Ready for Pickup':  { color: '#0ea5e9', bg: '#e0f2fe', text: '#0369a1' },
+    'Out for Delivery':  { color: '#0ea5e9', bg: '#e0f2fe', text: '#0369a1' },
+    'Delivered':         { color: '#22c55e', bg: '#dcfce7', text: '#16a34a' },
+    'Cancelled':         { color: '#ef4444', bg: '#fee2e2', text: '#dc2626' },
+    'Rejected':          { color: '#ef4444', bg: '#fee2e2', text: '#dc2626' },
+};
 
-    useEffect(() => {
-        fetchOrders();
-    }, []);
+const getStatusStyle = (status) =>
+    STATUS_CONFIG[status] || { color: '#94a3b8', bg: '#f1f5f9', text: '#64748b' };
+
+const TABS = [
+    { key: 'New',       label: '🆕 New',      filter: o => o.status === 'Placed' },
+    { key: 'Accepted',  label: '✅ Accepted',  filter: o => ['Accepted','Preparing'].includes(o.status) },
+    { key: 'Ready',     label: '📦 Ready',     filter: o => ['Ready for Pickup','Out for Delivery'].includes(o.status) },
+    { key: 'Completed', label: '🎉 Done',      filter: o => o.status === 'Delivered' },
+    { key: 'Cancelled', label: '❌ Cancelled', filter: o => ['Cancelled','Rejected'].includes(o.status) },
+    { key: 'Returns',   label: '↩️ Returns',   filter: o => o.items.some(i => i.status?.includes('Return')) },
+];
+
+const OrdersTab = () => {
+    const [orders, setOrders]       = useState([]);
+    const [loading, setLoading]     = useState(true);
+    const [activeTab, setActiveTab] = useState('New');
+    const [processing, setProcessing] = useState(null); // orderId being processed
+
+    useEffect(() => { fetchOrders(); }, []);
 
     const fetchOrders = async () => {
         try {
             const res = await api.get('/orders/seller');
-            if (res.data.success) {
-                setOrders(res.data.data);
-            }
-        } catch (error) {
-            console.error('Failed to fetch orders:', error);
+            if (res.data.success) setOrders(res.data.data);
+        } catch (e) {
+            console.error('Failed to fetch orders:', e);
         } finally {
             setLoading(false);
         }
     };
 
+    // Order-level status update (Accept, Reject, Ready)
     const updateOrderStatus = async (orderId, status) => {
-        if (!window.confirm(`Are you sure you want to mark this order as ${status}?`)) return;
-
+        if (!window.confirm(`Mark this order as "${status}"?`)) return;
+        setProcessing(orderId);
         try {
             await api.put(`/orders/seller/${orderId}/status`, { status });
-            fetchOrders();
-        } catch (error) {
-            alert(error.response?.data?.message || 'Failed to update order status');
+            await fetchOrders();
+        } catch (e) {
+            alert(e.response?.data?.message || 'Failed to update order status');
+        } finally {
+            setProcessing(null);
         }
     };
 
-    if (loading) return <div className="loading"><div className="spinner" style={{borderTopColor: '#4f46e5'}}></div></div>;
-
-    const tabs = ['New', 'Accepted', 'Ready', 'Completed', 'Cancelled', 'Returns'];
-
-    const getFilteredOrders = () => {
-        switch (activeTab) {
-            case 'New': return orders.filter(o => o.status === 'Placed');
-            case 'Accepted': return orders.filter(o => o.status === 'Accepted' || o.status === 'Preparing');
-            case 'Ready': return orders.filter(o => o.status === 'Ready for Pickup' || o.status === 'Out for Delivery');
-            case 'Completed': return orders.filter(o => o.status === 'Delivered');
-            case 'Cancelled': return orders.filter(o => o.status === 'Cancelled' || o.status === 'Rejected');
-            case 'Returns': return orders.filter(o => o.items.some(i => i.status?.includes('Return')));
-            default: return orders;
+    // Item-level return approve/reject
+    const handleItemReturn = async (orderId, itemId, action, itemName) => {
+        const verb = action === 'approve' ? 'Accept' : 'Reject';
+        if (!window.confirm(`${verb} return for "${itemName}"?`)) return;
+        setProcessing(orderId + itemId);
+        try {
+            await api.put(`/orders/seller/${orderId}/item-return`, { itemId, action });
+            await fetchOrders();
+            alert(action === 'approve'
+                ? '✅ Return accepted! A delivery partner will be assigned shortly.'
+                : '❌ Return rejected.');
+        } catch (e) {
+            alert(e.response?.data?.message || 'Error processing return');
+        } finally {
+            setProcessing(null);
         }
     };
 
-    const filteredOrders = getFilteredOrders();
+    if (loading) return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px' }}>
+            <div style={{ width: '32px', height: '32px', border: '3px solid #e2e8f0', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+        </div>
+    );
+
+    const tab = TABS.find(t => t.key === activeTab);
+    const filteredOrders = tab ? orders.filter(tab.filter) : orders;
 
     return (
-        <div className="orders-tab">
-            <div className="section-header" style={{ marginBottom: '16px' }}>
-                <h2>Order Management</h2>
-                <p>Track, accept, and prepare customer orders for pickup.</p>
+        <div style={{ width: '100%' }}>
+            <style>{`
+                @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes pulse-ring {
+                    0%   { box-shadow: 0 0 0 0 rgba(234,179,8,0.4); }
+                    70%  { box-shadow: 0 0 0 8px rgba(234,179,8,0); }
+                    100% { box-shadow: 0 0 0 0 rgba(234,179,8,0); }
+                }
+                .orders-tab-wrap::-webkit-scrollbar { display: none; }
+                .orders-tab-wrap { -ms-overflow-style: none; scrollbar-width: none; }
+                .order-card { transition: box-shadow 0.2s; }
+                .order-card:hover { box-shadow: 0 4px 16px rgba(79,70,229,0.1); }
+                .pulse-ready { animation: pulse-ring 2s infinite; }
+                @media (max-width: 600px) {
+                    .order-meta-row { flex-direction: column !important; gap: 4px !important; }
+                    .order-items-grid { gap: 12px !important; }
+                    .item-attrs { flex-wrap: wrap !important; }
+                    .return-btns { flex-direction: row !important; }
+                }
+            `}</style>
+
+            {/* Header */}
+            <div style={{ marginBottom: '16px' }}>
+                <h2 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>
+                    Order Management
+                </h2>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                    Accept, prepare, and manage customer orders.
+                </p>
             </div>
 
-            <style>{`
-                .tabs-container::-webkit-scrollbar { display: none; }
-                .tabs-container { -ms-overflow-style: none; scrollbar-width: none; }
-            `}</style>
-            
-            <div style={{ paddingBottom: '16px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0' }}>
-                <div className="tabs-container" style={{ 
-                    display: 'flex', gap: '8px', overflowX: 'auto', 
-                    background: '#f1f5f9', padding: '6px', borderRadius: '16px', 
-                    width: 'max-content', maxWidth: '100%' 
-                }}>
-                    {tabs.map(tab => {
-                        const count = 
-                            tab === 'New' ? orders.filter(o => o.status === 'Placed').length :
-                            tab === 'Accepted' ? orders.filter(o => o.status === 'Accepted' || o.status === 'Preparing').length :
-                            tab === 'Ready' ? orders.filter(o => o.status === 'Ready for Pickup' || o.status === 'Out for Delivery').length :
-                            tab === 'Completed' ? orders.filter(o => o.status === 'Delivered').length :
-                            tab === 'Cancelled' ? orders.filter(o => o.status === 'Cancelled' || o.status === 'Rejected').length :
-                            orders.filter(o => o.items.some(i => i.status?.includes('Return'))).length;
-
+            {/* Tab bar — horizontally scrollable */}
+            <div className="orders-tab-wrap" style={{ overflowX: 'auto', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', gap: '6px', background: '#f1f5f9', padding: '5px', borderRadius: '14px', width: 'max-content' }}>
+                    {TABS.map(t => {
+                        const count = orders.filter(t.filter).length;
+                        const isActive = activeTab === t.key;
                         return (
                             <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
+                                key={t.key}
+                                onClick={() => setActiveTab(t.key)}
                                 style={{
-                                    display: 'flex', alignItems: 'center', gap: '8px',
-                                    padding: '8px 16px', borderRadius: '12px', fontSize: '14px', 
-                                    fontWeight: 600, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    background: activeTab === tab ? '#ffffff' : 'transparent',
-                                    color: activeTab === tab ? '#4f46e5' : '#64748b',
-                                    boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                    padding: '7px 14px', borderRadius: '10px',
+                                    fontSize: '13px', fontWeight: 600, border: 'none',
+                                    cursor: 'pointer', whiteSpace: 'nowrap',
+                                    background: isActive ? 'white' : 'transparent',
+                                    color: isActive ? '#4f46e5' : '#64748b',
+                                    boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                                    transition: 'all 0.18s',
                                 }}
                             >
-                                {tab}
-                                <span style={{
-                                    background: activeTab === tab ? '#eef2ff' : '#e2e8f0',
-                                    color: activeTab === tab ? '#4f46e5' : '#64748b',
-                                    padding: '2px 8px',
-                                    borderRadius: '10px',
-                                    fontSize: '12px',
-                                    fontWeight: 700,
-                                    transition: 'all 0.2s',
-                                    minWidth: '24px',
-                                    textAlign: 'center'
-                                }}>
-                                    {count}
-                                </span>
+                                {t.label}
+                                {count > 0 && (
+                                    <span style={{
+                                        background: isActive ? '#4f46e5' : '#e2e8f0',
+                                        color: isActive ? 'white' : '#64748b',
+                                        padding: '1px 7px', borderRadius: '20px',
+                                        fontSize: '11px', fontWeight: 700,
+                                    }}>
+                                        {count}
+                                    </span>
+                                )}
                             </button>
                         );
                     })}
                 </div>
             </div>
 
+            {/* Returns notice banner */}
+            {activeTab === 'Returns' && filteredOrders.length > 0 && (
+                <div style={{
+                    background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px',
+                    padding: '10px 14px', marginBottom: '12px', fontSize: '12px', color: '#92400e',
+                    display: 'flex', alignItems: 'center', gap: '8px'
+                }}>
+                    ℹ️ <span>Tap <strong>Accept Return</strong> next to the item — a delivery partner will be auto-assigned to collect it from the customer.</span>
+                </div>
+            )}
+
+            {/* Empty state */}
             {filteredOrders.length === 0 ? (
-                <div className="temp-placeholder">
-                     <span style={{ fontSize: '48px', margin: '0 0 16px', display: 'block' }}>📦</span>
-                     <h3>No orders yet</h3>
-                     <p>When customers buy your products, they will appear here.</p>
-                 </div>
+                <div style={{
+                    background: 'white', border: '1px dashed #cbd5e1', borderRadius: '14px',
+                    padding: '48px 20px', textAlign: 'center'
+                }}>
+                    <div style={{ fontSize: '48px', marginBottom: '12px' }}>
+                        {activeTab === 'New' ? '🛒' : activeTab === 'Returns' ? '↩️' : '📦'}
+                    </div>
+                    <p style={{ margin: '0 0 4px', fontWeight: 700, color: '#1e293b' }}>
+                        No {activeTab === 'New' ? 'new' : activeTab.toLowerCase()} orders
+                    </p>
+                    <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+                        {activeTab === 'New' ? 'New customer orders will appear here.' : 'Nothing here yet.'}
+                    </span>
+                </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {filteredOrders.map(order => {
-                        const statusColor =
-                            ['Placed', 'Return Requested'].includes(order.status) ? '#f59e0b' :
-                            ['Delivered', 'Return Completed'].includes(order.status) ? '#22c55e' :
-                            ['Cancelled', 'Rejected'].includes(order.status) ? '#ef4444' : '#6366f1';
-
-                        const statusBg =
-                            ['Placed', 'Return Requested'].includes(order.status) ? '#fef3c7' :
-                            ['Delivered', 'Return Completed'].includes(order.status) ? '#dcfce7' :
-                            ['Cancelled', 'Rejected'].includes(order.status) ? '#fee2e2' : '#eef2ff';
-
-                        const statusText =
-                            ['Placed', 'Return Requested'].includes(order.status) ? '#b45309' :
-                            ['Delivered', 'Return Completed'].includes(order.status) ? '#16a34a' :
-                            ['Cancelled', 'Rejected'].includes(order.status) ? '#dc2626' : '#4f46e5';
+                        const { color, bg, text } = getStatusStyle(order.status);
+                        const isProcessing = processing === order._id;
+                        const customer = order.shippingAddress?.fullName || order.contactInfo?.name || order.user?.name;
+                        const phone = order.shippingAddress?.phone || order.contactInfo?.phone || order.user?.phone;
+                        const returnItems = order.items.filter(i => i.status?.includes('Return'));
 
                         return (
-                            <div key={order._id} style={{
-                                display: 'flex',
-                                flexWrap: 'wrap',
-                                alignItems: 'stretch',
+                            <div key={order._id} className="order-card" style={{
                                 background: 'white',
-                                borderRadius: '10px',
+                                borderRadius: '14px',
                                 border: '1px solid #e2e8f0',
                                 overflow: 'hidden',
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
                             }}>
-                                {/* Left accent bar */}
-                                <div style={{ width: '5px', background: statusColor, flexShrink: 0 }} />
+                                {/* Top accent stripe + header */}
+                                <div style={{ height: '3px', background: color }} />
 
-                                {/* Main content */}
-                                <div style={{ flex: 1, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-
-                                    {/* Order ID + Date */}
-                                    <div style={{ minWidth: '90px' }}>
-                                        <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>
-                                            #{(order.orderId || order._id?.toString())?.slice(-6)}
+                                <div style={{ padding: '14px 16px' }}>
+                                    {/* Order meta row */}
+                                    <div className="order-meta-row" style={{
+                                        display: 'flex', alignItems: 'center',
+                                        justifyContent: 'space-between', flexWrap: 'wrap',
+                                        gap: '8px', marginBottom: '12px'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                            <span style={{ fontWeight: 800, fontSize: '15px', color: '#1e293b' }}>
+                                                #{(order.orderId || order._id?.toString())?.slice(-6)}
+                                            </span>
+                                            <span style={{
+                                                padding: '3px 10px', borderRadius: '20px',
+                                                fontSize: '11px', fontWeight: 700,
+                                                background: bg, color: text
+                                            }}>
+                                                {order.status}
+                                            </span>
+                                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                                {new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                                            </span>
                                         </div>
-                                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                                            {new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                            <span style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b' }}>
+                                                ₹{(order.totalAmount || 0).toFixed(0)}
+                                            </span>
+                                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                                {order.paymentMethod || 'COD'}
+                                            </span>
                                         </div>
                                     </div>
 
-                                    {/* Status badge */}
-                                    <span style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, background: statusBg, color: statusText, whiteSpace: 'nowrap' }}>
-                                        {order.status}
-                                    </span>
-
-                                    {/* Customer (masked) */}
-                                    <div style={{ minWidth: '110px' }}>
-                                        <div style={{ fontSize: '12px', color: '#64748b' }}>👤 {maskName(order.shippingAddress?.fullName || order.contactInfo?.name)}</div>
-                                        <div style={{ fontSize: '12px', color: '#64748b' }}>📞 {maskPhone(order.shippingAddress?.phone || order.contactInfo?.phone || order.user?.phone) || 'N/A'}</div>
+                                    {/* Customer */}
+                                    <div style={{
+                                        display: 'flex', gap: '16px', flexWrap: 'wrap',
+                                        padding: '8px 12px', background: '#f8fafc',
+                                        borderRadius: '8px', marginBottom: '12px',
+                                        fontSize: '12px', color: '#475569'
+                                    }}>
+                                        <span>👤 {maskName(customer)}</span>
+                                        <span>📞 {maskPhone(phone) || 'N/A'}</span>
+                                        <span style={{ flex: 1, minWidth: '120px' }}>
+                                            📍 {order.shippingAddress?.fullAddress?.substring(0, 40) || '—'}
+                                        </span>
                                     </div>
 
-                                    {/* Items list */}
-                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 'min(100%, 350px)' }}>
-                                        {order.items.map((item, idx) => (
-                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%' }}>
-                                                <img
-                                                    src={getImageUrl(item.image)}
-                                                    alt={item.name}
-                                                    style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0, cursor: 'pointer', border: '1px solid #e2e8f0' }}
-                                                    onClick={() => window.open(getImageUrl(item.image), '_blank')}
-                                                    onError={(e) => { e.target.style.display = 'none'; }}
-                                                />
-                                                {/* Title */}
-                                                <div style={{ width: '130px', fontSize: '13px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.name}>
-                                                    {item.name}
-                                                </div>
-                                                
-                                                {/* Attributes spread out */}
-                                                <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '50px' }}>
-                                                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Qty</span>
-                                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{item.quantity}</span>
-                                                    </div>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }}>
-                                                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Size</span>
-                                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{item.size || '-'}</span>
-                                                    </div>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }}>
-                                                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Color</span>
-                                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{item.color || '-'}</span>
-                                                    </div>
-                                                    
-                                                    {/* Item Value */}
-                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: '70px', marginRight: '10px' }}>
-                                                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Value</span>
-                                                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>₹{((item.sellingPrice ?? 0) * item.quantity).toFixed(0)}</span>
-                                                    </div>
+                                    {/* Items */}
+                                    <div className="order-items-grid" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {order.items.map((item, idx) => {
+                                            const itemReturnPending = item.status === 'Return Requested';
+                                            const itemReturnDone = item.status?.includes('Return') && !itemReturnPending;
+                                            const isItemProcessing = processing === (order._id + item._id);
 
-                                                    {/* Return Actions per item */}
-                                                    {item.status === 'Return Requested' && (
-                                                        <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
-                                                            <button style={{ padding: '6px 12px', background: '#e0f2fe', color: '#0369a1', border: '1px solid #7dd3fc', borderRadius: '6px', fontWeight: 700, cursor: 'pointer', fontSize: '11px', whiteSpace: 'nowrap' }}
-                                                                onClick={async () => {
-                                                                    if(!window.confirm(`Accept return for ${item.name}?`)) return;
-                                                                    try {
-                                                                        await api.put(`/orders/seller/${order._id}/item-return`, { itemId: item._id, action: 'approve' });
-                                                                        fetchOrders();
-                                                                    } catch (e) { alert(e.response?.data?.message || 'Error'); }
-                                                                }}>✅ Accept Return</button>
-                                                            <button style={{ padding: '6px 12px', background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', borderRadius: '6px', fontWeight: 700, cursor: 'pointer', fontSize: '11px', whiteSpace: 'nowrap' }}
-                                                                onClick={async () => {
-                                                                    if(!window.confirm(`Reject return for ${item.name}?`)) return;
-                                                                    try {
-                                                                        await api.put(`/orders/seller/${order._id}/item-return`, { itemId: item._id, action: 'reject' });
-                                                                        fetchOrders();
-                                                                    } catch (e) { alert(e.response?.data?.message || 'Error'); }
-                                                                }}>❌ Reject</button>
+                                            return (
+                                                <div key={idx} style={{
+                                                    display: 'flex', gap: '10px', alignItems: 'flex-start',
+                                                    padding: '10px', borderRadius: '10px',
+                                                    background: itemReturnPending ? '#fff7ed' : '#fafbfc',
+                                                    border: itemReturnPending ? '1px solid #fed7aa' : '1px solid #f1f5f9',
+                                                }}>
+                                                    {/* Image */}
+                                                    <img
+                                                        src={getImageUrl(item.image)}
+                                                        alt={item.name}
+                                                        onClick={() => window.open(getImageUrl(item.image), '_blank')}
+                                                        onError={e => e.target.style.display = 'none'}
+                                                        style={{
+                                                            width: '48px', height: '48px', borderRadius: '8px',
+                                                            objectFit: 'cover', flexShrink: 0, cursor: 'pointer',
+                                                            border: '1px solid #e2e8f0'
+                                                        }}
+                                                    />
+
+                                                    {/* Info */}
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{
+                                                            fontWeight: 700, fontSize: '13px', color: '#1e293b',
+                                                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                                                        }}>
+                                                            {item.name}
                                                         </div>
-                                                    )}
-                                                    {item.status?.includes('Return') && item.status !== 'Return Requested' && (
-                                                        <span style={{ padding: '4px 8px', background: '#f1f5f9', color: '#475569', borderRadius: '6px', fontSize: '11px', fontWeight: 600, marginLeft: 'auto' }}>
-                                                            {item.status}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
 
-                                {/* Action buttons */}
-                                <div style={{ display: 'flex', flexWrap: 'wrap', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '12px 16px', borderTop: '1px solid #f1f5f9', background: '#fafafa', width: '100%' }}>
-                                    {order.status === 'Placed' && (
-                                        <div style={{ display: 'flex', gap: '6px' }}>
-                                            <button style={{ flex: 1, padding: '7px 10px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
-                                                onClick={() => updateOrderStatus(order._id, 'Accepted')}>✅ Accept Order</button>
-                                            <button style={{ flex: 1, padding: '7px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
-                                                onClick={() => updateOrderStatus(order._id, 'Rejected')}>❌ Reject Order</button>
+                                                        <div className="item-attrs" style={{
+                                                            display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap'
+                                                        }}>
+                                                            <span style={{ fontSize: '11px', background: '#e0f2fe', color: '#0369a1', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                                                Qty: {item.quantity}
+                                                            </span>
+                                                            {item.size && (
+                                                                <span style={{ fontSize: '11px', background: '#f3e8ff', color: '#7c3aed', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                                                    {item.size}
+                                                                </span>
+                                                            )}
+                                                            {item.color && (
+                                                                <span style={{ fontSize: '11px', background: '#fce7f3', color: '#be185d', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                                                    {item.color}
+                                                                </span>
+                                                            )}
+                                                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#1e293b' }}>
+                                                                ₹{((item.sellingPrice || 0) * item.quantity).toFixed(0)}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Return status badge or action buttons */}
+                                                        {itemReturnPending && (
+                                                            <div style={{ marginTop: '8px' }}>
+                                                                <div style={{ fontSize: '11px', color: '#92400e', marginBottom: '6px', fontWeight: 600 }}>
+                                                                    ↩️ Customer requested a return{item.actionReason ? `: "${item.actionReason}"` : ''}
+                                                                </div>
+                                                                <div className="return-btns" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                                                    <button
+                                                                        disabled={isItemProcessing}
+                                                                        onClick={() => handleItemReturn(order._id, item._id, 'approve', item.name)}
+                                                                        style={{
+                                                                            flex: 1, minWidth: '100px', padding: '7px 12px',
+                                                                            background: isItemProcessing ? '#e2e8f0' : '#22c55e',
+                                                                            color: 'white', border: 'none', borderRadius: '8px',
+                                                                            fontWeight: 700, cursor: isItemProcessing ? 'not-allowed' : 'pointer',
+                                                                            fontSize: '12px',
+                                                                        }}
+                                                                    >
+                                                                        {isItemProcessing ? '⏳ Processing…' : '✅ Accept Return'}
+                                                                    </button>
+                                                                    <button
+                                                                        disabled={isItemProcessing}
+                                                                        onClick={() => handleItemReturn(order._id, item._id, 'reject', item.name)}
+                                                                        style={{
+                                                                            flex: 1, minWidth: '80px', padding: '7px 12px',
+                                                                            background: '#fee2e2', color: '#b91c1c',
+                                                                            border: '1px solid #fca5a5', borderRadius: '8px',
+                                                                            fontWeight: 700, cursor: isItemProcessing ? 'not-allowed' : 'pointer',
+                                                                            fontSize: '12px',
+                                                                        }}
+                                                                    >
+                                                                        ❌ Reject
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {itemReturnDone && (
+                                                            <div style={{ marginTop: '6px' }}>
+                                                                <span style={{
+                                                                    display: 'inline-block', padding: '3px 8px',
+                                                                    background: item.status?.includes('Rejected') ? '#fee2e2' : '#dcfce7',
+                                                                    color: item.status?.includes('Rejected') ? '#dc2626' : '#16a34a',
+                                                                    borderRadius: '6px', fontSize: '11px', fontWeight: 700
+                                                                }}>
+                                                                    {item.status}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Order-level action buttons */}
+                                    {(order.status === 'Placed' || order.status === 'Accepted') && (
+                                        <div style={{
+                                            display: 'flex', gap: '8px', marginTop: '12px',
+                                            paddingTop: '12px', borderTop: '1px solid #f1f5f9',
+                                            flexWrap: 'wrap'
+                                        }}>
+                                            {order.status === 'Placed' && (
+                                                <>
+                                                    <button
+                                                        disabled={isProcessing}
+                                                        onClick={() => updateOrderStatus(order._id, 'Accepted')}
+                                                        style={{
+                                                            flex: 1, minWidth: '100px', padding: '9px 14px',
+                                                            background: '#22c55e', color: 'white',
+                                                            border: 'none', borderRadius: '8px',
+                                                            fontWeight: 700, cursor: 'pointer', fontSize: '13px'
+                                                        }}
+                                                    >
+                                                        ✅ Accept Order
+                                                    </button>
+                                                    <button
+                                                        disabled={isProcessing}
+                                                        onClick={() => updateOrderStatus(order._id, 'Rejected')}
+                                                        style={{
+                                                            flex: 1, minWidth: '80px', padding: '9px 14px',
+                                                            background: '#fee2e2', color: '#b91c1c',
+                                                            border: '1px solid #fca5a5', borderRadius: '8px',
+                                                            fontWeight: 700, cursor: 'pointer', fontSize: '13px'
+                                                        }}
+                                                    >
+                                                        ❌ Reject
+                                                    </button>
+                                                </>
+                                            )}
+                                            {order.status === 'Accepted' && (
+                                                <button
+                                                    disabled={isProcessing}
+                                                    onClick={() => updateOrderStatus(order._id, 'Ready for Pickup')}
+                                                    className="pulse-ready"
+                                                    style={{
+                                                        flex: 1, padding: '9px 14px',
+                                                        background: '#eab308', color: 'white',
+                                                        border: 'none', borderRadius: '8px',
+                                                        fontWeight: 700, cursor: 'pointer', fontSize: '13px'
+                                                    }}
+                                                >
+                                                    📦 Mark Ready for Pickup
+                                                </button>
+                                            )}
                                         </div>
-                                    )}
-                                    {order.status === 'Accepted' && (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                            <button style={{ padding: '7px 14px', background: '#eab308', color: 'white', border: 'none', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
-                                                onClick={() => updateOrderStatus(order._id, 'Ready for Pickup')} className="pulse-btn">📦 Mark Ready</button>
-                                        </div>
-                                    )}
-                                    {!['Placed','Accepted'].includes(order.status) && (
-                                        <span style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', padding: '0 8px' }}>Tracking updates managed automatically</span>
                                     )}
                                 </div>
                             </div>
@@ -284,16 +431,6 @@ const OrdersTab = () => {
                     })}
                 </div>
             )}
-            <style>{`
-                .pulse-btn {
-                    animation: pulse-ring 2s infinite;
-                }
-                @keyframes pulse-ring {
-                    0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
-                    70% { box-shadow: 0 0 0 10px rgba(234, 179, 8, 0); }
-                    100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
-                }
-            `}</style>
         </div>
     );
 };
