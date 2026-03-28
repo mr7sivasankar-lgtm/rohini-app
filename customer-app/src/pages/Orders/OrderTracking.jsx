@@ -1,14 +1,71 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Map, Overlay } from 'pigeon-maps';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import api, { getImageUrl } from '../../utils/api';
 import './OrderTracking.css';
 
+// ─── Fix Leaflet default icon paths broken by bundlers ───
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+// ─── Custom map icons ───
+const scooterIcon = L.divIcon({
+    html: `<div class="ot-map-scooter">🛵</div>`,
+    className: '',
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+});
+
+const shopIcon = L.divIcon({
+    html: `<div class="ot-map-shop">🏬</div>`,
+    className: '',
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+});
+
+const customerIcon = L.divIcon({
+    html: `<div class="ot-map-pin">📍</div>`,
+    className: '',
+    iconSize: [32, 40],
+    iconAnchor: [16, 40],
+});
+
+// ─── Sub-component: smoothly re-center map when DP moves ───
+const MapUpdater = ({ center }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (center) map.panTo(center, { animate: true, duration: 1.5 });
+    }, [center]);
+    return null;
+};
+
+// ─── Sub-component: fit bounds on first load ───
+const BoundsFitter = ({ points }) => {
+    const map = useMap();
+    const fitted = useRef(false);
+    useEffect(() => {
+        if (!fitted.current && points.length > 1) {
+            map.fitBounds(points, { padding: [50, 50] });
+            fitted.current = true;
+        } else if (!fitted.current && points.length === 1) {
+            map.setView(points[0], 15);
+            fitted.current = true;
+        }
+    }, []);
+    return null;
+};
+
+// ─── Main Component ───
 const OrderTracking = () => {
     const { orderId } = useParams();
     const navigate = useNavigate();
 
-    // ─── All hooks at the very top (Rules of Hooks) ───
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [actionModal, setActionModal] = useState({ isOpen: false, type: '', item: null });
@@ -19,84 +76,147 @@ const OrderTracking = () => {
     const [timeLeft, setTimeLeft] = useState(null);
     const [isExpired, setIsExpired] = useState(false);
 
+    // ─── Timer for return window ───
     const calculateTimeLeft = (deliveredTimestamp) => {
         const checkTime = () => {
-            const deliveredAt = new Date(deliveredTimestamp).getTime();
-            const threeHoursInMs = 3 * 60 * 60 * 1000;
-            const expiresAt = deliveredAt + threeHoursInMs;
-            const now = new Date().getTime();
-            const difference = expiresAt - now;
-            if (difference <= 0) {
+            const diff = (new Date(deliveredTimestamp).getTime() + 3 * 3600000) - Date.now();
+            if (diff <= 0) {
                 setIsExpired(true);
                 setTimeLeft('00:00:00');
             } else {
                 setIsExpired(false);
-                const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-                const minutes = Math.floor((difference / 1000 / 60) % 60);
-                const seconds = Math.floor((difference / 1000) % 60);
-                setTimeLeft(
-                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-                );
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                setTimeLeft(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
             }
         };
         checkTime();
-        const timer = setInterval(checkTime, 1000);
-        return () => clearInterval(timer);
+        const t = setInterval(checkTime, 1000);
+        return () => clearInterval(t);
     };
 
+    // ─── Fetch order data ───
     const fetchOrder = async () => {
         try {
-            const response = await api.get(`/orders`);
-            if (response.data.success) {
-                const foundOrder = response.data.data.find(o => o.orderId === orderId);
-                setOrder(foundOrder);
-                if (foundOrder?.status === 'Delivered') {
-                    const deliveredStatus = foundOrder.statusHistory.find(s => s.status === 'Delivered');
-                    if (deliveredStatus) calculateTimeLeft(deliveredStatus.timestamp);
+            const res = await api.get('/orders');
+            if (res.data.success) {
+                const found = res.data.data.find(o => o.orderId === orderId);
+                setOrder(found);
+                if (found?.status === 'Delivered') {
+                    const ds = found.statusHistory?.find(s => s.status === 'Delivered');
+                    if (ds) calculateTimeLeft(ds.timestamp);
                 }
             }
-        } catch (error) {
-            console.error('Error fetching order:', error);
+        } catch (err) {
+            console.error('Error fetching order:', err);
         } finally {
             setLoading(false);
         }
     };
 
-    // ─── All useEffect hooks right after state declarations ───
     useEffect(() => { fetchOrder(); }, [orderId]);
 
+    // ─── Live polling while delivery partner is active ───
     useEffect(() => {
-        let interval;
-        if (order && order.deliveryPartner && ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status)) {
-            interval = setInterval(() => fetchOrder(), 10000);
-        }
-        return () => { if (interval) clearInterval(interval); };
+        if (!order?.deliveryPartner) return;
+        if (!['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status)) return;
+        const interval = setInterval(fetchOrder, 10000);
+        return () => clearInterval(interval);
     }, [order?.status, order?.deliveryPartner]);
 
-    // ─── Helper functions ───
+    // ─── Loading / not found ───
+    if (loading) {
+        return (
+            <div className="ot-loading">
+                <div className="ot-spinner" />
+                <p>Loading order...</p>
+            </div>
+        );
+    }
+
+    if (!order) {
+        return (
+            <div className="ot-empty-state">
+                <div className="ot-empty-icon">📦</div>
+                <h2>Order not found</h2>
+                <button className="ot-btn-primary" onClick={() => navigate('/orders')}>View All Orders</button>
+            </div>
+        );
+    }
+
+    // ─── Derived state ───
+    const ACTIVE_STATUSES = ['Assigned', 'Picked Up', 'Out for Delivery'];
+    const showMap = !!(
+        order.deliveryPartner &&
+        order.deliveryPartner.location?.coordinates?.length >= 2 &&
+        ACTIVE_STATUSES.includes(order.status)
+    );
+
+    const dpLat = showMap ? order.deliveryPartner.location.coordinates[1] : null;
+    const dpLng = showMap ? order.deliveryPartner.location.coordinates[0] : null;
+    const dpCenter = showMap ? [dpLat, dpLng] : null;
+
+    const shopCoords = order.seller?.location?.coordinates;
+    const shopCenter = shopCoords?.length >= 2 ? [shopCoords[1], shopCoords[0]] : null;
+    const customerCenter = (order.shippingAddress?.latitude && order.shippingAddress?.longitude)
+        ? [order.shippingAddress.latitude, order.shippingAddress.longitude]
+        : null;
+
+    const allMapPoints = [dpCenter, shopCenter, customerCenter].filter(Boolean);
+
+    // ─── ETA via Haversine ───
+    const etaMins = (() => {
+        if (!showMap || !customerCenter) return null;
+        const toRad = v => (v * Math.PI) / 180;
+        const R = 6371;
+        const dLat = toRad(customerCenter[0] - dpLat);
+        const dLon = toRad(customerCenter[1] - dpLng);
+        const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(dpLat)) * Math.cos(toRad(customerCenter[0])) * Math.sin(dLon / 2) ** 2;
+        const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return Math.ceil((distKm / 20) * 60); // 20 km/h avg local speed
+    })();
+
+    // ─── Payment label ───
+    const getPaymentLabel = (method) => {
+        if (!method) return 'Online';
+        const m = method.toLowerCase();
+        if (m === 'cod') return 'Cash on Delivery';
+        if (m === 'wallet') return 'Wallet';
+        if (m === 'online' || m === 'upi') return 'Online / UPI';
+        return method;
+    };
+
+    // ─── Date format ───
+    const orderDate = new Date(order.createdAt);
+    const isToday = new Date().toDateString() === orderDate.toDateString();
+    const orderedOnStr = isToday
+        ? `Today, ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+        : `${orderDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+    // ─── Timeline ───
+    const statusSteps = ['Placed', 'Accepted', 'Packed', 'Picked Up', 'Out for Delivery', 'Delivered'];
+    const currentStepIndex = statusSteps.indexOf(order.status);
+
+    // ─── Modal helpers ───
     const openModal = (item, type) => {
         setActionModal({ isOpen: true, type, item });
         setActionReason('');
         setActionExchangeSize('');
         setActionExchangeColor('');
     };
-
     const closeModal = () => {
         setActionModal({ isOpen: false, type: '', item: null });
         setActionReason('');
         setActionExchangeSize('');
         setActionExchangeColor('');
     };
-
     const handleActionItem = async () => {
         if (!actionModal.item || !actionModal.type) return;
         setIsSubmitting(true);
         try {
-            const payload = {
-                itemId: actionModal.item._id,
-                action: actionModal.type,
-                reason: actionReason
-            };
+            const payload = { itemId: actionModal.item._id, action: actionModal.type, reason: actionReason };
             if (actionModal.type === 'exchange') {
                 payload.exchangeSize = actionExchangeSize;
                 payload.exchangeColor = actionExchangeColor;
@@ -104,371 +224,378 @@ const OrderTracking = () => {
             await api.put(`/orders/${order._id}/item-action`, payload);
             await fetchOrder();
             closeModal();
-        } catch (error) {
-            alert(error.response?.data?.message || 'Error processing request');
+        } catch (err) {
+            alert(err.response?.data?.message || 'Error processing request');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // ─── Conditional renders AFTER all hooks ───
-    if (loading) {
-        return <div className="tracking-loading"><div className="spinner"></div></div>;
-    }
-
-    if (!order) {
-        return (
-            <div className="tracking-empty-state">
-                <div className="empty-icon">📦</div>
-                <h2>Order not found</h2>
-                <button className="btn-modern primary" onClick={() => navigate('/orders')}>
-                    View All Orders
-                </button>
-            </div>
-        );
-    }
-
-    const statusSteps = ['Placed', 'Accepted', 'Packed', 'Picked Up', 'Out for Delivery', 'Delivered'];
-    const currentStepIndex = statusSteps.indexOf(order.status);
-    const showMap = order.deliveryPartner &&
-        order.deliveryPartner.location?.coordinates?.length >= 2 &&
-        ['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status);
-
-    const dpLat = showMap ? order.deliveryPartner.location.coordinates[1] : null;
-    const dpLng = showMap ? order.deliveryPartner.location.coordinates[0] : null;
-
-    // ─── ETA Calculation (Haversine) ───
-    const calcEta = () => {
-        if (!showMap || !order.shippingAddress?.latitude || !order.shippingAddress?.longitude) return null;
-        const toRad = (v) => (v * Math.PI) / 180;
-        const R = 6371; // Earth radius km
-        const dLat = toRad(order.shippingAddress.latitude - dpLat);
-        const dLng = toRad(order.shippingAddress.longitude - dpLng);
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(toRad(dpLat)) * Math.cos(toRad(order.shippingAddress.latitude)) *
-            Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const avgSpeedKmH = 20; // local delivery speed estimate
-        const etaMins = Math.ceil((distKm / avgSpeedKmH) * 60);
-        return etaMins;
+    // ─── Status display text ───
+    const getStatusText = () => {
+        if (order.status === 'Delivered') return 'Order Delivered!';
+        if (order.status === 'Placed') return 'Order Placed';
+        if (order.status === 'Accepted') return 'Order Accepted';
+        if (order.status === 'Packed') return 'Order Packed';
+        if (order.status === 'Out for Delivery') return 'Your order is on the way';
+        return `Order ${order.status}`;
     };
-    const etaMins = calcEta();
 
     return (
-        <div className={`order-tracking-premium-page ${showMap ? 'has-active-map' : 'no-map'}`}>
+        <div className="ot-page">
 
-            {/* 🗺️ Background Map */}
-            {showMap && (
-                <div className="premium-map-bg">
-                    <Map center={[dpLat, dpLng]} defaultZoom={15}>
-                        {/* Delivery Partner marker */}
-                        <Overlay anchor={[dpLat, dpLng]} offset={[20, 20]}>
-                            <div style={{ fontSize: '32px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))', transform: 'scaleX(-1)' }}>🛵</div>
-                        </Overlay>
-                        {/* Seller / Shop marker */}
-                        {order.seller?.location?.coordinates?.length >= 2 && (
-                            <Overlay
-                                anchor={[order.seller.location.coordinates[1], order.seller.location.coordinates[0]]}
-                                offset={[16, 32]}
-                            >
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                                    <div style={{ fontSize: '28px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))' }}>🏬</div>
-                                    <div style={{ background: '#f59e0b', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '6px', whiteSpace: 'nowrap', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>
-                                        {order.seller?.shopName || 'Shop'}
-                                    </div>
-                                </div>
-                            </Overlay>
-                        )}
-                        {/* Customer destination marker */}
-                        {order.shippingAddress?.latitude && order.shippingAddress?.longitude && (
-                            <Overlay anchor={[order.shippingAddress.latitude, order.shippingAddress.longitude]} offset={[16, 32]}>
-                                <div style={{ fontSize: '32px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))' }}>📍</div>
-                            </Overlay>
-                        )}
-                    </Map>
+            {/* ══════════════════════════
+                MAP SECTION (active orders)
+            ══════════════════════════ */}
+            {showMap ? (
+                <div className="ot-map-wrapper">
+                    <MapContainer
+                        center={dpCenter}
+                        zoom={14}
+                        className="ot-map"
+                        zoomControl={false}
+                        scrollWheelZoom={false}
+                        attributionControl={false}
+                    >
+                        <TileLayer
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            attribution="© OpenStreetMap contributors"
+                            maxZoom={19}
+                        />
+                        <BoundsFitter points={allMapPoints} />
+                        <MapUpdater center={dpCenter} />
+
+                        {/* Delivery partner scooter */}
+                        <Marker position={dpCenter} icon={scooterIcon} />
+
+                        {/* Shop marker */}
+                        {shopCenter && <Marker position={shopCenter} icon={shopIcon} />}
+
+                        {/* Customer destination */}
+                        {customerCenter && <Marker position={customerCenter} icon={customerIcon} />}
+                    </MapContainer>
+
+                    {/* Nav overlay on top of map */}
+                    <div className="ot-map-nav">
+                        <button className="ot-back-pill" onClick={() => navigate('/orders')}>
+                            ←
+                        </button>
+                        <div className="ot-map-title-pill">Order Details</div>
+                    </div>
+                </div>
+            ) : (
+                /* ── Top nav (no map) ── */
+                <div className="ot-top-nav">
+                    <button className="ot-back-flat" onClick={() => navigate('/orders')}>← Back</button>
+                    <h1 className="ot-top-title">Order Details</h1>
                 </div>
             )}
 
-            {/* 🔴 Floating Top Nav */}
-            <div className="floating-top-nav">
-                <button className="pill-back-btn" onClick={() => navigate('/orders')}>
-                    <span className="icon">←</span> Back
-                </button>
-                <h1 className="pill-title">Order Details</h1>
-            </div>
+            {/* ══════════════════════════
+                BODY CONTENT
+            ══════════════════════════ */}
+            <div className="ot-body">
 
-            {/* 🧊 Content Overlay */}
-            <div className="premium-content-overlay">
+                {/* ── ETA Banner (active delivery) ── */}
+                {showMap && (
+                    <div className="ot-eta-banner">
+                        <span className="ot-eta-icon">🛵</span>
+                        <span className="ot-eta-text">
+                            Deliveryman arriving in&nbsp;
+                            <strong>
+                                {etaMins == null
+                                    ? '...'
+                                    : etaMins <= 1
+                                        ? 'less than a minute'
+                                        : `${etaMins} mins`}
+                            </strong>
+                        </span>
+                    </div>
+                )}
 
-                {/* Card 1: Status */}
-                <div className="glass-card main-status-card">
-                    <div className="status-hero-row">
-                        <div className="status-icon-box">
+                {/* ── Status Card (non-active orders) ── */}
+                {!showMap && (
+                    <div className="ot-status-card">
+                        <div className="ot-status-icon-box">
                             {order.status === 'Delivered' ? '✅' : '🛍️'}
                         </div>
-                        <div className="status-hero-text">
-                            <h3>
-                                {order.status === 'Delivered'
-                                    ? 'Order Delivered Successfully'
-                                    : order.status === 'Out for Delivery'
-                                    ? 'Your order is on the way'
-                                    : `Order ${order.status}`}
-                            </h3>
-                            <p>
-                                {order.status === 'Delivered'
-                                    ? `Delivered at ${new Date(order.deliveredAt || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                                    : etaMins != null
-                                    ? (
-                                        <span className="eta-inline">
-                                            <span className="eta-clock">🕐</span>
-                                            Arriving in <strong>{etaMins <= 1 ? 'less than a minute' : `~${etaMins} min${etaMins > 1 ? 's' : ''}`}</strong>
-                                        </span>
-                                    )
-                                    : 'Preparing your order'}
+                        <div className="ot-status-info">
+                            <h3>{getStatusText()}</h3>
+                            <p className="ot-item-preview-text">
+                                {order.items.map(i => i.name).join(' · ').substring(0, 45)}
+                                {order.items.map(i => i.name).join(' · ').length > 45 ? '...' : ''}
                             </p>
                         </div>
                     </div>
-                    <div className="thin-divider" />
-                    <div className="status-quick-items-row">
-                        <div className="quick-item-names">
-                            <p className="item-names-text">
-                                {order.items.map(i => i.name).join(' – ').length > 28
-                                    ? order.items.map(i => i.name).join(' – ').substring(0, 28) + '...'
-                                    : order.items.map(i => i.name).join(' – ')}
-                            </p>
-                            <p className="item-meta">₹{(order.totalAmount || 0).toFixed(2)} &nbsp;•&nbsp; {order.items.length} items</p>
+                )}
+
+                {/* ══════════════════════════
+                    WHITE PANEL
+                ══════════════════════════ */}
+                <div className="ot-white-panel">
+
+                    {/* ── Order summary row ── */}
+                    <div className="ot-summary-row">
+                        <div className="ot-summary-left">
+                            <strong className="ot-summary-shop">{order.seller?.shopName || 'Shop'}</strong>
+                            <span className="ot-summary-meta">
+                                ₹{(order.totalAmount || 0).toFixed(2)}&nbsp;•&nbsp;
+                                {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
+                            </span>
                         </div>
-                        <button className="btn-detail-solid"
-                            onClick={() => document.getElementById('extended-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                        <button
+                            className="ot-detail-btn"
+                            onClick={() => document.getElementById('ot-items')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
                             Detail
                         </button>
                     </div>
-                </div>
 
-                {/* Card 2: Route & Delivery Partner */}
-                <div className="glass-card route-partner-card">
-                    <div className="route-path-container">
-                        <div className="route-node">
-                            <div className="node-icon dot"></div>
-                            <div className="node-text">
-                                <strong>{order.seller?.shopName || 'Shop'}</strong>
-                                <span>Shop</span>
-                            </div>
-                        </div>
-                        <div className="route-line-dashed"></div>
-                        <div className="route-node">
-                            <div className="node-icon pin">📍</div>
-                            <div className="node-text">
-                                <strong>You – {order.shippingAddress?.fullAddress?.split(',')[0]}</strong>
-                                <span>Home • {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
+                    <div className="ot-divider" />
+
+                    {/* ── Shop row ── */}
+                    <div className="ot-loc-row">
+                        <div className="ot-loc-icon-wrap shop">🏬</div>
+                        <div className="ot-loc-text">
+                            <strong>{order.seller?.shopName || 'Shop'}</strong>
+                            <span>{order.seller?.address || 'Shop'}</span>
                         </div>
                     </div>
 
+                    {/* ── Delivery address row ── */}
+                    <div className="ot-loc-row">
+                        <div className="ot-loc-icon-wrap home">📍</div>
+                        <div className="ot-loc-text">
+                            <strong>Delivery location</strong>
+                            <span>{order.shippingAddress?.fullAddress || order.shippingAddress?.street || 'Your address'}</span>
+                        </div>
+                    </div>
+
+                    <div className="ot-divider" />
+
+                    {/* ── Delivery partner ── */}
                     {order.deliveryPartner && (
-                        <>
-                            <div className="thin-divider" />
-                            <div className="dp-contact-row">
-                                <img
-                                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${order.deliveryPartner.name}&backgroundColor=10b981`}
-                                    alt="DP" className="dp-pic"
-                                />
-                                <div className="dp-text">
-                                    <strong>{order.deliveryPartner.name}</strong>
-                                    <span>Delivery • {order.deliveryPartner.phone}</span>
-                                </div>
-                                <div className="dp-actions">
-                                    <a href={`tel:${order.deliveryPartner.phone}`} className="circle-btn green">📞</a>
-                                    <a href={`sms:${order.deliveryPartner.phone}`} className="circle-btn yellow">💬</a>
-                                </div>
+                        <div className="ot-partner-row">
+                            <img
+                                src={`https://api.dicebear.com/7.x/initials/svg?seed=${order.deliveryPartner.name}&backgroundColor=10b981`}
+                                alt={order.deliveryPartner.name}
+                                className="ot-partner-avatar"
+                            />
+                            <div className="ot-partner-info">
+                                <strong>{order.deliveryPartner.name}</strong>
+                                <span>Delivery&nbsp;•&nbsp;{order.deliveryPartner.phone}</span>
                             </div>
-                        </>
-                    )}
-                </div>
-
-                {/* Extended Details */}
-                <div id="extended-details" className="extended-details-section">
-
-                    {order.status === 'Delivered' && timeLeft && (
-                        <div className={`time-window-banner ${isExpired ? 'expired-banner' : 'active-banner'}`} style={{ marginBottom: '20px' }}>
-                            <div className="banner-icon">{isExpired ? '⏳' : '⏱️'}</div>
-                            <div className="banner-text">
-                                {isExpired
-                                    ? <p><strong>Return window expired.</strong></p>
-                                    : <p>Return / Exchange available for: <strong>{timeLeft} remaining</strong></p>}
+                            <div className="ot-partner-actions">
+                                <a href={`tel:${order.deliveryPartner.phone}`} className="ot-icon-btn green">📞</a>
+                                <a href={`sms:${order.deliveryPartner.phone}`} className="ot-icon-btn yellow">💬</a>
                             </div>
                         </div>
                     )}
 
-                    {/* Timeline */}
-                    <div className="extended-card timeline-card">
-                        <h3 className="section-title">Order Timeline</h3>
-                        <div className="tracking-timeline-horizontal">
-                            {statusSteps.map((step, index) => {
-                                let dotClass = 'h-dot';
-                                const isFinished = index === currentStepIndex && index === statusSteps.length - 1;
-                                const isCompleted = isFinished || index < currentStepIndex;
-                                const isCurrent = index === currentStepIndex;
-                                if (isCompleted) dotClass += ' completed';
-                                else if (isCurrent) dotClass += ' current';
+                    <div className="ot-divider" />
 
-                                let stepTimestamp = null;
-                                if (index <= currentStepIndex && order.statusHistory) {
-                                    const historyItem = order.statusHistory.find(h => h.status === step);
-                                    if (historyItem?.timestamp) {
-                                        const d = new Date(historyItem.timestamp);
-                                        stepTimestamp = `${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}\n${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                    {/* ── Order Items ── */}
+                    <div id="ot-items" className="ot-items-section">
+                        <h4 className="ot-section-title">Ordered Item(s)</h4>
+                        {order.items.map((item, idx) => (
+                            <div key={idx} className="ot-item-row">
+                                <div className="ot-item-left">
+                                    {item.image
+                                        ? <img src={getImageUrl(item.image)} alt={item.name} className="ot-item-thumb" />
+                                        : <div className="ot-item-thumb-placeholder">🛍️</div>
                                     }
-                                }
-
-                                return (
-                                    <div key={step} className={`h-step ${index <= currentStepIndex ? 'active' : ''}`}>
-                                        <div className="h-indicator">
-                                            <div className={dotClass}>
-                                                {isCompleted && <span className="check">✓</span>}
-                                            </div>
-                                            {index < statusSteps.length - 1 && (
-                                                <div className={`h-line ${isCompleted ? 'completed-line' : ''}`} />
-                                            )}
-                                        </div>
-                                        <div className="h-content">
-                                            <h4>{step}</h4>
-                                            {stepTimestamp && <p>{stepTimestamp}</p>}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Bill Details */}
-                    <div className="extended-card bill-details-container">
-                        <h3 className="section-title">Bill Details</h3>
-                        <div className="receipt-items">
-                            {order.items.map((item, index) => (
-                                <div key={index} className="receipt-item">
-                                    <div className="receipt-item-main">
-                                        <div className="receipt-item-img-wrap">
-                                            {item.image
-                                                ? <img src={getImageUrl(item.image)} alt={item.name} />
-                                                : <div className="receipt-placeholder">🛍️</div>}
-                                        </div>
-                                        <div className="receipt-item-info">
-                                            <div className="receipt-name-row">
-                                                <span className="receipt-name">{item.name}</span>
-                                                <span className="receipt-qty">x {item.quantity}</span>
-                                            </div>
-                                            <div className="receipt-variants">
-                                                {item.size && <span>Size: {item.size}</span>}
-                                                {item.color && <span>Color: {item.color}</span>}
-                                            </div>
-                                        </div>
-                                        <div className="receipt-price">
-                                            ₹{((item.sellingPrice || item.price) * item.quantity).toFixed(2)}
-                                        </div>
-                                    </div>
-
-                                    <div className="receipt-actions-row">
-                                        {item.status !== 'Active' ? (
-                                            <div className={`compact-status-flag flag-${item.status.replace(/ /g, '-').toLowerCase()}`}>
+                                    <div className="ot-item-details">
+                                        <span className="ot-item-name">{item.name}</span>
+                                        {(item.size || item.color) && (
+                                            <span className="ot-item-variant">
+                                                {[item.size, item.color].filter(Boolean).join(' · ')}
+                                            </span>
+                                        )}
+                                        {item.status !== 'Active' && (
+                                            <span className={`ot-item-flag flag-${item.status?.replace(/ /g, '-').toLowerCase()}`}>
                                                 {item.status}
-                                            </div>
-                                        ) : (
-                                            <div className="compact-action-buttons">
-                                                {(order.status === 'Placed' || order.status === 'Accepted') && (
-                                                    <button className="link-action-btn cancel" onClick={() => openModal(item, 'cancel')}>Cancel</button>
-                                                )}
-                                                {order.status === 'Delivered' && !isExpired && (
-                                                    <>
-                                                        <button className="link-action-btn" onClick={() => openModal(item, 'return')}>Return</button>
-                                                        <button className="link-action-btn" onClick={() => openModal(item, 'exchange')}>Exchange</button>
-                                                    </>
-                                                )}
-                                                {order.status === 'Delivered' && (
-                                                    <button className="link-action-btn review" onClick={() => navigate(`/product/${item.product._id || item.product}`)}>Review</button>
-                                                )}
-                                            </div>
+                                            </span>
                                         )}
                                     </div>
                                 </div>
-                            ))}
+                                <div className="ot-item-right">
+                                    <span className="ot-item-qty">×{item.quantity}</span>
+                                    <span className="ot-item-price">
+                                        ₹{((item.sellingPrice || item.price) * item.quantity).toFixed(2)}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Return/Exchange actions for delivered orders */}
+                        {order.status === 'Delivered' && !isExpired && (
+                            <>
+                                {timeLeft && (
+                                    <div className="ot-return-window active">
+                                        ⏱️ Return window: <strong>{timeLeft}</strong> remaining
+                                    </div>
+                                )}
+                                {order.items.filter(i => i.status === 'Active').map((item, idx) => (
+                                    <div key={idx} className="ot-item-actions">
+                                        <span className="ot-item-actions-name">{item.name}</span>
+                                        <div className="ot-item-action-btns">
+                                            <button className="ot-link-btn return" onClick={() => openModal(item, 'return')}>Return</button>
+                                            <button className="ot-link-btn exchange" onClick={() => openModal(item, 'exchange')}>Exchange</button>
+                                            <button className="ot-link-btn review" onClick={() => navigate(`/product/${item.product?._id || item.product}`)}>Review</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </>
+                        )}
+                        {order.status === 'Delivered' && isExpired && timeLeft && (
+                            <div className="ot-return-window expired">⏳ Return window expired</div>
+                        )}
+
+                        {/* Cancel item during Placed/Accepted */}
+                        {['Placed', 'Accepted'].includes(order.status) &&
+                            order.items.filter(i => i.status === 'Active').map((item, idx) => (
+                                <div key={idx} className="ot-item-actions">
+                                    <span className="ot-item-actions-name">{item.name}</span>
+                                    <div className="ot-item-action-btns">
+                                        <button className="ot-link-btn cancel" onClick={() => openModal(item, 'cancel')}>Cancel Item</button>
+                                    </div>
+                                </div>
+                            ))
+                        }
+                    </div>
+
+                    <div className="ot-divider dashed" />
+
+                    {/* ── Bill Section ── */}
+                    <div className="ot-bill-section">
+                        <div className="ot-bill-row">
+                            <span>Item total</span>
+                            <span>₹{(order.sellingPriceTotal || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="ot-bill-row">
+                            <span>Delivery fee</span>
+                            {order.deliveryFee > 0
+                                ? <span>₹{(order.deliveryFee || 0).toFixed(2)}</span>
+                                : <span className="ot-free">FREE</span>}
+                        </div>
+                        {order.platformFee > 0 && (
+                            <div className="ot-bill-row">
+                                <span>Taxes &amp; Charges</span>
+                                <span>₹{(order.platformFee || 0).toFixed(2)}</span>
+                            </div>
+                        )}
+
+                        <div className="ot-bill-divider" />
+
+                        <div className="ot-bill-total-row">
+                            <span className="ot-payment-label">
+                                <span className="ot-payment-check">✅</span>
+                                Pay via {getPaymentLabel(order.paymentMethod)}
+                            </span>
+                            <strong className="ot-grand-total">₹{(order.totalAmount || 0).toFixed(2)}</strong>
                         </div>
 
-                        <div className="receipt-summary">
-                            <div className="receipt-line"><span>Item Total</span><span>₹{(order.sellingPriceTotal || 0).toFixed(2)}</span></div>
-                            <div className="receipt-line">
-                                <span>Delivery Fee</span>
-                                {order.deliveryFee > 0 ? <span>₹{(order.deliveryFee || 0).toFixed(2)}</span> : <span className="free-text">FREE</span>}
+                        <div className="ot-bill-meta">
+                            <div className="ot-meta-row">
+                                <span>Order ID</span>
+                                <span className="ot-meta-val">{order.orderId}</span>
                             </div>
-                            {order.platformFee > 0 && (
-                                <div className="receipt-line"><span>Platform Fee</span><span>₹{(order.platformFee || 0).toFixed(2)}</span></div>
-                            )}
-                            <div className="receipt-divider" />
-                            <div className="receipt-line grand-total">
-                                <span>Grand Total</span>
-                                <span>₹{(order.totalAmount || 0).toFixed(2)}</span>
+                            <div className="ot-meta-row">
+                                <span>Ordered on</span>
+                                <span className="ot-meta-val">{orderedOnStr}</span>
                             </div>
-                        </div>
-
-                        <div className="receipt-payment-mode">
-                            <span className="pay-icon">💳</span> PAID VIA {order.paymentMethod?.toUpperCase()}
                         </div>
                     </div>
                 </div>
 
-            </div>
+                {/* ══════════════════════════
+                    ORDER TIMELINE
+                ══════════════════════════ */}
+                <div className="ot-timeline-card">
+                    <h4 className="ot-section-title">Order Timeline</h4>
+                    <div className="ot-timeline-h">
+                        {statusSteps.map((step, idx) => {
+                            const isCompleted = idx < currentStepIndex || (idx === currentStepIndex && idx === statusSteps.length - 1);
+                            const isCurrent = idx === currentStepIndex;
+                            let ts = null;
+                            if (idx <= currentStepIndex && order.statusHistory) {
+                                const h = order.statusHistory.find(x => x.status === step);
+                                if (h?.timestamp) {
+                                    const d = new Date(h.timestamp);
+                                    ts = `${d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}\n${d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}`;
+                                }
+                            }
+                            return (
+                                <div key={step} className={`ot-h-step${idx <= currentStepIndex ? ' active' : ''}`}>
+                                    <div className="ot-h-indicator">
+                                        <div className={`ot-h-dot${isCompleted ? ' completed' : isCurrent ? ' current' : ''}`}>
+                                            {isCompleted && <span className="ot-h-check">✓</span>}
+                                        </div>
+                                        {idx < statusSteps.length - 1 && (
+                                            <div className={`ot-h-line${isCompleted ? ' done' : ''}`} />
+                                        )}
+                                    </div>
+                                    <div className="ot-h-content">
+                                        <h5>{step}</h5>
+                                        {ts && <p>{ts}</p>}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
 
-            {/* Action Modal */}
+            </div>{/* end ot-body */}
+
+            {/* ══════════════════════════
+                ACTION MODAL
+            ══════════════════════════ */}
             {actionModal.isOpen && (
-                <div className="modal-overlay">
-                    <div className="modal-content modern-modal">
+                <div className="ot-modal-overlay" onClick={closeModal}>
+                    <div className="ot-modal" onClick={e => e.stopPropagation()}>
                         <h3>{actionModal.type.charAt(0).toUpperCase() + actionModal.type.slice(1)} Item</h3>
-                        <div className="modal-item-preview">
-                            <img src={getImageUrl(actionModal.item.image)} alt={actionModal.item.name} />
+                        <div className="ot-modal-preview">
+                            {actionModal.item.image && (
+                                <img src={getImageUrl(actionModal.item.image)} alt={actionModal.item.name} />
+                            )}
                             <div>
                                 <h4>{actionModal.item.name}</h4>
                                 <span>Qty: {actionModal.item.quantity}</span>
                             </div>
                         </div>
-
-                        <div className="modal-form">
-                            {actionModal.type === 'exchange' && (
-                                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <label>New Size (Optional)</label>
-                                        <select value={actionExchangeSize} onChange={(e) => setActionExchangeSize(e.target.value)}
-                                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                                            <option value="">Same Size</option>
-                                            <option value="XS">XS</option><option value="S">S</option>
-                                            <option value="M">M</option><option value="L">L</option>
-                                            <option value="XL">XL</option><option value="XXL">XXL</option>
-                                        </select>
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <label>New Color (Optional)</label>
-                                        <input type="text" placeholder="e.g. Red" value={actionExchangeColor}
-                                            onChange={(e) => setActionExchangeColor(e.target.value)}
-                                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                                        />
-                                    </div>
+                        {actionModal.type === 'exchange' && (
+                            <div className="ot-modal-exchange">
+                                <div className="ot-modal-field">
+                                    <label>New Size (Optional)</label>
+                                    <select value={actionExchangeSize} onChange={e => setActionExchangeSize(e.target.value)}>
+                                        <option value="">Same Size</option>
+                                        {['XS','S','M','L','XL','XXL'].map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
                                 </div>
-                            )}
-                            <label>Reason / Comments (Optional)</label>
-                            <textarea placeholder={`Why are you requesting a ${actionModal.type}?`}
-                                value={actionReason} onChange={(e) => setActionReason(e.target.value)} rows={3}>
-                            </textarea>
-                            <p className="modal-warning">
-                                {actionModal.type === 'cancel'
-                                    ? 'This item will be permanently cancelled'
-                                    : `Your ${actionModal.type} request will be reviewed by our team.`}
-                            </p>
+                                <div className="ot-modal-field">
+                                    <label>New Color (Optional)</label>
+                                    <input type="text" placeholder="e.g. Red" value={actionExchangeColor}
+                                        onChange={e => setActionExchangeColor(e.target.value)} />
+                                </div>
+                            </div>
+                        )}
+                        <div className="ot-modal-field">
+                            <label>Reason (Optional)</label>
+                            <textarea rows={3} placeholder={`Why are you requesting a ${actionModal.type}?`}
+                                value={actionReason} onChange={e => setActionReason(e.target.value)} />
                         </div>
-
-                        <div className="modal-actions">
-                            <button className="btn-modern secondary" onClick={closeModal} disabled={isSubmitting}>No, Keep It</button>
-                            <button className={`btn-modern ${actionModal.type === 'cancel' ? 'danger' : 'warning'}`}
-                                onClick={handleActionItem} disabled={isSubmitting}>
+                        <p className="ot-modal-warning">
+                            {actionModal.type === 'cancel'
+                                ? 'This item will be permanently cancelled.'
+                                : `Your ${actionModal.type} request will be reviewed.`}
+                        </p>
+                        <div className="ot-modal-actions">
+                            <button className="ot-modal-btn secondary" onClick={closeModal} disabled={isSubmitting}>Keep It</button>
+                            <button
+                                className={`ot-modal-btn ${actionModal.type === 'cancel' ? 'danger' : 'primary'}`}
+                                onClick={handleActionItem}
+                                disabled={isSubmitting}
+                            >
                                 {isSubmitting ? 'Processing...' : `Confirm ${actionModal.type}`}
                             </button>
                         </div>
