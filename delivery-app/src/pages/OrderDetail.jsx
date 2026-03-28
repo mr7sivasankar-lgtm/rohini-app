@@ -18,14 +18,25 @@ const NEXT_STATUS_RETURN = {
 const STATUS_STEPS_NORMAL = ['Assigned', 'Picked Up', 'Out for Delivery', 'Delivered'];
 const STATUS_STEPS_RETURN = ['Assigned', 'Picked Up', 'Collected'];
 
+const PAYMENT_OPTIONS = [
+    { value: 'Cash', label: '💵 Cash', color: '#10b981' },
+    { value: 'UPI',  label: '📱 UPI',  color: '#6366f1' },
+    { value: 'Card', label: '💳 Card', color: '#f59e0b' },
+    { value: 'Online', label: '🌐 Online', color: '#3b82f6' },
+];
+
 export default function OrderDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { partner } = useAuth(); // ADDED THIS LINE
+    const { partner } = useAuth();
 
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
+
+    // Payment collection modal state
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [selectedPayment, setSelectedPayment] = useState('');
 
     const fetchOrder = async () => {
         try {
@@ -45,13 +56,29 @@ export default function OrderDetail() {
     const STATUS_STEPS = isReturnPickup ? STATUS_STEPS_RETURN : STATUS_STEPS_NORMAL;
     const currentStepIndex = STATUS_STEPS.indexOf(order?.deliveryStatus);
 
-    const updateStatus = async () => {
+    const nextStatus = NEXT_STATUS[order?.deliveryStatus];
+    const isAboutToDeliver = nextStatus === 'Delivered';
+
+    // Handle button click — intercept "Delivered" to show payment modal first
+    const handleStatusBtn = () => {
+        if (isAboutToDeliver) {
+            setSelectedPayment('');
+            setShowPaymentModal(true);
+        } else {
+            confirmStatusUpdate(null);
+        }
+    };
+
+    const confirmStatusUpdate = async (paymentMethod) => {
         const next = NEXT_STATUS[order.deliveryStatus];
         if (!next) return;
-        if (!window.confirm(`Mark order as "${next}"?`)) return;
+        setShowPaymentModal(false);
         setUpdating(true);
         try {
-            await api.put(`/delivery/orders/${id}/status`, { deliveryStatus: next });
+            const body = { deliveryStatus: next };
+            if (paymentMethod) body.paymentCollectedVia = paymentMethod;
+
+            await api.put(`/delivery/orders/${id}/status`, body);
             await fetchOrder();
             if (next === 'Delivered') {
                 alert('✅ Order marked as Delivered!');
@@ -69,32 +96,27 @@ export default function OrderDetail() {
         if (phone) window.open(`tel:${phone}`);
     };
 
-    // Get partner's exact GPS location for routing origin
-    const originParam = (partner?.location?.coordinates) 
-        ? `&origin=${partner.location.coordinates[1]},${partner.location.coordinates[0]}` 
+    const originParam = (partner?.location?.coordinates)
+        ? `&origin=${partner.location.coordinates[1]},${partner.location.coordinates[0]}`
         : '';
 
-    // Navigate to seller pickup location
     const navigateToPickup = () => {
         const sel = order.sellerLocation;
         if (sel && sel.lat && sel.lng) {
             window.open(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${sel.lat},${sel.lng}`);
         } else if (order.sellerShopAddress) {
-            const addr = encodeURIComponent(order.sellerShopAddress);
-            window.open(`https://www.google.com/maps/search/?api=1&query=${addr}`);
+            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.sellerShopAddress)}`);
         } else {
             alert('Seller location not available.');
         }
     };
 
-    // Navigate to customer delivery location
     const navigateToCustomer = () => {
         const { latitude, longitude, fullAddress, city } = order.shippingAddress || {};
         if (latitude && longitude) {
             window.open(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${latitude},${longitude}`);
         } else {
-            const addr = encodeURIComponent(`${fullAddress}, ${city}`);
-            window.open(`https://www.google.com/maps/search/?api=1&query=${addr}`);
+            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${fullAddress}, ${city}`)}`);
         }
     };
 
@@ -103,6 +125,7 @@ export default function OrderDetail() {
 
     return (
         <div className="order-detail-page">
+
             {/* Header */}
             <div className="detail-header">
                 <button className="back-btn" onClick={() => navigate('/')}>← Back</button>
@@ -131,6 +154,24 @@ export default function OrderDetail() {
                 </div>
             )}
 
+            {/* Payment Method Info (shows what customer initially chose) */}
+            <div style={{ margin: '0 16px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '12px 16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Order Payment Method</span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: order.paymentMethod === 'COD' ? '#f59e0b' : '#10b981' }}>
+                    {order.paymentMethod === 'COD' ? '💵 Cash on Delivery' : '💳 Online Paid'}
+                </span>
+            </div>
+
+            {/* Collected Via (once delivered) */}
+            {order.paymentCollectedVia && (
+                <div style={{ margin: '0 16px 16px', background: '#ecfdf5', border: '1px solid #10b981', padding: '12px 16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '13px', color: '#047857', fontWeight: 600 }}>Payment Collected Via</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#059669' }}>
+                        ✅ {order.paymentCollectedVia}
+                    </span>
+                </div>
+            )}
+
             {/* Pickup Location */}
             <div className="detail-card location-card">
                 <h3>🏪 Pickup From</h3>
@@ -142,12 +183,6 @@ export default function OrderDetail() {
                     <div className="detail-row">
                         <span>Address</span>
                         <strong>📍 {order.sellerShopAddress}</strong>
-                    </div>
-                )}
-                {order.sellerLocation?.lat && order.sellerLocation?.lng && (
-                    <div className="detail-row">
-                        <span>Coords</span>
-                        <strong>{order.sellerLocation.lat.toFixed(4)}, {order.sellerLocation.lng.toFixed(4)}</strong>
                     </div>
                 )}
                 <button className="map-nav-btn pickup-nav-btn" onClick={navigateToPickup}>
@@ -164,12 +199,6 @@ export default function OrderDetail() {
                     <span>Address</span>
                     <strong>📍 {order.shippingAddress?.fullAddress}, {order.shippingAddress?.city}, {order.shippingAddress?.pincode}</strong>
                 </div>
-                {order.shippingAddress?.latitude && order.shippingAddress?.longitude && (
-                    <div className="detail-row">
-                        <span>Coords</span>
-                        <strong>{order.shippingAddress.latitude.toFixed(4)}, {order.shippingAddress.longitude.toFixed(4)}</strong>
-                    </div>
-                )}
                 <div className="nav-buttons-row">
                     <button className="action-btn call-btn" onClick={callCustomer}>
                         <span>📞</span> Call Customer
@@ -202,17 +231,74 @@ export default function OrderDetail() {
                 <div className="total-row"><span>Total Order Value</span><strong>₹{order.total?.toFixed(2)}</strong></div>
             </div>
 
-            {/* Status Update */}
+            {/* Status Update Button */}
             {NEXT_STATUS[order.deliveryStatus] && (
-                <button className="status-update-btn" onClick={updateStatus} disabled={updating}>
-                    {updating ? 'Updating…' : `Mark as "${NEXT_STATUS[order.deliveryStatus]}" →`}
+                <button
+                    className={`status-update-btn ${isAboutToDeliver ? 'deliver-btn' : ''}`}
+                    onClick={handleStatusBtn}
+                    disabled={updating}
+                >
+                    {updating
+                        ? 'Updating…'
+                        : isAboutToDeliver
+                            ? '💰 Collect Payment & Deliver →'
+                            : `Mark as "${NEXT_STATUS[order.deliveryStatus]}" →`}
                 </button>
             )}
+
             {order.deliveryStatus === 'Delivered' && (
                 <div className="delivered-banner">✅ This order has been delivered!</div>
             )}
             {order.deliveryStatus === 'Collected' && (
                 <div className="delivered-banner">✅ Return collected successfully! Stock restored.</div>
+            )}
+
+            {/* ══ PAYMENT COLLECTION MODAL ══ */}
+            {showPaymentModal && (
+                <div className="od-modal-overlay" onClick={() => setShowPaymentModal(false)}>
+                    <div className="od-payment-modal" onClick={e => e.stopPropagation()}>
+                        <div className="od-modal-header">
+                            <span className="od-modal-icon">💰</span>
+                            <h3>Payment Received</h3>
+                            <p>How did the customer pay?</p>
+                        </div>
+
+                        <div className="od-payment-options">
+                            {PAYMENT_OPTIONS.map(opt => (
+                                <button
+                                    key={opt.value}
+                                    className={`od-payment-opt ${selectedPayment === opt.value ? 'selected' : ''}`}
+                                    style={selectedPayment === opt.value ? { borderColor: opt.color, background: `${opt.color}15` } : {}}
+                                    onClick={() => setSelectedPayment(opt.value)}
+                                >
+                                    <span className="od-opt-label">{opt.label}</span>
+                                    {selectedPayment === opt.value && (
+                                        <span className="od-opt-check" style={{ color: opt.color }}>✓</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="od-modal-note">
+                            {order.paymentMethod === 'COD'
+                                ? '⚠️ This is a Cash on Delivery order. Please collect ₹' + (order.totalAmount || 0).toFixed(2) + ' before marking as delivered.'
+                                : '✅ This order was paid online. Confirm delivery after handing over the package.'}
+                        </div>
+
+                        <div className="od-modal-actions">
+                            <button className="od-modal-btn cancel" onClick={() => setShowPaymentModal(false)}>
+                                Cancel
+                            </button>
+                            <button
+                                className="od-modal-btn confirm"
+                                disabled={!selectedPayment}
+                                onClick={() => confirmStatusUpdate(selectedPayment)}
+                            >
+                                ✅ Mark as Delivered
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

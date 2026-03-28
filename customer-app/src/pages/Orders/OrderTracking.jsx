@@ -223,8 +223,12 @@ const OrderTracking = () => {
         }
     };
 
-    // ─── Payment label ───
+    // ─── Payment label — prefer actual collected method over original ───
     const getPaymentLabel = (method) => {
+        // If delivery partner already collected and recorded how — show that
+        if (order.paymentCollectedVia) {
+            return order.paymentCollectedVia; // Cash / UPI / Card / Online
+        }
         if (!method) return 'Online';
         const m = method.toLowerCase();
         if (m === 'cod') return 'Cash on Delivery';

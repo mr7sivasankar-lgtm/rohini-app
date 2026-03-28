@@ -125,6 +125,12 @@ const orderSchema = new mongoose.Schema({
         enum: ['COD', 'Online'],
         default: 'COD'
     },
+    // Actual payment collected by delivery partner at the door
+    paymentCollectedVia: {
+        type: String,
+        enum: ['', 'Cash', 'UPI', 'Card', 'Online'],
+        default: ''
+    },
     status: {
         type: String,
         enum: ['Placed', 'Accepted', 'Ready for Pickup', 'Packed', 'Out for Delivery', 'Delivered', 'Cancelled', 'Rejected'],

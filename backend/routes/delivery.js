@@ -208,7 +208,7 @@ router.get('/orders/single/:id', protectDelivery, async (req, res) => {
 // PUT /api/delivery/orders/:id/status — update delivery status
 router.put('/orders/:id/status', protectDelivery, async (req, res) => {
     try {
-        const { deliveryStatus } = req.body;
+        const { deliveryStatus, paymentCollectedVia } = req.body;
 
         const order = await Order.findOne({ _id: req.params.id, deliveryPartner: req.partner._id })
             .populate('items.product', 'stock');
@@ -268,6 +268,10 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
 
             if (deliveryStatus === 'Delivered') {
                 order.deliveredAt = new Date();
+                // Save how payment was actually collected at the door
+                if (paymentCollectedVia && ['Cash', 'UPI', 'Card', 'Online'].includes(paymentCollectedVia)) {
+                    order.paymentCollectedVia = paymentCollectedVia;
+                }
                 
                 // === CENTRAL PAYMENTS WALLET SETTLEMENT ===
                 if (order.walletSettlementStatus === 'Pending') {
