@@ -1,137 +1,163 @@
-import { useEffect, useRef, useState } from 'react';
-import api from '../../utils/api';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import './MapPicker.css';
 
+const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
 const DEFAULT_LAT = 13.6288;
 const DEFAULT_LNG = 79.4192;
 
+/* ── Load Google Maps script once ── */
+let gmapsLoaded = false;
+let gmapsLoading = false;
+const gmapsCallbacks = [];
+
+function loadGoogleMaps(callback) {
+    if (gmapsLoaded) return callback();
+    gmapsCallbacks.push(callback);
+    if (gmapsLoading) return;
+    gmapsLoading = true;
+    window.__gmapsReady = () => {
+        gmapsLoaded = true;
+        gmapsLoading = false;
+        gmapsCallbacks.forEach(cb => cb());
+        gmapsCallbacks.length = 0;
+    };
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAP_KEY}&libraries=places&callback=__gmapsReady`;
+    s.async = true;
+    s.defer = true;
+    document.head.appendChild(s);
+}
+
+/* ── Reverse geocode using Google Geocoding API ── */
+async function reverseGeocodeGoogle(lat, lng) {
+    try {
+        const res = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GMAP_KEY}`
+        );
+        const data = await res.json();
+        if (data.status === 'OK' && data.results[0]) {
+            const r = data.results[0];
+            const get = (type) => r.address_components.find(c => c.types.includes(type))?.long_name || '';
+            return {
+                fullAddress: r.formatted_address,
+                address: [get('sublocality_level_1') || get('sublocality'), get('route')].filter(Boolean).join(', ') || r.formatted_address,
+                locality: get('sublocality_level_1') || get('sublocality') || get('neighborhood'),
+                city: get('locality'),
+                state: get('administrative_area_level_1'),
+                pincode: get('postal_code'),
+            };
+        }
+    } catch { /* silent */ }
+    return null;
+}
+
 const MapPicker = ({ initialLat, initialLng, onConfirm, onClose }) => {
     const mapRef = useRef(null);
-    const leafletMapRef = useRef(null);
+    const googleMapRef = useRef(null);
     const markerRef = useRef(null);
-    const [pos, setPos] = useState({
-        lat: initialLat || DEFAULT_LAT,
-        lng: initialLng || DEFAULT_LNG
-    });
+    const autocompleteRef = useRef(null);
+    const searchInputRef = useRef(null);
+
+    const [pos, setPos] = useState({ lat: initialLat || DEFAULT_LAT, lng: initialLng || DEFAULT_LNG });
     const [detecting, setDetecting] = useState(false);
     const [addressText, setAddressText] = useState('');
     const [addrDetails, setAddrDetails] = useState(null);
     const [loadingAddr, setLoadingAddr] = useState(false);
+    const [ready, setReady] = useState(false);
 
-    const reverseGeocode = async (lat, lng) => {
+    const doReverseGeocode = useCallback(async (lat, lng) => {
         setLoadingAddr(true);
-        try {
-            const res = await api.get(`/serviceability/geocode/reverse?lat=${lat}&lon=${lng}`);
-            if (res.data.success && res.data.data) {
-                const d = res.data.data;
-                const parts = [d.address, d.city, d.state].filter(Boolean);
-                setAddressText(parts.join(', '));
-                setAddrDetails(d);
-            } else {
-                setAddressText(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-                setAddrDetails(null);
-            }
-        } catch {
+        const d = await reverseGeocodeGoogle(lat, lng);
+        if (d) {
+            setAddressText(d.fullAddress);
+            setAddrDetails(d);
+        } else {
             setAddressText(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
             setAddrDetails(null);
-        } finally {
-            setLoadingAddr(false);
         }
-    };
+        setLoadingAddr(false);
+    }, []);
 
+    /* ── Init Google Map ── */
     useEffect(() => {
-        if (!document.getElementById('leaflet-css')) {
-            const link = document.createElement('link');
-            link.id = 'leaflet-css';
-            link.rel = 'stylesheet';
-            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-            document.head.appendChild(link);
-        }
+        loadGoogleMaps(() => {
+            if (!mapRef.current || googleMapRef.current) return;
 
-        const initMap = () => {
-            if (!window.L || leafletMapRef.current) return;
-            const L = window.L;
-
-            const map = L.map(mapRef.current, {
-                center: [pos.lat, pos.lng],
+            const map = new window.google.maps.Map(mapRef.current, {
+                center: { lat: pos.lat, lng: pos.lng },
                 zoom: 17,
-                zoomControl: false // Hide zoom buttons for aesthetics
+                disableDefaultUI: false,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+                gestureHandling: 'greedy',
+                styles: [
+                    { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }
+                ]
             });
 
-            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-                attribution: '© Google',
-                maxZoom: 20
-            }).addTo(map);
-
-            const icon = L.divIcon({
-                html: `
-                    <div style="position:relative; width:48px; height:48px; display:flex; justify-content:center;">
-                        <div class="map-tooltip">Your order will be delivered here<br/>Move pin to your exact location</div>
-                        <svg width="42" height="42" viewBox="0 0 24 24" fill="#ef4444" style="filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3));">
-                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 10.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
-                            <circle cx="12" cy="9" r="2.5" fill="white"/>
-                        </svg>
-                    </div>
-                `,
-                className: '',
-                iconSize: [48, 48],
-                iconAnchor: [24, 48]
-            });
-
-            const marker = L.marker([pos.lat, pos.lng], {
+            const marker = new window.google.maps.Marker({
+                position: { lat: pos.lat, lng: pos.lng },
+                map,
                 draggable: true,
-                icon
-            }).addTo(map);
-
-            marker.on('dragstart', () => {
-                document.querySelector('.map-tooltip').style.display = 'none';
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="50" viewBox="0 0 40 50">
+                            <ellipse cx="20" cy="48" rx="8" ry="3" fill="rgba(0,0,0,0.2)"/>
+                            <path d="M20 2C12.27 2 6 8.27 6 16c0 10.5 14 32 14 32s14-21.5 14-32C34 8.27 27.73 2 20 2z" fill="#ef4444" stroke="white" stroke-width="1.5"/>
+                            <circle cx="20" cy="16" r="6" fill="white"/>
+                            <circle cx="20" cy="16" r="3.5" fill="#ef4444"/>
+                        </svg>
+                    `),
+                    scaledSize: new window.google.maps.Size(40, 50),
+                    anchor: new window.google.maps.Point(20, 50),
+                }
             });
 
-            marker.on('dragend', (e) => {
-                const { lat, lng } = e.target.getLatLng();
+            marker.addListener('dragend', () => {
+                const p = marker.getPosition();
+                const lat = p.lat(); const lng = p.lng();
                 setPos({ lat, lng });
-                reverseGeocode(lat, lng);
-                document.querySelector('.map-tooltip').style.display = 'block';
+                doReverseGeocode(lat, lng);
             });
 
-            map.on('move', () => {
-                const { lat, lng } = map.getCenter();
-                marker.setLatLng([lat, lng]);
-            });
-            
-            map.on('movestart', () => {
-                document.querySelector('.map-tooltip').style.display = 'none';
-            });
-
-            map.on('moveend', () => {
-                const { lat, lng } = map.getCenter();
+            map.addListener('click', (e) => {
+                const lat = e.latLng.lat(); const lng = e.latLng.lng();
+                marker.setPosition({ lat, lng });
                 setPos({ lat, lng });
-                reverseGeocode(lat, lng);
-                document.querySelector('.map-tooltip').style.display = 'block';
+                doReverseGeocode(lat, lng);
             });
 
-            leafletMapRef.current = map;
+            googleMapRef.current = map;
             markerRef.current = marker;
+            setReady(true);
+            doReverseGeocode(pos.lat, pos.lng);
 
-            reverseGeocode(pos.lat, pos.lng);
-            setTimeout(() => map.invalidateSize(), 300);
-        };
-
-        if (window.L) {
-            initMap();
-        } else {
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-            script.onload = initMap;
-            document.head.appendChild(script);
-        }
+            /* ── Places Autocomplete ── */
+            if (searchInputRef.current) {
+                const ac = new window.google.maps.places.Autocomplete(searchInputRef.current, {
+                    componentRestrictions: { country: 'IN' },
+                    fields: ['geometry', 'formatted_address', 'address_components', 'name'],
+                });
+                ac.addListener('place_changed', () => {
+                    const place = ac.getPlace();
+                    if (!place.geometry) return;
+                    const lat = place.geometry.location.lat();
+                    const lng = place.geometry.location.lng();
+                    map.setCenter({ lat, lng });
+                    map.setZoom(17);
+                    marker.setPosition({ lat, lng });
+                    setPos({ lat, lng });
+                    doReverseGeocode(lat, lng);
+                });
+                autocompleteRef.current = ac;
+            }
+        });
 
         return () => {
-            if (leafletMapRef.current) {
-                leafletMapRef.current.remove();
-                leafletMapRef.current = null;
-                markerRef.current = null;
-            }
+            googleMapRef.current = null;
+            markerRef.current = null;
+            autocompleteRef.current = null;
         };
     }, []);
 
@@ -139,15 +165,13 @@ const MapPicker = ({ initialLat, initialLng, onConfirm, onClose }) => {
         if (!navigator.geolocation) return;
         setDetecting(true);
         navigator.geolocation.getCurrentPosition(
-            (p) => {
-                const lat = p.coords.latitude;
-                const lng = p.coords.longitude;
+            ({ coords }) => {
+                const lat = coords.latitude; const lng = coords.longitude;
                 setPos({ lat, lng });
-                reverseGeocode(lat, lng);
-                if (leafletMapRef.current) {
-                    leafletMapRef.current.setView([lat, lng], 17);
-                    markerRef.current?.setLatLng([lat, lng]);
-                }
+                googleMapRef.current?.setCenter({ lat, lng });
+                googleMapRef.current?.setZoom(17);
+                markerRef.current?.setPosition({ lat, lng });
+                doReverseGeocode(lat, lng);
                 setDetecting(false);
             },
             () => { alert('Location access denied.'); setDetecting(false); }
@@ -170,9 +194,15 @@ const MapPicker = ({ initialLat, initialLng, onConfirm, onClose }) => {
             </div>
 
             <div className="map-picker-body-full">
+                {/* Google Places Search */}
                 <div className="map-floating-search">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" placeholder="Search for area, street name..." />
+                    <input
+                        ref={searchInputRef}
+                        type="text"
+                        placeholder="Search for area, street name..."
+                        autoComplete="off"
+                    />
                 </div>
 
                 <div ref={mapRef} className="map-picker-map" />
@@ -182,21 +212,20 @@ const MapPicker = ({ initialLat, initialLng, onConfirm, onClose }) => {
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
                         {detecting ? 'Detecting...' : 'Use current location'}
                     </button>
-                    
+
                     <div className="map-tray-label">Delivering your order to</div>
                     <div className="map-tray-title-row">
                         <div className="map-tray-title">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                             {loadingAddr ? 'Locating...' : displayTitle}
                         </div>
-                        <button className="map-tray-change" onClick={() => document.querySelector('.map-floating-search input').focus()}>CHANGE</button>
                     </div>
                     <div className="map-tray-sub">
                         {loadingAddr ? 'Fetching exact address...' : addressText}
                     </div>
 
-                    <button className="map-tray-confirm" onClick={handleConfirm} disabled={loadingAddr}>
-                        Add more address details
+                    <button className="map-tray-confirm" onClick={handleConfirm} disabled={loadingAddr || !ready}>
+                        {loadingAddr ? 'Detecting address...' : 'Confirm this location'}
                     </button>
                 </div>
             </div>

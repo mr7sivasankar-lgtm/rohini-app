@@ -1,9 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import api, { getImageUrl } from '../../utils/api';
 import './OrderTracking.css';
+
+const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+let _gmapsLoaded = false, _gmapsLoading = false, _gmapsCbs = [];
+function loadGM(cb) {
+    if (_gmapsLoaded) return cb();
+    _gmapsCbs.push(cb);
+    if (_gmapsLoading) return;
+    _gmapsLoading = true;
+    window.__gmOTReady = () => { _gmapsLoaded = true; _gmapsLoading = false; _gmapsCbs.forEach(f => f()); _gmapsCbs = []; };
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAP_KEY}&callback=__gmOTReady`;
+    s.async = true; s.defer = true;
+    document.head.appendChild(s);
+}
 
 // ─── Main Component ───
 const OrderTracking = () => {
@@ -22,9 +34,9 @@ const OrderTracking = () => {
     const [isExpired, setIsExpired] = useState(false);
     const [mapReady, setMapReady] = useState(false);
 
-    // ─── Leaflet refs (not state — no re-renders) ───
+    // ─── Google Maps refs (not state — no re-renders) ───
     const mapContainerRef = useRef(null);
-    const leafletMapRef = useRef(null);
+    const googleMapRef = useRef(null);
     const dpMarkerRef = useRef(null);
     const markersAddedRef = useRef(false);
 
@@ -87,93 +99,86 @@ const OrderTracking = () => {
     const dpLat = showMap ? order.deliveryPartner.location.coordinates[1] : null;
     const dpLng = showMap ? order.deliveryPartner.location.coordinates[0] : null;
 
-    // ─── LEAFLET: Init map (pure DOM, no react-leaflet) ───
+    // ─── Google Maps: Init map ───
     useEffect(() => {
-        if (!showMap || !mapContainerRef.current || leafletMapRef.current) return;
+        if (!showMap || !mapContainerRef.current || googleMapRef.current) return;
 
-        const map = L.map(mapContainerRef.current, {
-            zoomControl: true,
-            scrollWheelZoom: false,
-            dragging: true,
-            attributionControl: true,
+        loadGM(() => {
+            if (!mapContainerRef.current || googleMapRef.current) return;
+            const map = new window.google.maps.Map(mapContainerRef.current, {
+                center: { lat: dpLat, lng: dpLng },
+                zoom: 14,
+                disableDefaultUI: false,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+                gestureHandling: 'greedy',
+            });
+            googleMapRef.current = map;
+            setMapReady(true);
         });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© <a href="https://openstreetmap.org">OSM</a>',
-            maxZoom: 19,
-        }).addTo(map);
-
-        leafletMapRef.current = map;
-        setMapReady(true);
-
         return () => {
-            leafletMapRef.current?.remove();
-            leafletMapRef.current = null;
+            googleMapRef.current = null;
             dpMarkerRef.current = null;
             markersAddedRef.current = false;
             setMapReady(false);
         };
     }, [showMap]);
 
-    // ─── LEAFLET: Add / update markers ───
+    // ─── Google Maps: Add / update markers ───
     useEffect(() => {
-        const map = leafletMapRef.current;
+        const map = googleMapRef.current;
         if (!mapReady || !map || dpLat === null || dpLng === null) return;
 
-        const scooterIcon = L.divIcon({
-            html: `<div style="font-size:26px;transform:scaleX(-1);filter:drop-shadow(0 3px 6px rgba(0,0,0,0.35));line-height:1;">🛵</div>`,
-            className: '',
-            iconSize: [36, 36],
-            iconAnchor: [18, 18],
+        const makeIcon = (emoji, size = 36) => ({
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+                `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><text y="${size * 0.85}" font-size="${size * 0.85}">${emoji}</text></svg>`
+            ),
+            scaledSize: new window.google.maps.Size(size, size),
+            anchor: new window.google.maps.Point(size / 2, size / 2),
         });
 
         if (!markersAddedRef.current) {
             // ── First load: place all markers ──
-            dpMarkerRef.current = L.marker([dpLat, dpLng], { icon: scooterIcon }).addTo(map);
+            dpMarkerRef.current = new window.google.maps.Marker({
+                position: { lat: dpLat, lng: dpLng },
+                map,
+                icon: makeIcon('🛵', 36),
+                title: 'Delivery Partner',
+            });
 
             const shopC = order?.seller?.location?.coordinates;
             if (shopC?.length >= 2) {
-                const shopIcon = L.divIcon({
-                    html: `<div style="background:#10b981;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,0.25);">🏬</div>`,
-                    className: '',
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 15],
+                new window.google.maps.Marker({
+                    position: { lat: shopC[1], lng: shopC[0] },
+                    map,
+                    icon: makeIcon('🏬', 32),
+                    title: 'Shop',
                 });
-                L.marker([shopC[1], shopC[0]], { icon: shopIcon }).addTo(map);
             }
 
             if (order?.shippingAddress?.latitude && order?.shippingAddress?.longitude) {
-                const pinIcon = L.divIcon({
-                    html: `<div style="font-size:26px;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.35));line-height:1;">📍</div>`,
-                    className: '',
-                    iconSize: [30, 38],
-                    iconAnchor: [15, 38],
+                new window.google.maps.Marker({
+                    position: { lat: order.shippingAddress.latitude, lng: order.shippingAddress.longitude },
+                    map,
+                    icon: makeIcon('📍', 32),
+                    title: 'Delivery Address',
                 });
-                L.marker(
-                    [order.shippingAddress.latitude, order.shippingAddress.longitude],
-                    { icon: pinIcon }
-                ).addTo(map);
             }
 
             // Fit all points in view
-            const pts = [[dpLat, dpLng]];
-            if (shopC?.length >= 2) pts.push([shopC[1], shopC[0]]);
-            if (order?.shippingAddress?.latitude) pts.push([
-                order.shippingAddress.latitude,
-                order.shippingAddress.longitude,
-            ]);
-
-            if (pts.length > 1) {
-                map.fitBounds(pts, { padding: [50, 50] });
-            } else {
-                map.setView([dpLat, dpLng], 15);
-            }
+            const bounds = new window.google.maps.LatLngBounds();
+            bounds.extend({ lat: dpLat, lng: dpLng });
+            if (shopC?.length >= 2) bounds.extend({ lat: shopC[1], lng: shopC[0] });
+            if (order?.shippingAddress?.latitude) bounds.extend({ lat: order.shippingAddress.latitude, lng: order.shippingAddress.longitude });
+            map.fitBounds(bounds, { top: 60, bottom: 60, left: 40, right: 40 });
 
             markersAddedRef.current = true;
         } else {
             // ── Subsequent polls: only move scooter ──
-            dpMarkerRef.current?.setLatLng([dpLat, dpLng]);
-            map.panTo([dpLat, dpLng], { animate: true, duration: 1.5 });
+            dpMarkerRef.current?.setPosition({ lat: dpLat, lng: dpLng });
+            map.panTo({ lat: dpLat, lng: dpLng });
         }
     }, [mapReady, dpLat, dpLng]);
 
@@ -286,7 +291,7 @@ const OrderTracking = () => {
             {/* ══ MAP (active delivery) ══ */}
             {showMap ? (
                 <div className="ot-map-wrapper">
-                    {/* Raw Leaflet container — populated by useEffect */}
+                    {/* Google Maps container */}
                     <div ref={mapContainerRef} className="ot-map" />
 
                     {/* Overlay nav on top of map */}
