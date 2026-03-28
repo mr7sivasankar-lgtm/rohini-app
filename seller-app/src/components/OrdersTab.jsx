@@ -237,15 +237,52 @@ const OrdersTab = () => {
                                                 {new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
                                             </span>
                                         </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                            <span style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b' }}>
-                                                ₹{(order.totalAmount || 0).toFixed(0)}
-                                            </span>
-                                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                                                {order.paymentMethod || 'COD'}
-                                            </span>
+
+                                        {/* ── Earnings Breakdown Panel ── */}
+                                        <div style={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
+                                            gap: '2px', minWidth: '130px',
+                                            background: '#f0fdf4', border: '1px solid #bbf7d0',
+                                            borderRadius: '10px', padding: '8px 10px'
+                                        }}>
+                                            {/* Selling Price */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: '8px' }}>
+                                                <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 500 }}>Sale Price</span>
+                                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#1e293b' }}>
+                                                    ₹{(order.sellingPriceTotal || order.totalAmount || 0).toFixed(0)}
+                                                </span>
+                                            </div>
+                                            {/* Commission deduction */}
+                                            {(order.commissionAmount > 0) && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: '8px' }}>
+                                                    <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 500 }}>Commission</span>
+                                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#ef4444' }}>
+                                                        − ₹{(order.commissionAmount || 0).toFixed(0)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {/* Divider */}
+                                            <div style={{ width: '100%', height: '1px', background: '#86efac', margin: '2px 0' }} />
+                                            {/* Net Earnings — highlighted */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '8px' }}>
+                                                <span style={{ fontSize: '10px', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                                                    You Receive
+                                                </span>
+                                                <span style={{ fontSize: '14px', fontWeight: 900, color: '#15803d' }}>
+                                                    ₹{(order.sellerEarning || (order.sellingPriceTotal || order.totalAmount || 0)).toFixed(0)}
+                                                </span>
+                                            </div>
+                                            {/* Status label */}
+                                            <div style={{ fontSize: '9px', color: '#64748b', alignSelf: 'flex-end', marginTop: '1px' }}>
+                                                {order.walletSettlementStatus === 'Settled'
+                                                    ? '✅ Settled to wallet'
+                                                    : order.status === 'Delivered'
+                                                        ? '🕐 Pending settlement'
+                                                        : '⏳ Est. after delivery'}
+                                            </div>
                                         </div>
                                     </div>
+
 
                                     {/* Customer */}
                                     <div style={{
