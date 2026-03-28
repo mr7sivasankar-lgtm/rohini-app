@@ -116,20 +116,44 @@ export default function OrderBroadcastOverlay() {
         <div className="broadcast-overlay">
             <div className="broadcast-card">
                 <button className="btn-close-broadcast" onClick={handleIgnore}>✖</button>
+
+                {/* Type badge */}
+                <div style={{
+                    display: 'inline-block',
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    marginBottom: '8px',
+                    background: activeBroadcast.deliveryType === 'Return Pickup' ? '#fff7ed' : '#dcfce7',
+                    color:      activeBroadcast.deliveryType === 'Return Pickup' ? '#c2410c' : '#16a34a',
+                    border: `1px solid ${activeBroadcast.deliveryType === 'Return Pickup' ? '#fed7aa' : '#bbf7d0'}`,
+                }}>
+                    {activeBroadcast.deliveryType === 'Return Pickup' ? '↩️ Return Pickup' : '🚚 New Delivery'}
+                </div>
+
                 <div className="broadcast-header">
-                    <div className="broadcast-subtitle">New {activeBroadcast.deliveryType} Request</div>
+                    <div className="broadcast-subtitle">
+                        {activeBroadcast.deliveryType === 'Return Pickup'
+                            ? 'Collect from customer → Drop at shop'
+                            : 'New Delivery Request'}
+                    </div>
                     <div className="broadcast-earning">₹{activeBroadcast.deliveryFee}</div>
                     <div className="broadcast-subtitle">Est. Earning</div>
                 </div>
 
                 <div className="broadcast-details">
                     <div className="broadcast-detail-item item-pickup">
-                        <div className="detail-icon">🏪</div>
+                        <div className="detail-icon">
+                            {activeBroadcast.deliveryType === 'Return Pickup' ? '👤' : '🏪'}
+                        </div>
                         <div className="detail-value">{activeBroadcast.pickupKm} <span style={{fontSize:'16px'}}>km</span></div>
                         <div className="detail-label">Pickup</div>
                     </div>
                     <div className="broadcast-detail-item item-dropoff">
-                        <div className="detail-icon">📍</div>
+                        <div className="detail-icon">
+                            {activeBroadcast.deliveryType === 'Return Pickup' ? '🏪' : '📍'}
+                        </div>
                         <div className="detail-value">{activeBroadcast.deliveryKm} <span style={{fontSize:'16px'}}>km</span></div>
                         <div className="detail-label">Drop-off</div>
                     </div>
@@ -137,15 +161,35 @@ export default function OrderBroadcastOverlay() {
 
                 {activeBroadcast.itemsSummary && (
                     <div className="broadcast-info-box">
-                        <div className="info-label">🛍️ Order Items</div>
+                        <div className="info-label">🛍️ Items</div>
                         <div className="info-value">{activeBroadcast.itemsSummary}</div>
                     </div>
                 )}
 
+                {/* Pickup location */}
                 <div className="broadcast-info-box">
-                    <div className="info-label">🏬 Pickup Location</div>
-                    <div className="info-value">{activeBroadcast.sellerShopName}</div>
-                    <div className="info-sub">{activeBroadcast.sellerShopAddress}</div>
+                    <div className="info-label">
+                        {activeBroadcast.deliveryType === 'Return Pickup' ? '👤 Pickup From (Customer)' : '🏬 Pickup From (Shop)'}
+                    </div>
+                    <div className="info-value">
+                        {activeBroadcast.pickupLabel || activeBroadcast.sellerShopName}
+                    </div>
+                    {activeBroadcast.pickupAddress && (
+                        <div className="info-sub">{activeBroadcast.pickupAddress}</div>
+                    )}
+                </div>
+
+                {/* Drop-off location */}
+                <div className="broadcast-info-box">
+                    <div className="info-label">
+                        {activeBroadcast.deliveryType === 'Return Pickup' ? '🏪 Drop-off At (Shop)' : '📍 Deliver To (Customer)'}
+                    </div>
+                    <div className="info-value">
+                        {activeBroadcast.dropoffLabel || 'Customer'}
+                    </div>
+                    {activeBroadcast.dropoffAddress && (
+                        <div className="info-sub">{activeBroadcast.dropoffAddress}</div>
+                    )}
                 </div>
 
                 <div 
@@ -174,3 +218,4 @@ export default function OrderBroadcastOverlay() {
         </div>
     );
 }
+

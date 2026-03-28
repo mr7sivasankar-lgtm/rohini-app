@@ -501,64 +501,88 @@ router.get('/broadcasts', protectDelivery, async (req, res) => {
         const pLat = partner.location?.coordinates?.[1];
         const pLng = partner.location?.coordinates?.[0];
         
-        // Find unassigned orders that are Ready for Pickup
-        const orders = await Order.find({
+        // Find unassigned NORMAL orders (Ready for Pickup / Packed)
+        const normalOrders = await Order.find({
             deliveryStatus: '',
+            deliveryPartner: null,
             status: { $in: ['Ready for Pickup', 'Packed'] }
         }).populate('seller', 'shopName shopAddress location phone');
 
+        // Find unassigned RETURN PICKUP orders
+        // (order status is still 'Delivered' but deliveryType is 'Return Pickup')
+        const returnOrders = await Order.find({
+            deliveryStatus: '',
+            deliveryPartner: null,
+            deliveryType: 'Return Pickup',
+            'items.status': 'Return Approved'
+        }).populate('seller', 'shopName shopAddress location phone');
+
+        const allOrders = [...normalOrders, ...returnOrders];
         const broadcasts = [];
         const now = new Date();
 
-        for (const order of orders) {
-            let pickupKm = 5;
-            let deliveryKm = 5;
-            let isValid = false;
+        for (const order of allOrders) {
+            const isReturn = order.deliveryType === 'Return Pickup';
 
             const sLat = order.seller?.location?.coordinates?.[1] || order.sellerLocation?.lat;
             const sLng = order.seller?.location?.coordinates?.[0] || order.sellerLocation?.lng;
-            
-            if (pLat && pLng && sLat && sLng) {
-                pickupKm = getDistanceFromLatLonInKm(pLat, pLng, sLat, sLng);
-            }
-
             const cLat = order.shippingAddress?.latitude;
             const cLng = order.shippingAddress?.longitude;
 
-            if (sLat && sLng && cLat && cLng) {
-                deliveryKm = getDistanceFromLatLonInKm(sLat, sLng, cLat, cLng);
+            // For normal: pickup = shop, dropoff = customer
+            // For return: pickup = customer, dropoff = shop
+            let pickupLat = isReturn ? cLat  : sLat;
+            let pickupLng = isReturn ? cLng  : sLng;
+            let dropoffLat = isReturn ? sLat  : cLat;
+            let dropoffLng = isReturn ? sLng  : cLng;
+
+            let pickupKm = 5;
+            let deliveryKm = 5;
+
+            if (pLat && pLng && pickupLat && pickupLng) {
+                pickupKm = getDistanceFromLatLonInKm(pLat, pLng, pickupLat, pickupLng);
+            }
+            if (pickupLat && pickupLng && dropoffLat && dropoffLng) {
+                deliveryKm = getDistanceFromLatLonInKm(pickupLat, pickupLng, dropoffLat, dropoffLng);
             }
 
-            const timeSinceBroadcast = order.broadcastedAt ? (now - order.broadcastedAt) / 1000 : 0; // seconds
-            
-            // If within 10km or > 2 mins elapsed (fallback)
+            const timeSinceBroadcast = order.broadcastedAt ? (now - order.broadcastedAt) / 1000 : 0;
+
             if (pickupKm <= 10 || timeSinceBroadcast > 120 || !pLat) {
-                isValid = true;
-            }
-
-            if (isValid) {
                 broadcasts.push({
                     _id: order._id,
                     orderId: order.orderId,
+                    deliveryType: order.deliveryType || 'Normal',
+                    // Pickup info depends on order type
+                    pickupLabel: isReturn ? 'Customer Address' : (order.sellerShopName || order.seller?.shopName),
+                    pickupAddress: isReturn
+                        ? order.shippingAddress?.fullAddress
+                        : (order.sellerShopAddress || order.seller?.shopAddress),
+                    dropoffLabel: isReturn ? (order.sellerShopName || order.seller?.shopName) : 'Customer',
+                    dropoffAddress: isReturn
+                        ? (order.sellerShopAddress || order.seller?.shopAddress)
+                        : order.shippingAddress?.fullAddress,
+                    // Legacy fields for backward compat
                     sellerShopName: order.sellerShopName || order.seller?.shopName,
                     sellerShopAddress: order.sellerShopAddress || order.seller?.shopAddress,
                     pickupKm: parseFloat(pickupKm.toFixed(1)),
                     deliveryKm: parseFloat(deliveryKm.toFixed(1)),
                     deliveryFee: order.deliveryFee || 20,
                     totalAmount: order.totalAmount,
-                    deliveryType: order.deliveryType || 'Normal',
                     timeSinceBroadcast,
-                    itemsSummary: order.items && order.items.length > 0 
-                        ? order.items.map(i => `${i.quantity}x ${i.name}`).join(', ') 
-                        : 'Delivery Items'
+                    itemsSummary: order.items?.length > 0
+                        ? order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')
+                        : 'Items'
                 });
             }
         }
+
         res.json({ success: true, data: broadcasts });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
 
 // POST /api/delivery/broadcasts/:id/accept
 router.post('/broadcasts/:id/accept', protectDelivery, async (req, res) => {
