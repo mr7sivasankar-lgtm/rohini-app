@@ -1052,6 +1052,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
           <th>Total</th>
           <th>Status</th>
           <th>Date</th>
+          <th style={{ minWidth: '160px' }}>Delivery Partner</th>
           <th>Item Logistics</th>
           <th>User Comments</th>
           <th>Action</th>
@@ -1196,18 +1197,76 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                         </span>
                       );
                     })()}
-
-                    {order.deliveryPartnerId && (
-                      <div style={{ marginTop: '4px', padding: '4px 6px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <span style={{ fontWeight: 600, color: '#334155' }}>🚚 {order.deliveryPartnerId.name}</span>
-                        <span style={{ color: '#64748b' }}>{order.deliveryPartnerId.phone}</span>
-                      </div>
-                    )}
                   </div>
                 </td>
                 <td>
                   <div>{new Date(order.createdAt).toLocaleDateString('en-IN')}</div>
                   <div style={{ fontSize: '0.85em', color: '#666' }}>{new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
+                </td>
+
+                {/* ── Delivery Partner Column ── */}
+                <td style={{ minWidth: '160px' }}>
+                  {order.deliveryPartner ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {/* Partner avatar + name */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #f97316, #fb923c)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '16px', flexShrink: 0
+                        }}>🚴</div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b' }}>
+                            {order.deliveryPartner.name}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>
+                            {order.deliveryPartner.phone}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Delivery type badge */}
+                      {order.deliveryType && order.deliveryType !== 'Normal' && (
+                        <span style={{
+                          display: 'inline-block', fontSize: '10px', fontWeight: 700,
+                          padding: '2px 7px', borderRadius: '10px',
+                          background: '#fff7ed', color: '#c2410c',
+                          border: '1px solid #fed7aa', width: 'fit-content'
+                        }}>
+                          {order.deliveryType === 'Return Pickup' ? '↩️ Return Pickup' : '🔄 Exchange'}
+                        </span>
+                      )}
+
+                      {/* Delivery status */}
+                      {order.deliveryStatus && (
+                        <span style={{
+                          display: 'inline-block', fontSize: '10px', fontWeight: 700,
+                          padding: '2px 7px', borderRadius: '10px', width: 'fit-content',
+                          background: order.deliveryStatus === 'Delivered' ? '#dcfce7' :
+                                      order.deliveryStatus === 'Picked Up' ? '#e0f2fe' : '#fef3c7',
+                          color: order.deliveryStatus === 'Delivered' ? '#16a34a' :
+                                 order.deliveryStatus === 'Picked Up' ? '#0369a1' : '#b45309',
+                        }}>
+                          {order.deliveryStatus}
+                        </span>
+                      )}
+
+                      {/* Payment method */}
+                      {order.paymentCollectedVia && (
+                        <span style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          💳 Collected via <strong>{order.paymentCollectedVia}</strong>
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>—</span>
+                      {['Ready for Pickup', 'Packed'].includes(order.status) && (
+                        <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 600 }}>⏳ Awaiting assignment</span>
+                      )}
+                    </div>
+                  )}
                 </td>
                 <td>
                   <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '200px' }}>
@@ -1305,7 +1364,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
               {/* Expandable History Row */}
               {expandedOrders[order._id] && (
                 <tr key={`hist-${order._id}`}>
-                  <td colSpan={13} style={{ background: '#f8fafc', padding: '0 12px 12px 40px', borderBottom: '2px solid #e2e8f0' }}>
+                  <td colSpan={14} style={{ background: '#f8fafc', padding: '0 12px 12px 40px', borderBottom: '2px solid #e2e8f0' }}>
                     <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', paddingTop: '12px' }}>
                       {/* Order Status Timeline */}
                       <div style={{ minWidth: '220px' }}>
