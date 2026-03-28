@@ -1,11 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import './Dashboard.css';
 
-const DELIVERY_TYPE_LABELS = { Normal: '🚚 Normal Delivery', 'Return Pickup': '↩️ Return Pickup', 'Exchange Pickup': '🔄 Exchange Pickup' };
+const DELIVERY_TYPE_LABELS = { Normal: '🚚 Normal', 'Return Pickup': '↩️ Return', 'Exchange Pickup': '🔄 Exchange' };
 const STATUS_COLORS = { Assigned: '#f59e0b', 'Picked Up': '#22c55e', 'Out for Delivery': '#16a34a' };
+
+// Custom marker for delivery partner location
+const dpLocationIcon = L.divIcon({
+    html: `<div class="dp-location-marker">🛵</div>`,
+    className: '',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+});
 
 export default function Dashboard() {
     const { partner, updatePartner } = useAuth();
@@ -15,13 +25,21 @@ export default function Dashboard() {
     const [stats, setStats] = useState({ assigned: 0, pending: 0, deliveredToday: 0, returnPickups: 0, exchangePickups: 0 });
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeFilter, setActiveFilter] = useState(null); // null = show all active
+    const [activeFilter, setActiveFilter] = useState(null);
+    const [dpPosition, setDpPosition] = useState(null); // { lat, lng }
 
+    // Leaflet map refs
+    const mapContainerRef = useRef(null);
+    const mapRef = useRef(null);
+    const dpMarkerRef = useRef(null);
+    const [mapReady, setMapReady] = useState(false);
+
+    // ── Fetch stats & orders ──
     const fetchData = useCallback(async () => {
         try {
             const [statsRes, ordersRes] = await Promise.all([
                 api.get('/delivery/stats'),
-                api.get('/delivery/orders')
+                api.get('/delivery/orders'),
             ]);
             setStats(statsRes.data.data);
             setOrders(ordersRes.data.data);
@@ -38,6 +56,72 @@ export default function Dashboard() {
         return () => clearInterval(interval);
     }, [fetchData]);
 
+    // ── Watch delivery partner GPS ──
+    useEffect(() => {
+        if (!navigator.geolocation) return;
+
+        const watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                const { latitude, longitude } = pos.coords;
+                setDpPosition({ lat: latitude, lng: longitude });
+
+                // Also send to backend so other apps see live location
+                api.put('/delivery/location', {
+                    coordinates: [longitude, latitude],
+                }).catch(() => {}); // silent fail
+            },
+            (err) => console.warn('GPS error:', err.message),
+            { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+        );
+
+        return () => navigator.geolocation.clearWatch(watchId);
+    }, []);
+
+    // ── Init Leaflet map ──
+    useEffect(() => {
+        if (!mapContainerRef.current || mapRef.current) return;
+
+        const map = L.map(mapContainerRef.current, {
+            zoomControl: true,
+            scrollWheelZoom: false,
+            dragging: true,
+            attributionControl: false,
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        // Default center (India) until GPS kicks in
+        map.setView([20.5937, 78.9629], 5);
+
+        mapRef.current = map;
+        setMapReady(true);
+
+        return () => {
+            mapRef.current?.remove();
+            mapRef.current = null;
+            dpMarkerRef.current = null;
+            setMapReady(false);
+        };
+    }, []);
+
+    // ── Update marker when position changes ──
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!mapReady || !map || !dpPosition) return;
+
+        const { lat, lng } = dpPosition;
+
+        if (!dpMarkerRef.current) {
+            dpMarkerRef.current = L.marker([lat, lng], { icon: dpLocationIcon }).addTo(map);
+            map.setView([lat, lng], 15);
+        } else {
+            dpMarkerRef.current.setLatLng([lat, lng]);
+            map.panTo([lat, lng], { animate: true, duration: 1 });
+        }
+    }, [mapReady, dpPosition]);
+
     const toggleStatus = async () => {
         const newStatus = !isOnline;
         setIsOnline(newStatus);
@@ -47,51 +131,42 @@ export default function Dashboard() {
         } catch { setIsOnline(!newStatus); }
     };
 
-    const handleFilterClick = (key) => {
-        setActiveFilter(prev => prev === key ? null : key);
-    };
+    const handleFilterClick = (key) => setActiveFilter(prev => prev === key ? null : key);
 
     const getFilteredOrders = () => {
         if (!activeFilter) return orders;
         switch (activeFilter) {
-            case 'assigned':
-                return orders.filter(o => o.deliveryStatus === 'Assigned');
-            case 'pending':
-                return orders.filter(o => ['Picked Up', 'Out for Delivery'].includes(o.deliveryStatus));
+            case 'assigned': return orders.filter(o => o.deliveryStatus === 'Assigned');
+            case 'pending': return orders.filter(o => ['Picked Up', 'Out for Delivery'].includes(o.deliveryStatus));
             case 'deliveredToday': {
                 const today = new Date().toDateString();
                 return orders.filter(o => o.deliveryStatus === 'Delivered' && new Date(o.updatedAt).toDateString() === today);
             }
-            case 'returnPickups':
-                return orders.filter(o => o.deliveryType === 'Return Pickup');
-            case 'exchangePickups':
-                return orders.filter(o => o.deliveryType === 'Exchange Pickup');
-            default:
-                return orders;
+            case 'returnPickups': return orders.filter(o => o.deliveryType === 'Return Pickup');
+            case 'exchangePickups': return orders.filter(o => o.deliveryType === 'Exchange Pickup');
+            default: return orders;
         }
     };
 
     const filteredOrders = getFilteredOrders();
 
     const FILTER_LABELS = {
-        assigned: 'Assigned',
-        pending: 'Pending',
-        deliveredToday: 'Delivered Today',
-        returnPickups: 'Return Pickups',
-        exchangePickups: 'Exchange Pickups',
+        assigned: 'Assigned', pending: 'Pending', deliveredToday: 'Delivered Today',
+        returnPickups: 'Return Pickups', exchangePickups: 'Exchange Pickups',
     };
 
     const statCards = [
-        { key: 'assigned',        label: 'Assigned',         value: stats.assigned,        color: '#f59e0b', icon: '📦' },
-        { key: 'pending',         label: 'Pending',          value: stats.pending,         color: '#3b82f6', icon: '⏳' },
-        { key: 'deliveredToday',  label: 'Delivered Today',  value: stats.deliveredToday,  color: '#10b981', icon: '✅' },
-        { key: 'returnPickups',   label: 'Return Pickups',   value: stats.returnPickups,   color: '#ef4444', icon: '↩️' },
-        { key: 'exchangePickups', label: 'Exchange Pickups', value: stats.exchangePickups, color: '#8b5cf6', icon: '🔄' },
+        { key: 'assigned',        label: 'Assigned',   value: stats.assigned,        color: '#f59e0b', icon: '📦' },
+        { key: 'pending',         label: 'Pending',    value: stats.pending,         color: '#3b82f6', icon: '⏳' },
+        { key: 'deliveredToday',  label: 'Delivered',  value: stats.deliveredToday,  color: '#10b981', icon: '✅' },
+        { key: 'returnPickups',   label: 'Returns',    value: stats.returnPickups,   color: '#ef4444', icon: '↩️' },
+        { key: 'exchangePickups', label: 'Exchange',   value: stats.exchangePickups, color: '#8b5cf6', icon: '🔄' },
     ];
 
     return (
         <div className="dashboard-page">
-            {/* Header */}
+
+            {/* ── Header ── */}
             <div className="dash-header">
                 <div className="dash-greeting">
                     <div className="avatar">🚴</div>
@@ -101,39 +176,32 @@ export default function Dashboard() {
                     </div>
                 </div>
                 <div className="status-toggle-wrap-dashboard">
-                    <span className={`status-dot ${isOnline ? 'online' : 'offline'}`}></span>
+                    <span className={`status-dot ${isOnline ? 'online' : 'offline'}`} />
                     <span style={{ fontSize: 13, fontWeight: 700 }}>{isOnline ? 'Online' : 'Offline'}</span>
                     <label className="toggle-dash">
                         <input type="checkbox" checked={isOnline} onChange={toggleStatus} />
-                        <span className="slider-dash"></span>
+                        <span className="slider-dash" />
                     </label>
                 </div>
             </div>
 
-            {/* Stats Cards — tap to filter */}
-            <div className="stats-grid">
-                {statCards.map(s => (
-                    <div
-                        key={s.key}
-                        className="stat-card"
-                        onClick={() => handleFilterClick(s.key)}
-                        style={{
-                            borderTop: `3px solid ${s.color}`,
-                            cursor: 'pointer',
-                            outline: activeFilter === s.key ? `2.5px solid ${s.color}` : 'none',
-                            background: activeFilter === s.key ? `${s.color}18` : 'white',
-                            transform: activeFilter === s.key ? 'scale(1.04)' : 'scale(1)',
-                            transition: 'all 0.2s ease',
-                        }}
-                    >
-                        <div className="stat-icon">{s.icon}</div>
-                        <div className="stat-value" style={{ color: s.color }}>{s.value}</div>
-                        <div className="stat-label">{s.label.toUpperCase()}</div>
+            {/* ── Live Location Map ── */}
+            <div className="dp-map-section">
+                <div ref={mapContainerRef} className="dp-map" />
+                {!dpPosition && (
+                    <div className="dp-map-locating">
+                        <span className="dp-map-locating-dot" />
+                        Locating you…
                     </div>
-                ))}
+                )}
+                {dpPosition && (
+                    <div className="dp-map-badge">
+                        📍 Live Location
+                    </div>
+                )}
             </div>
 
-            {/* Section header */}
+            {/* ── Active Deliveries ── */}
             <div className="section-header">
                 <h3>
                     {activeFilter ? `${FILTER_LABELS[activeFilter]} Orders` : 'Active Deliveries'}
@@ -150,12 +218,12 @@ export default function Dashboard() {
             </div>
 
             {loading ? (
-                <div className="empty-state"><div className="spinner"></div></div>
+                <div className="empty-state"><div className="spinner" /></div>
             ) : filteredOrders.length === 0 ? (
                 <div className="empty-state">
                     <div className="empty-icon">📭</div>
                     <p>{activeFilter ? `No ${FILTER_LABELS[activeFilter]} orders` : 'No active deliveries right now'}</p>
-                    <span>{activeFilter ? 'Tap the card again to clear filter' : 'New orders will appear here automatically'}</span>
+                    <span>{activeFilter ? 'Tap a stat to clear filter' : 'New orders will appear here automatically'}</span>
                 </div>
             ) : (
                 <div className="orders-list">
@@ -185,6 +253,28 @@ export default function Dashboard() {
                     ))}
                 </div>
             )}
+
+            {/* ── Stats Bar (compact, above bottom nav) ── */}
+            <div className="stats-bar">
+                {statCards.map(s => (
+                    <div
+                        key={s.key}
+                        className="stat-chip"
+                        onClick={() => handleFilterClick(s.key)}
+                        style={{
+                            borderTop: `2px solid ${s.color}`,
+                            outline: activeFilter === s.key ? `2px solid ${s.color}` : 'none',
+                            background: activeFilter === s.key ? `${s.color}18` : 'white',
+                            transform: activeFilter === s.key ? 'scale(1.06)' : 'scale(1)',
+                        }}
+                    >
+                        <span className="chip-icon">{s.icon}</span>
+                        <span className="chip-value" style={{ color: s.color }}>{s.value}</span>
+                        <span className="chip-label">{s.label}</span>
+                    </div>
+                ))}
+            </div>
+
         </div>
     );
 }

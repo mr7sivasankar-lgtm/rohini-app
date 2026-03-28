@@ -153,6 +153,23 @@ router.put('/profile/status', protectDelivery, async (req, res) => {
     }
 });
 
+// PUT /api/delivery/location — update delivery partner's live GPS coordinates
+router.put('/location', protectDelivery, async (req, res) => {
+    try {
+        const { coordinates } = req.body; // [lng, lat]
+        if (!coordinates || coordinates.length !== 2) {
+            return res.status(400).json({ success: false, message: 'Invalid coordinates' });
+        }
+        await DeliveryPartner.findByIdAndUpdate(req.partner._id, {
+            location: { type: 'Point', coordinates }
+        });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+
 // ── Stats ────────────────────────────────────────────────────────────────────
 
 // GET /api/delivery/stats
