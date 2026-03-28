@@ -521,7 +521,115 @@ router.put('/seller/:id/status', sellerProtect, async (req, res) => {
     }
 });
 
-// ========== ADMIN ROUTES (must be BEFORE /:id) ==========
+// @route   PUT /api/orders/seller/:id/item-return
+// @desc    Seller accepts or rejects a customer return request
+// @access  Private/Seller
+router.put('/seller/:id/item-return', sellerProtect, async (req, res) => {
+    try {
+        const { itemId, action } = req.body; // action: 'approve' | 'reject'
+
+        if (!['approve', 'reject'].includes(action)) {
+            return res.status(400).json({ success: false, message: 'Invalid action. Use approve or reject.' });
+        }
+
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+        if (order.seller.toString() !== req.seller._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
+
+        const item = order.items.id(itemId);
+        if (!item) return res.status(404).json({ success: false, message: 'Item not found in order' });
+
+        if (item.status !== 'Return Requested') {
+            return res.status(400).json({ success: false, message: `Item is not in Return Requested state (current: ${item.status})` });
+        }
+
+        const now = new Date();
+
+        if (action === 'approve') {
+            item.status = 'Return Approved';
+            item.returnApprovedAt = now;
+            order.statusHistory.push({ status: 'Return Approved', timestamp: now, note: 'Return approved by seller.' });
+
+            await order.save();
+
+            // Broadcast return pickup to delivery partners — same as normal order broadcast
+            try {
+                await broadcastOrder(order._id, 'Return Pickup');
+                console.log(`[Return] Pickup broadcasted for order ${order.orderId}`);
+            } catch (e) {
+                console.error('[Return] Broadcast failed:', e.message);
+            }
+
+            // Notify customer
+            try {
+                const customer = await User.findById(order.user);
+                if (customer?.pushSubscription) {
+                    await sendPush(customer.pushSubscription, {
+                        title: '✅ Return Approved!',
+                        body: `Your return for "${item.name}" has been approved. A delivery partner will pick it up soon.`,
+                        icon: '/icons/icon-192.png',
+                        tag: `return-approved-${order._id}`,
+                        url: `/orders/${order.orderId}`
+                    });
+                }
+            } catch (e) { console.warn('[Push] Return approved notify failed:', e.message); }
+
+        } else {
+            item.status = 'Return Rejected';
+            item.returnRejectedAt = now;
+            order.statusHistory.push({ status: 'Return Rejected', timestamp: now, note: 'Return rejected by seller.' });
+
+            await order.save();
+
+            // Notify customer of rejection
+            try {
+                const customer = await User.findById(order.user);
+                if (customer?.pushSubscription) {
+                    await sendPush(customer.pushSubscription, {
+                        title: '❌ Return Rejected',
+                        body: `Your return request for "${item.name}" was rejected by the seller.`,
+                        icon: '/icons/icon-192.png',
+                        tag: `return-rejected-${order._id}`,
+                        url: `/orders/${order.orderId}`
+                    });
+                }
+            } catch (e) { console.warn('[Push] Return rejected notify failed:', e.message); }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Return ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
+            data: order
+        });
+    } catch (error) {
+        console.error('Seller item-return error:', error);
+        res.status(500).json({ success: false, message: 'Error processing return request' });
+    }
+});
+
+// @route   GET /api/orders/seller/returns
+// @desc    Get all orders with pending return requests for this seller
+// @access  Private/Seller
+router.get('/seller/returns', sellerProtect, async (req, res) => {
+    try {
+        const orders = await Order.find({
+            seller: req.seller._id,
+            'items.status': 'Return Requested'
+        })
+        .populate('user', 'name phone email')
+        .sort({ updatedAt: -1 });
+
+        res.status(200).json({ success: true, data: orders });
+    } catch (error) {
+        console.error('Get seller returns error:', error);
+        res.status(500).json({ success: false, message: 'Error fetching returns' });
+    }
+});
+
+
 
 // @route   GET /api/orders/admin/revenue
 // @desc    Revenue & profit analytics for admin dashboard

@@ -442,7 +442,6 @@ const OrderTracking = () => {
                                     <span className="ot-item-actions-name">{item.name}</span>
                                     <div className="ot-item-action-btns">
                                         <button className="ot-link-btn return" onClick={() => openModal(item, 'return')}>Return</button>
-                                        <button className="ot-link-btn exchange" onClick={() => openModal(item, 'exchange')}>Exchange</button>
                                         <button className="ot-link-btn review" onClick={() => navigate(`/product/${item.product?._id || item.product}`)}>Review</button>
                                     </div>
                                 </div>
