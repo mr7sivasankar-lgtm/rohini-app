@@ -93,12 +93,18 @@ const Login = () => {
     };
 
     const handleOTPChange = (i, val) => {
-        if (!/^\d?$/.test(val)) return;
+        // Normalize regional numerals (Devanagari, Arabic-Indic, etc.) to ASCII
+        const normalized = val.replace(/[\u0660-\u0669]/g, d => d.charCodeAt(0) - 0x0660)
+                              .replace(/[\u06F0-\u06F9]/g, d => d.charCodeAt(0) - 0x06F0)
+                              .replace(/[\u0966-\u096F]/g, d => d.charCodeAt(0) - 0x0966)
+                              .replace(/\D/g, '');
+        const digit = normalized.slice(-1); // take last char if somehow multiple
+        if (!/^\d?$/.test(digit)) return;
         const next = [...otp];
-        next[i] = val;
+        next[i] = digit;
         setOtp(next);
-        if (val && i < 5) otpRefs[i + 1].current?.focus();
-        if (!val && i > 0) otpRefs[i - 1].current?.focus();
+        if (digit && i < 5) otpRefs[i + 1].current?.focus();
+        if (!digit && i > 0) otpRefs[i - 1].current?.focus();
     };
 
     const handleOTPPaste = (e) => {
@@ -414,17 +420,27 @@ const Login = () => {
                                 <input
                                     key={i}
                                     ref={otpRefs[i]}
-                                    type="text" inputMode="numeric"
+                                    type="tel"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     maxLength={1}
                                     value={digit}
                                     onChange={e => handleOTPChange(i, e.target.value)}
                                     onKeyDown={e => { if (e.key === 'Backspace' && !digit && i > 0) otpRefs[i - 1].current?.focus(); }}
                                     onPaste={i === 0 ? handleOTPPaste : undefined}
+                                    autoComplete="one-time-code"
                                     style={{
-                                        width: 44, height: 52, textAlign: 'center', fontSize: 22, fontWeight: 700,
-                                        border: `2px solid ${digit ? '#22c55e' : '#e2e8f0'}`,
-                                        borderRadius: 12, outline: 'none', background: digit ? '#f0fdf4' : '#f8fafc',
-                                        color: '#111827', transition: 'all 0.2s', caretColor: '#22c55e',
+                                        width: 46, height: 56, textAlign: 'center',
+                                        fontSize: 26, fontWeight: 800,
+                                        fontFamily: "'Inter', 'Roboto Mono', 'SF Mono', 'Courier New', monospace",
+                                        border: `2px solid ${digit ? '#16a34a' : '#d1d5db'}`,
+                                        borderRadius: 14, outline: 'none',
+                                        background: digit ? '#f0fdf4' : '#ffffff',
+                                        color: '#0a0a0a',
+                                        transition: 'border 0.2s, background 0.2s',
+                                        caretColor: '#22c55e',
+                                        WebkitTextFillColor: '#0a0a0a',
+                                        boxShadow: digit ? '0 0 0 3px rgba(34,197,94,0.15)' : 'none',
                                     }}
                                     autoFocus={i === 0}
                                 />
