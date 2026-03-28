@@ -719,7 +719,7 @@ router.get('/admin/revenue', protect, adminOnly, async (req, res) => {
             deliveredAt: { $gte: startDate, $lte: endDate }
         };
 
-        // Summary totals
+        // Summary totals — compute profit inline so old orders (adminProfit=0) are correct
         const [summary] = await Order.aggregate([
             { $match: matchDelivered },
             {
@@ -730,18 +730,32 @@ router.get('/admin/revenue', protect, adminOnly, async (req, res) => {
                     totalCommission: { $sum: '$commissionAmount' },
                     totalPlatformFees: { $sum: '$platformFee' },
                     totalGatewayFees: { $sum: '$paymentGatewayFee' },
-                    totalProfit: { $sum: '$adminProfit' }
+                    totalProfit: {
+                        $sum: {
+                            $subtract: [
+                                { $add: ['$commissionAmount', '$platformFee'] },
+                                '$paymentGatewayFee'
+                            ]
+                        }
+                    }
                 }
             }
         ]);
 
-        // Daily chart data
+        // Daily chart data — compute profit inline
         const dailyChart = await Order.aggregate([
             { $match: matchDelivered },
             {
                 $group: {
                     _id: { $dateToString: { format: '%Y-%m-%d', date: '$deliveredAt' } },
-                    profit: { $sum: '$adminProfit' },
+                    profit: {
+                        $sum: {
+                            $subtract: [
+                                { $add: ['$commissionAmount', '$platformFee'] },
+                                '$paymentGatewayFee'
+                            ]
+                        }
+                    },
                     revenue: { $sum: '$totalAmount' },
                     orders: { $sum: 1 }
                 }
@@ -749,13 +763,20 @@ router.get('/admin/revenue', protect, adminOnly, async (req, res) => {
             { $sort: { _id: 1 } }
         ]);
 
-        // Monthly chart data
+        // Monthly chart data — compute profit inline
         const monthlyChart = await Order.aggregate([
             { $match: { status: 'Delivered', deliveredAt: { $exists: true } } },
             {
                 $group: {
                     _id: { $dateToString: { format: '%Y-%m', date: '$deliveredAt' } },
-                    profit: { $sum: '$adminProfit' },
+                    profit: {
+                        $sum: {
+                            $subtract: [
+                                { $add: ['$commissionAmount', '$platformFee'] },
+                                '$paymentGatewayFee'
+                            ]
+                        }
+                    },
                     revenue: { $sum: '$totalAmount' },
                     orders: { $sum: 1 }
                 }
@@ -764,11 +785,18 @@ router.get('/admin/revenue', protect, adminOnly, async (req, res) => {
             { $limit: 12 }
         ]);
 
-        // Per-order table (most recent 100)
-        const orders = await Order.find(matchDelivered)
+        // Per-order table — add computed adminProfit if the stored value is 0/missing
+        const rawOrders = await Order.find(matchDelivered)
             .select('orderId sellingPriceTotal commissionAmount platformFee paymentGatewayFee adminProfit deliveredAt totalAmount')
             .sort({ deliveredAt: -1 })
-            .limit(100);
+            .limit(100)
+            .lean();
+
+        // Recompute adminProfit on each order so old orders also show correctly
+        const orders = rawOrders.map(o => ({
+            ...o,
+            adminProfit: (o.commissionAmount || 0) + (o.platformFee || 0) - (o.paymentGatewayFee || 0)
+        }));
 
         res.json({
             success: true,
