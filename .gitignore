@@ -4,3 +4,9 @@ node_modules/
 uploads/
 dist/
 .DS_Store
+
+# Temp / scratch files (do NOT commit these to root — they trigger all Vercel rebuilds)
+*.diff
+*.patch
+temp.*
+last_commit.*
