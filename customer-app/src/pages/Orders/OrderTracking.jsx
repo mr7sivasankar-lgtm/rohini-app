@@ -1,71 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import api, { getImageUrl } from '../../utils/api';
 import './OrderTracking.css';
-
-// ─── Fix Leaflet default icon paths broken by bundlers ───
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
-
-// ─── Custom map icons ───
-const scooterIcon = L.divIcon({
-    html: `<div class="ot-map-scooter">🛵</div>`,
-    className: '',
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
-});
-
-const shopIcon = L.divIcon({
-    html: `<div class="ot-map-shop">🏬</div>`,
-    className: '',
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-});
-
-const customerIcon = L.divIcon({
-    html: `<div class="ot-map-pin">📍</div>`,
-    className: '',
-    iconSize: [32, 40],
-    iconAnchor: [16, 40],
-});
-
-// ─── Sub-component: smoothly re-center map when DP moves ───
-const MapUpdater = ({ center }) => {
-    const map = useMap();
-    useEffect(() => {
-        if (center) map.panTo(center, { animate: true, duration: 1.5 });
-    }, [center]);
-    return null;
-};
-
-// ─── Sub-component: fit bounds on first load ───
-const BoundsFitter = ({ points }) => {
-    const map = useMap();
-    const fitted = useRef(false);
-    useEffect(() => {
-        if (!fitted.current && points.length > 1) {
-            map.fitBounds(points, { padding: [50, 50] });
-            fitted.current = true;
-        } else if (!fitted.current && points.length === 1) {
-            map.setView(points[0], 15);
-            fitted.current = true;
-        }
-    }, []);
-    return null;
-};
 
 // ─── Main Component ───
 const OrderTracking = () => {
     const { orderId } = useParams();
     const navigate = useNavigate();
 
+    // ─── State ───
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [actionModal, setActionModal] = useState({ isOpen: false, type: '', item: null });
@@ -75,10 +20,17 @@ const OrderTracking = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [timeLeft, setTimeLeft] = useState(null);
     const [isExpired, setIsExpired] = useState(false);
+    const [mapReady, setMapReady] = useState(false);
 
-    // ─── Timer for return window ───
+    // ─── Leaflet refs (not state — no re-renders) ───
+    const mapContainerRef = useRef(null);
+    const leafletMapRef = useRef(null);
+    const dpMarkerRef = useRef(null);
+    const markersAddedRef = useRef(false);
+
+    // ─── Return window countdown ───
     const calculateTimeLeft = (deliveredTimestamp) => {
-        const checkTime = () => {
+        const tick = () => {
             const diff = (new Date(deliveredTimestamp).getTime() + 3 * 3600000) - Date.now();
             if (diff <= 0) {
                 setIsExpired(true);
@@ -88,15 +40,15 @@ const OrderTracking = () => {
                 const h = Math.floor(diff / 3600000);
                 const m = Math.floor((diff % 3600000) / 60000);
                 const s = Math.floor((diff % 60000) / 1000);
-                setTimeLeft(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
+                setTimeLeft(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
             }
         };
-        checkTime();
-        const t = setInterval(checkTime, 1000);
+        tick();
+        const t = setInterval(tick, 1000);
         return () => clearInterval(t);
     };
 
-    // ─── Fetch order data ───
+    // ─── Fetch order ───
     const fetchOrder = async () => {
         try {
             const res = await api.get('/orders');
@@ -117,7 +69,7 @@ const OrderTracking = () => {
 
     useEffect(() => { fetchOrder(); }, [orderId]);
 
-    // ─── Live polling while delivery partner is active ───
+    // ─── Live polling ───
     useEffect(() => {
         if (!order?.deliveryPartner) return;
         if (!['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status)) return;
@@ -125,79 +77,119 @@ const OrderTracking = () => {
         return () => clearInterval(interval);
     }, [order?.status, order?.deliveryPartner]);
 
-    // ─── Loading / not found ───
-    if (loading) {
-        return (
-            <div className="ot-loading">
-                <div className="ot-spinner" />
-                <p>Loading order...</p>
-            </div>
-        );
-    }
-
-    if (!order) {
-        return (
-            <div className="ot-empty-state">
-                <div className="ot-empty-icon">📦</div>
-                <h2>Order not found</h2>
-                <button className="ot-btn-primary" onClick={() => navigate('/orders')}>View All Orders</button>
-            </div>
-        );
-    }
-
-    // ─── Derived state ───
-    const ACTIVE_STATUSES = ['Assigned', 'Picked Up', 'Out for Delivery'];
+    // ─── Derived values ───
+    const ACTIVE = ['Assigned', 'Picked Up', 'Out for Delivery'];
     const showMap = !!(
-        order.deliveryPartner &&
+        order?.deliveryPartner &&
         order.deliveryPartner.location?.coordinates?.length >= 2 &&
-        ACTIVE_STATUSES.includes(order.status)
+        ACTIVE.includes(order?.status)
     );
-
     const dpLat = showMap ? order.deliveryPartner.location.coordinates[1] : null;
     const dpLng = showMap ? order.deliveryPartner.location.coordinates[0] : null;
-    const dpCenter = showMap ? [dpLat, dpLng] : null;
 
-    const shopCoords = order.seller?.location?.coordinates;
-    const shopCenter = shopCoords?.length >= 2 ? [shopCoords[1], shopCoords[0]] : null;
-    const customerCenter = (order.shippingAddress?.latitude && order.shippingAddress?.longitude)
-        ? [order.shippingAddress.latitude, order.shippingAddress.longitude]
-        : null;
+    // ─── LEAFLET: Init map (pure DOM, no react-leaflet) ───
+    useEffect(() => {
+        if (!showMap || !mapContainerRef.current || leafletMapRef.current) return;
 
-    const allMapPoints = [dpCenter, shopCenter, customerCenter].filter(Boolean);
+        const map = L.map(mapContainerRef.current, {
+            zoomControl: true,
+            scrollWheelZoom: false,
+            dragging: true,
+            attributionControl: true,
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://openstreetmap.org">OSM</a>',
+            maxZoom: 19,
+        }).addTo(map);
+
+        leafletMapRef.current = map;
+        setMapReady(true);
+
+        return () => {
+            leafletMapRef.current?.remove();
+            leafletMapRef.current = null;
+            dpMarkerRef.current = null;
+            markersAddedRef.current = false;
+            setMapReady(false);
+        };
+    }, [showMap]);
+
+    // ─── LEAFLET: Add / update markers ───
+    useEffect(() => {
+        const map = leafletMapRef.current;
+        if (!mapReady || !map || dpLat === null || dpLng === null) return;
+
+        const scooterIcon = L.divIcon({
+            html: `<div style="font-size:26px;transform:scaleX(-1);filter:drop-shadow(0 3px 6px rgba(0,0,0,0.35));line-height:1;">🛵</div>`,
+            className: '',
+            iconSize: [36, 36],
+            iconAnchor: [18, 18],
+        });
+
+        if (!markersAddedRef.current) {
+            // ── First load: place all markers ──
+            dpMarkerRef.current = L.marker([dpLat, dpLng], { icon: scooterIcon }).addTo(map);
+
+            const shopC = order?.seller?.location?.coordinates;
+            if (shopC?.length >= 2) {
+                const shopIcon = L.divIcon({
+                    html: `<div style="background:#10b981;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,0.25);">🏬</div>`,
+                    className: '',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15],
+                });
+                L.marker([shopC[1], shopC[0]], { icon: shopIcon }).addTo(map);
+            }
+
+            if (order?.shippingAddress?.latitude && order?.shippingAddress?.longitude) {
+                const pinIcon = L.divIcon({
+                    html: `<div style="font-size:26px;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.35));line-height:1;">📍</div>`,
+                    className: '',
+                    iconSize: [30, 38],
+                    iconAnchor: [15, 38],
+                });
+                L.marker(
+                    [order.shippingAddress.latitude, order.shippingAddress.longitude],
+                    { icon: pinIcon }
+                ).addTo(map);
+            }
+
+            // Fit all points in view
+            const pts = [[dpLat, dpLng]];
+            if (shopC?.length >= 2) pts.push([shopC[1], shopC[0]]);
+            if (order?.shippingAddress?.latitude) pts.push([
+                order.shippingAddress.latitude,
+                order.shippingAddress.longitude,
+            ]);
+
+            if (pts.length > 1) {
+                map.fitBounds(pts, { padding: [50, 50] });
+            } else {
+                map.setView([dpLat, dpLng], 15);
+            }
+
+            markersAddedRef.current = true;
+        } else {
+            // ── Subsequent polls: only move scooter ──
+            dpMarkerRef.current?.setLatLng([dpLat, dpLng]);
+            map.panTo([dpLat, dpLng], { animate: true, duration: 1.5 });
+        }
+    }, [mapReady, dpLat, dpLng]);
 
     // ─── ETA via Haversine ───
     const etaMins = (() => {
-        if (!showMap || !customerCenter) return null;
+        if (!showMap || !order?.shippingAddress?.latitude) return null;
         const toRad = v => (v * Math.PI) / 180;
         const R = 6371;
-        const dLat = toRad(customerCenter[0] - dpLat);
-        const dLon = toRad(customerCenter[1] - dpLng);
+        const dLat = toRad(order.shippingAddress.latitude - dpLat);
+        const dLon = toRad(order.shippingAddress.longitude - dpLng);
         const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(dpLat)) * Math.cos(toRad(customerCenter[0])) * Math.sin(dLon / 2) ** 2;
+            Math.cos(toRad(dpLat)) * Math.cos(toRad(order.shippingAddress.latitude)) *
+            Math.sin(dLon / 2) ** 2;
         const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return Math.ceil((distKm / 20) * 60); // 20 km/h avg local speed
+        return Math.ceil((distKm / 20) * 60);
     })();
-
-    // ─── Payment label ───
-    const getPaymentLabel = (method) => {
-        if (!method) return 'Online';
-        const m = method.toLowerCase();
-        if (m === 'cod') return 'Cash on Delivery';
-        if (m === 'wallet') return 'Wallet';
-        if (m === 'online' || m === 'upi') return 'Online / UPI';
-        return method;
-    };
-
-    // ─── Date format ───
-    const orderDate = new Date(order.createdAt);
-    const isToday = new Date().toDateString() === orderDate.toDateString();
-    const orderedOnStr = isToday
-        ? `Today, ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-        : `${orderDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-
-    // ─── Timeline ───
-    const statusSteps = ['Placed', 'Accepted', 'Packed', 'Picked Up', 'Out for Delivery', 'Delivered'];
-    const currentStepIndex = statusSteps.indexOf(order.status);
 
     // ─── Modal helpers ───
     const openModal = (item, type) => {
@@ -231,89 +223,98 @@ const OrderTracking = () => {
         }
     };
 
-    // ─── Status display text ───
-    const getStatusText = () => {
-        if (order.status === 'Delivered') return 'Order Delivered!';
-        if (order.status === 'Placed') return 'Order Placed';
-        if (order.status === 'Accepted') return 'Order Accepted';
-        if (order.status === 'Packed') return 'Order Packed';
-        if (order.status === 'Out for Delivery') return 'Your order is on the way';
-        return `Order ${order.status}`;
+    // ─── Payment label ───
+    const getPaymentLabel = (method) => {
+        if (!method) return 'Online';
+        const m = method.toLowerCase();
+        if (m === 'cod') return 'Cash on Delivery';
+        if (m === 'wallet') return 'Wallet';
+        return 'Online / UPI';
     };
+
+    // ─── Date label ───
+    const orderDate = order ? new Date(order.createdAt) : null;
+    const orderedOnStr = orderDate
+        ? (new Date().toDateString() === orderDate.toDateString()
+            ? `Today, ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            : `${orderDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`)
+        : '';
+
+    // ─── Status text ───
+    const getStatusText = () => {
+        const map = {
+            'Delivered': 'Order Delivered!',
+            'Placed': 'Order Placed',
+            'Accepted': 'Order Accepted',
+            'Packed': 'Order Packed',
+            'Out for Delivery': 'Your order is on the way',
+        };
+        return map[order?.status] || `Order ${order?.status}`;
+    };
+
+    // ─── Timeline steps ───
+    const statusSteps = ['Placed', 'Accepted', 'Packed', 'Picked Up', 'Out for Delivery', 'Delivered'];
+    const currentStepIndex = statusSteps.indexOf(order?.status);
+
+    // ─── Loading / empty ───
+    if (loading) {
+        return (
+            <div className="ot-loading">
+                <div className="ot-spinner" />
+                <p>Loading order...</p>
+            </div>
+        );
+    }
+
+    if (!order) {
+        return (
+            <div className="ot-empty-state">
+                <div className="ot-empty-icon">📦</div>
+                <h2>Order not found</h2>
+                <button className="ot-btn-primary" onClick={() => navigate('/orders')}>View All Orders</button>
+            </div>
+        );
+    }
 
     return (
         <div className="ot-page">
 
-            {/* ══════════════════════════
-                MAP SECTION (active orders)
-            ══════════════════════════ */}
+            {/* ══ MAP (active delivery) ══ */}
             {showMap ? (
                 <div className="ot-map-wrapper">
-                    <MapContainer
-                        center={dpCenter}
-                        zoom={14}
-                        className="ot-map"
-                        zoomControl={false}
-                        scrollWheelZoom={false}
-                        attributionControl={false}
-                    >
-                        <TileLayer
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                            attribution="© OpenStreetMap contributors"
-                            maxZoom={19}
-                        />
-                        <BoundsFitter points={allMapPoints} />
-                        <MapUpdater center={dpCenter} />
+                    {/* Raw Leaflet container — populated by useEffect */}
+                    <div ref={mapContainerRef} className="ot-map" />
 
-                        {/* Delivery partner scooter */}
-                        <Marker position={dpCenter} icon={scooterIcon} />
-
-                        {/* Shop marker */}
-                        {shopCenter && <Marker position={shopCenter} icon={shopIcon} />}
-
-                        {/* Customer destination */}
-                        {customerCenter && <Marker position={customerCenter} icon={customerIcon} />}
-                    </MapContainer>
-
-                    {/* Nav overlay on top of map */}
+                    {/* Overlay nav on top of map */}
                     <div className="ot-map-nav">
-                        <button className="ot-back-pill" onClick={() => navigate('/orders')}>
-                            ←
-                        </button>
+                        <button className="ot-back-pill" onClick={() => navigate('/orders')}>←</button>
                         <div className="ot-map-title-pill">Order Details</div>
                     </div>
                 </div>
             ) : (
-                /* ── Top nav (no map) ── */
                 <div className="ot-top-nav">
                     <button className="ot-back-flat" onClick={() => navigate('/orders')}>← Back</button>
                     <h1 className="ot-top-title">Order Details</h1>
                 </div>
             )}
 
-            {/* ══════════════════════════
-                BODY CONTENT
-            ══════════════════════════ */}
+            {/* ══ BODY ══ */}
             <div className="ot-body">
 
-                {/* ── ETA Banner (active delivery) ── */}
+                {/* Green ETA banner */}
                 {showMap && (
                     <div className="ot-eta-banner">
                         <span className="ot-eta-icon">🛵</span>
                         <span className="ot-eta-text">
                             Deliveryman arriving in&nbsp;
                             <strong>
-                                {etaMins == null
-                                    ? '...'
-                                    : etaMins <= 1
-                                        ? 'less than a minute'
-                                        : `${etaMins} mins`}
+                                {etaMins == null ? '...' : etaMins <= 1 ? 'less than a minute' : `${etaMins} mins`}
                             </strong>
                         </span>
                     </div>
                 )}
 
-                {/* ── Status Card (non-active orders) ── */}
+                {/* Status card (non-active) */}
                 {!showMap && (
                     <div className="ot-status-card">
                         <div className="ot-status-icon-box">
@@ -329,12 +330,10 @@ const OrderTracking = () => {
                     </div>
                 )}
 
-                {/* ══════════════════════════
-                    WHITE PANEL
-                ══════════════════════════ */}
+                {/* ══ WHITE PANEL ══ */}
                 <div className="ot-white-panel">
 
-                    {/* ── Order summary row ── */}
+                    {/* Summary row */}
                     <div className="ot-summary-row">
                         <div className="ot-summary-left">
                             <strong className="ot-summary-shop">{order.seller?.shopName || 'Shop'}</strong>
@@ -353,16 +352,16 @@ const OrderTracking = () => {
 
                     <div className="ot-divider" />
 
-                    {/* ── Shop row ── */}
+                    {/* Shop row */}
                     <div className="ot-loc-row">
                         <div className="ot-loc-icon-wrap shop">🏬</div>
                         <div className="ot-loc-text">
                             <strong>{order.seller?.shopName || 'Shop'}</strong>
-                            <span>{order.seller?.address || 'Shop'}</span>
+                            <span>{order.seller?.address || 'Shop location'}</span>
                         </div>
                     </div>
 
-                    {/* ── Delivery address row ── */}
+                    {/* Delivery address */}
                     <div className="ot-loc-row">
                         <div className="ot-loc-icon-wrap home">📍</div>
                         <div className="ot-loc-text">
@@ -373,7 +372,7 @@ const OrderTracking = () => {
 
                     <div className="ot-divider" />
 
-                    {/* ── Delivery partner ── */}
+                    {/* Delivery partner */}
                     {order.deliveryPartner && (
                         <div className="ot-partner-row">
                             <img
@@ -394,7 +393,7 @@ const OrderTracking = () => {
 
                     <div className="ot-divider" />
 
-                    {/* ── Order Items ── */}
+                    {/* Order items */}
                     <div id="ot-items" className="ot-items-section">
                         <h4 className="ot-section-title">Ordered Item(s)</h4>
                         {order.items.map((item, idx) => (
@@ -407,9 +406,7 @@ const OrderTracking = () => {
                                     <div className="ot-item-details">
                                         <span className="ot-item-name">{item.name}</span>
                                         {(item.size || item.color) && (
-                                            <span className="ot-item-variant">
-                                                {[item.size, item.color].filter(Boolean).join(' · ')}
-                                            </span>
+                                            <span className="ot-item-variant">{[item.size, item.color].filter(Boolean).join(' · ')}</span>
                                         )}
                                         {item.status !== 'Active' && (
                                             <span className={`ot-item-flag flag-${item.status?.replace(/ /g, '-').toLowerCase()}`}>
@@ -420,38 +417,35 @@ const OrderTracking = () => {
                                 </div>
                                 <div className="ot-item-right">
                                     <span className="ot-item-qty">×{item.quantity}</span>
-                                    <span className="ot-item-price">
-                                        ₹{((item.sellingPrice || item.price) * item.quantity).toFixed(2)}
-                                    </span>
+                                    <span className="ot-item-price">₹{((item.sellingPrice || item.price) * item.quantity).toFixed(2)}</span>
                                 </div>
                             </div>
                         ))}
 
-                        {/* Return/Exchange actions for delivered orders */}
-                        {order.status === 'Delivered' && !isExpired && (
-                            <>
-                                {timeLeft && (
-                                    <div className="ot-return-window active">
-                                        ⏱️ Return window: <strong>{timeLeft}</strong> remaining
-                                    </div>
-                                )}
-                                {order.items.filter(i => i.status === 'Active').map((item, idx) => (
-                                    <div key={idx} className="ot-item-actions">
-                                        <span className="ot-item-actions-name">{item.name}</span>
-                                        <div className="ot-item-action-btns">
-                                            <button className="ot-link-btn return" onClick={() => openModal(item, 'return')}>Return</button>
-                                            <button className="ot-link-btn exchange" onClick={() => openModal(item, 'exchange')}>Exchange</button>
-                                            <button className="ot-link-btn review" onClick={() => navigate(`/product/${item.product?._id || item.product}`)}>Review</button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </>
-                        )}
-                        {order.status === 'Delivered' && isExpired && timeLeft && (
-                            <div className="ot-return-window expired">⏳ Return window expired</div>
+                        {/* Return/Exchange window */}
+                        {order.status === 'Delivered' && timeLeft && (
+                            <div className={`ot-return-window ${isExpired ? 'expired' : 'active'}`}>
+                                {isExpired
+                                    ? '⏳ Return window expired'
+                                    : `⏱️ Return window: ${timeLeft} remaining`}
+                            </div>
                         )}
 
-                        {/* Cancel item during Placed/Accepted */}
+                        {/* Return/Exchange action buttons */}
+                        {order.status === 'Delivered' && !isExpired &&
+                            order.items.filter(i => i.status === 'Active').map((item, idx) => (
+                                <div key={idx} className="ot-item-actions">
+                                    <span className="ot-item-actions-name">{item.name}</span>
+                                    <div className="ot-item-action-btns">
+                                        <button className="ot-link-btn return" onClick={() => openModal(item, 'return')}>Return</button>
+                                        <button className="ot-link-btn exchange" onClick={() => openModal(item, 'exchange')}>Exchange</button>
+                                        <button className="ot-link-btn review" onClick={() => navigate(`/product/${item.product?._id || item.product}`)}>Review</button>
+                                    </div>
+                                </div>
+                            ))
+                        }
+
+                        {/* Cancel item (Placed/Accepted) */}
                         {['Placed', 'Accepted'].includes(order.status) &&
                             order.items.filter(i => i.status === 'Active').map((item, idx) => (
                                 <div key={idx} className="ot-item-actions">
@@ -466,7 +460,7 @@ const OrderTracking = () => {
 
                     <div className="ot-divider dashed" />
 
-                    {/* ── Bill Section ── */}
+                    {/* Bill section */}
                     <div className="ot-bill-section">
                         <div className="ot-bill-row">
                             <span>Item total</span>
@@ -484,9 +478,7 @@ const OrderTracking = () => {
                                 <span>₹{(order.platformFee || 0).toFixed(2)}</span>
                             </div>
                         )}
-
                         <div className="ot-bill-divider" />
-
                         <div className="ot-bill-total-row">
                             <span className="ot-payment-label">
                                 <span className="ot-payment-check">✅</span>
@@ -494,7 +486,6 @@ const OrderTracking = () => {
                             </span>
                             <strong className="ot-grand-total">₹{(order.totalAmount || 0).toFixed(2)}</strong>
                         </div>
-
                         <div className="ot-bill-meta">
                             <div className="ot-meta-row">
                                 <span>Order ID</span>
@@ -508,14 +499,13 @@ const OrderTracking = () => {
                     </div>
                 </div>
 
-                {/* ══════════════════════════
-                    ORDER TIMELINE
-                ══════════════════════════ */}
+                {/* ══ TIMELINE ══ */}
                 <div className="ot-timeline-card">
                     <h4 className="ot-section-title">Order Timeline</h4>
                     <div className="ot-timeline-h">
                         {statusSteps.map((step, idx) => {
-                            const isCompleted = idx < currentStepIndex || (idx === currentStepIndex && idx === statusSteps.length - 1);
+                            const isCompleted = idx < currentStepIndex ||
+                                (idx === currentStepIndex && idx === statusSteps.length - 1);
                             const isCurrent = idx === currentStepIndex;
                             let ts = null;
                             if (idx <= currentStepIndex && order.statusHistory) {
@@ -547,9 +537,7 @@ const OrderTracking = () => {
 
             </div>{/* end ot-body */}
 
-            {/* ══════════════════════════
-                ACTION MODAL
-            ══════════════════════════ */}
+            {/* ══ ACTION MODAL ══ */}
             {actionModal.isOpen && (
                 <div className="ot-modal-overlay" onClick={closeModal}>
                     <div className="ot-modal" onClick={e => e.stopPropagation()}>
@@ -581,8 +569,11 @@ const OrderTracking = () => {
                         )}
                         <div className="ot-modal-field">
                             <label>Reason (Optional)</label>
-                            <textarea rows={3} placeholder={`Why are you requesting a ${actionModal.type}?`}
-                                value={actionReason} onChange={e => setActionReason(e.target.value)} />
+                            <textarea rows={3}
+                                placeholder={`Why are you requesting a ${actionModal.type}?`}
+                                value={actionReason}
+                                onChange={e => setActionReason(e.target.value)}
+                            />
                         </div>
                         <p className="ot-modal-warning">
                             {actionModal.type === 'cancel'
@@ -590,7 +581,9 @@ const OrderTracking = () => {
                                 : `Your ${actionModal.type} request will be reviewed.`}
                         </p>
                         <div className="ot-modal-actions">
-                            <button className="ot-modal-btn secondary" onClick={closeModal} disabled={isSubmitting}>Keep It</button>
+                            <button className="ot-modal-btn secondary" onClick={closeModal} disabled={isSubmitting}>
+                                Keep It
+                            </button>
                             <button
                                 className={`ot-modal-btn ${actionModal.type === 'cancel' ? 'danger' : 'primary'}`}
                                 onClick={handleActionItem}
