@@ -34,10 +34,14 @@ const deliveryPartnerSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Please add a password'],
+        required: false,
         minlength: 6,
         select: false
     },
+    otp: { type: String, select: false },
+    otpExpiry: { type: Date, select: false },
+    isVerified: { type: Boolean, default: false },
+    isProfileComplete: { type: Boolean, default: false },
     vehicleType: {
         type: String,
         enum: ['Bike', 'Scooter', 'Bicycle', 'Car', 'Other'],
@@ -91,9 +95,9 @@ const deliveryPartnerSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Hash password before saving
+// Hash password before saving (only if password is set)
 deliveryPartnerSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
+    if (!this.isModified('password') || !this.password) return next();
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();

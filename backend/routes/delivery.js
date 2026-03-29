@@ -9,6 +9,7 @@ import WalletTransaction from '../models/WalletTransaction.js';
 import PartnerStatusLog from '../models/PartnerStatusLog.js';
 import { sendPush } from '../utils/notify.js';
 import { uploadSingle } from '../middleware/upload.js';
+import sendOTP from '../utils/sms.js';
 
 const router = express.Router();
 
@@ -33,44 +34,146 @@ export const protectDelivery = async (req, res, next) => {
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 
-// POST /api/delivery/register
-router.post('/register', async (req, res) => {
+// POST /api/delivery/send-otp
+router.post('/send-otp', async (req, res) => {
     try {
-        const { 
-            name, phone, password, vehicleType, vehicleNumber, 
-            address, city, state, pincode, location,
-            email, dob, gender, aadhaarNumber, panNumber,
-            bankAccountName, bankAccountNumber, bankIfsc, bankName
-        } = req.body;
-        const exists = await DeliveryPartner.findOne({ phone });
-        if (exists) return res.status(400).json({ success: false, message: 'Phone already registered' });
+        const { phone } = req.body;
+        if (!phone) return res.status(400).json({ success: false, message: 'Phone number required' });
 
-        const partnerData = { name, phone, password, vehicleType, vehicleNumber };
-        if (address) partnerData.address = address;
-        if (city) partnerData.city = city.trim();
-        if (state) partnerData.state = state.trim();
-        if (pincode) partnerData.pincode = pincode.trim();
-        if (location && location.coordinates && location.coordinates.length === 2 && location.coordinates[0] !== 0) {
-            partnerData.location = { type: 'Point', coordinates: location.coordinates };
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiry = new Date(Date.now() + (parseInt(process.env.OTP_EXPIRY_MINUTES) || 10) * 60000);
+
+        // Check if partner already exists
+        let partner = await DeliveryPartner.findOne({ phone }).select('+otp +otpExpiry');
+        if (partner) {
+            partner.otp = otp;
+            partner.otpExpiry = otpExpiry;
+            await partner.save();
+        } else {
+            // Pre-create with placeholder so OTP can be saved
+            partner = await DeliveryPartner.create({
+                phone,
+                name: 'Delivery Partner',
+                otp,
+                otpExpiry,
+                isVerified: false,
+                isProfileComplete: false,
+            });
         }
-        if (email) partnerData.email = email.trim();
-        if (dob) partnerData.dob = dob;
-        if (gender) partnerData.gender = gender;
-        if (aadhaarNumber) partnerData.aadhaarNumber = aadhaarNumber.trim();
-        if (panNumber) partnerData.panNumber = panNumber.trim().toUpperCase();
-        if (bankAccountName) partnerData.bankAccountName = bankAccountName.trim();
-        if (bankAccountNumber) partnerData.bankAccountNumber = bankAccountNumber.trim();
-        if (bankIfsc) partnerData.bankIfsc = bankIfsc.trim().toUpperCase();
-        if (bankName) partnerData.bankName = bankName.trim();
 
-        const partner = await DeliveryPartner.create(partnerData);
-        const token = jwt.sign({ id: partner._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        const smsSent = await sendOTP(phone, otp);
+        if (!smsSent) return res.status(500).json({ success: false, message: 'Failed to send OTP. Try again.' });
 
-        res.status(201).json({ success: true, message: 'Registered successfully', data: { token, partner: { _id: partner._id, name: partner.name, phone: partner.phone, vehicleType: partner.vehicleType, vehicleNumber: partner.vehicleNumber, isOnline: partner.isOnline, city: partner.city, pincode: partner.pincode } } });
+        res.json({
+            success: true,
+            message: 'OTP sent successfully',
+            data: { phone, ...(process.env.NODE_ENV !== 'production' ? { otp } : {}) }
+        });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+// POST /api/delivery/verify-otp
+router.post('/verify-otp', async (req, res) => {
+    try {
+        const { phone, otp } = req.body;
+        if (!phone || !otp) return res.status(400).json({ success: false, message: 'Phone and OTP required' });
+
+        const partner = await DeliveryPartner.findOne({ phone }).select('+otp +otpExpiry');
+        if (!partner) return res.status(404).json({ success: false, message: 'Partner not found' });
+
+        if (!partner.otp || partner.otpExpiry < Date.now()) {
+            return res.status(400).json({ success: false, message: 'OTP has expired. Request a new one.' });
+        }
+        if (partner.otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP' });
+        }
+
+        const isNewPartner = !partner.isProfileComplete;
+
+        partner.isVerified = true;
+        partner.otp = undefined;
+        partner.otpExpiry = undefined;
+        await partner.save();
+
+        const token = jwt.sign({ id: partner._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+
+        res.json({
+            success: true,
+            message: isNewPartner ? 'OTP verified. Please complete your profile.' : 'Login successful',
+            data: {
+                token,
+                isNewPartner,
+                partner: {
+                    _id: partner._id,
+                    name: partner.name,
+                    phone: partner.phone,
+                    vehicleType: partner.vehicleType,
+                    vehicleNumber: partner.vehicleNumber,
+                    isOnline: partner.isOnline,
+                    city: partner.city,
+                    pincode: partner.pincode,
+                    isProfileComplete: partner.isProfileComplete,
+                    status: partner.status,
+                    isActive: partner.isActive,
+                }
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// POST /api/delivery/register
+router.post('/register', async (req, res) => {
+    try {
+        const { 
+            name, phone, vehicleType, vehicleNumber, 
+            address, city, state, pincode, location,
+            email, dob, gender, aadhaarNumber, panNumber,
+            bankAccountName, bankAccountNumber, bankIfsc, bankName
+        } = req.body;
+
+        // For OTP flow: partner record was pre-created in send-otp. Find and update it.
+        let partner = await DeliveryPartner.findOne({ phone });
+        if (!partner) {
+            return res.status(404).json({ success: false, message: 'Please verify OTP first before registering.' });
+        }
+
+        // Update profile details
+        if (name) partner.name = name.trim();
+        if (vehicleType) partner.vehicleType = vehicleType;
+        if (vehicleNumber) partner.vehicleNumber = vehicleNumber.trim();
+        if (address) partner.address = address.trim();
+        if (city) partner.city = city.trim();
+        if (state) partner.state = state.trim();
+        if (pincode) partner.pincode = pincode.trim();
+        if (location && location.coordinates && location.coordinates.length === 2 && location.coordinates[0] !== 0) {
+            partner.location = { type: 'Point', coordinates: location.coordinates };
+        }
+        if (email) partner.email = email.trim();
+        if (dob) partner.dob = dob;
+        if (gender) partner.gender = gender;
+        if (aadhaarNumber) partner.aadhaarNumber = aadhaarNumber.trim();
+        if (panNumber) partner.panNumber = panNumber.trim().toUpperCase();
+        if (bankAccountName) partner.bankAccountName = bankAccountName.trim();
+        if (bankAccountNumber) partner.bankAccountNumber = bankAccountNumber.trim();
+        if (bankIfsc) partner.bankIfsc = bankIfsc.trim().toUpperCase();
+        if (bankName) partner.bankName = bankName.trim();
+
+        partner.isProfileComplete = true;
+        partner.isVerified = true;
+        await partner.save();
+
+        const token = jwt.sign({ id: partner._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+
+        res.status(201).json({ success: true, message: 'Registered successfully', data: { token, partner: { _id: partner._id, name: partner.name, phone: partner.phone, vehicleType: partner.vehicleType, vehicleNumber: partner.vehicleNumber, isOnline: partner.isOnline, city: partner.city, pincode: partner.pincode, isProfileComplete: partner.isProfileComplete, status: partner.status, isActive: partner.isActive } } });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 
 // POST /api/delivery/login
 router.post('/login', async (req, res) => {

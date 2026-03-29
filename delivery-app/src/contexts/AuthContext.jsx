@@ -42,24 +42,53 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // ── OTP-based auth ────────────────────────────────────────────────────────
+
+    const sendOTP = async (phone) => {
+        try {
+            const res = await api.post('/delivery/send-otp', { phone });
+            return res.data;
+        } catch (err) {
+            throw err.response?.data || err;
+        }
+    };
+
+    const verifyOTP = async (phone, otp) => {
+        try {
+            const res = await api.post('/delivery/verify-otp', { phone, otp });
+            if (res.data.success) {
+                const { token, partner: p } = res.data.data;
+                localStorage.setItem('deliveryToken', token);
+                localStorage.setItem('deliveryPartner', JSON.stringify(p));
+                setPartner(p);
+                setTimeout(registerPush, 500);
+            }
+            return res.data;
+        } catch (err) {
+            throw err.response?.data || err;
+        }
+    };
+
+    // ── Password-based auth (legacy / kept for admin use) ────────────────────
+
     const login = async (phone, password) => {
         const res = await api.post('/delivery/login', { phone, password });
-        const { token, partner } = res.data.data;
+        const { token, partner: p } = res.data.data;
         localStorage.setItem('deliveryToken', token);
-        localStorage.setItem('deliveryPartner', JSON.stringify(partner));
-        setPartner(partner);
+        localStorage.setItem('deliveryPartner', JSON.stringify(p));
+        setPartner(p);
         setTimeout(registerPush, 500);
-        return partner;
+        return p;
     };
 
     const register = async (data) => {
         const res = await api.post('/delivery/register', data);
-        const { token, partner } = res.data.data;
+        const { token, partner: p } = res.data.data;
         localStorage.setItem('deliveryToken', token);
-        localStorage.setItem('deliveryPartner', JSON.stringify(partner));
-        setPartner(partner);
+        localStorage.setItem('deliveryPartner', JSON.stringify(p));
+        setPartner(p);
         setTimeout(registerPush, 500);
-        return partner;
+        return p;
     };
 
     const logout = () => {
@@ -75,7 +104,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ partner, loading, login, register, logout, updatePartner }}>
+        <AuthContext.Provider value={{ partner, loading, sendOTP, verifyOTP, login, register, logout, updatePartner }}>
             {children}
         </AuthContext.Provider>
     );
