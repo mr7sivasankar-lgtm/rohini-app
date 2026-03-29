@@ -698,6 +698,43 @@ router.put('/seller/:id/item-received', sellerProtect, async (req, res) => {
         item.returnCompletedAt = now;
         order.statusHistory.push({ status: 'Return Completed', timestamp: now, note: 'Item received back by seller.' });
 
+        // ── Earnings Reversal ──────────────────────────────────────────────────
+        // Calculate this item's proportional share of seller earnings
+        const itemGrossValue = (item.sellingPrice || 0) * (item.quantity || 1);
+        const totalSellingPrice = order.sellingPriceTotal || order.totalAmount || 1;
+        // Proportional seller earning for this item
+        const earningDeduction = Math.round((itemGrossValue / totalSellingPrice) * (order.sellerEarning || 0));
+
+        // Reduce the recorded seller earning on the order
+        order.sellerEarning = Math.max(0, (order.sellerEarning || 0) - earningDeduction);
+
+        // If wallet was already settled, debit from seller's wallet balance
+        if (order.walletSettlementStatus === 'Settled' && earningDeduction > 0) {
+            try {
+                const SellerObj = (await import('../models/Seller.js')).default;
+                const seller = await SellerObj.findById(order.seller);
+                if (seller) {
+                    seller.walletBalance = Math.max(0, seller.walletBalance - earningDeduction);
+                    await seller.save();
+
+                    await WalletTransaction.create({
+                        userType: 'Seller',
+                        userId: seller._id,
+                        amount: -earningDeduction,
+                        type: 'Refund',
+                        status: 'Success',
+                        orderId: order._id,
+                        description: `Return deduction: "${item.name}" returned in Order ${order.orderId} (−₹${earningDeduction})`,
+                        balanceAfter: seller.walletBalance
+                    });
+                    console.log(`[Return] Seller wallet debited ₹${earningDeduction} for returned item "${item.name}"`);
+                }
+            } catch (walletErr) {
+                console.warn('[Return] Wallet deduction failed:', walletErr.message);
+            }
+        }
+        // ── End Earnings Reversal ──────────────────────────────────────────────
+
         // Restore stock
         try {
             const product = await Product.findById(item.product);
@@ -728,8 +765,8 @@ router.put('/seller/:id/item-received', sellerProtect, async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: 'Item marked as received. Return Completed.',
-            data: order
+            message: `Item marked as received. ₹${earningDeduction} deducted from your earnings.`,
+            data: { order, earningDeduction }
         });
     } catch (error) {
         console.error('Seller item-received error:', error);

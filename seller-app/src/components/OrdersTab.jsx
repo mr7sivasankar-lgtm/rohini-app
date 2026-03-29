@@ -91,18 +91,20 @@ const OrdersTab = () => {
 
     // Item-level: seller marks returned item as physically received
     const handleItemReceived = async (orderId, itemId, itemName) => {
-        if (!window.confirm(`Confirm you have physically received "${itemName}" back at your shop?`)) return;
+        if (!window.confirm(`Confirm you have physically received "${itemName}" back at your shop?\n\nEarnings for this item will be reversed from your wallet.`)) return;
         setProcessing(orderId + itemId + 'recv');
         try {
-            await api.put(`/orders/seller/${orderId}/item-received`, { itemId });
+            const res = await api.put(`/orders/seller/${orderId}/item-received`, { itemId });
             await fetchOrders();
-            alert('✅ Item marked as received! Return Completed. Stock has been restored.');
+            const deduction = res.data?.data?.earningDeduction || 0;
+            alert(`✅ Item marked as received! Return Completed.\n\n📦 Stock restored.\n💸 ₹${deduction} deducted from your earnings.`);
         } catch (e) {
             alert(e.response?.data?.message || 'Error marking item as received');
         } finally {
             setProcessing(null);
         }
     };
+
 
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px' }}>
@@ -219,16 +221,32 @@ const OrdersTab = () => {
                         const phone = order.shippingAddress?.phone || order.contactInfo?.phone || order.user?.phone;
                         const returnItems = order.items.filter(i => i.status?.includes('Return'));
 
+                        // ── Compute return deductions for earnings panel ──
+                        const activeReturnItems = order.items.filter(i =>
+                            ['Return Requested', 'Return Approved', 'Return Completed'].includes(i.status)
+                        );
+                        const returnedGrossValue = activeReturnItems.reduce(
+                            (sum, i) => sum + ((i.sellingPrice || 0) * (i.quantity || 1)), 0
+                        );
+                        const sellingPriceTotal = order.sellingPriceTotal || order.totalAmount || 1;
+                        // Proportional earning deduction for returned items
+                        const baseEarning = order.sellerEarning || (order.sellingPriceTotal || order.totalAmount || 0);
+                        const returnEarningDeduction = activeReturnItems.length > 0
+                            ? Math.round((returnedGrossValue / sellingPriceTotal) * baseEarning)
+                            : 0;
+                        const adjustedEarning = Math.max(0, baseEarning - returnEarningDeduction);
+                        const hasActiveReturns = activeReturnItems.length > 0;
+
                         return (
                             <div key={order._id} className="order-card" style={{
                                 background: 'white',
                                 borderRadius: '14px',
-                                border: '1px solid #e2e8f0',
+                                border: hasActiveReturns ? '1px solid #fca5a5' : '1px solid #e2e8f0',
                                 overflow: 'hidden',
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                                boxShadow: hasActiveReturns ? '0 1px 8px rgba(239,68,68,0.1)' : '0 1px 4px rgba(0,0,0,0.04)',
                             }}>
                                 {/* Top accent stripe + header */}
-                                <div style={{ height: '3px', background: color }} />
+                                <div style={{ height: '3px', background: hasActiveReturns ? '#ef4444' : color }} />
 
                                 <div style={{ padding: '14px 16px' }}>
                                     {/* Order meta row */}
@@ -248,6 +266,17 @@ const OrdersTab = () => {
                                             }}>
                                                 {order.status}
                                             </span>
+                                            {/* Returns badge — visible in Done tab */}
+                                            {hasActiveReturns && (
+                                                <span style={{
+                                                    padding: '3px 8px', borderRadius: '20px',
+                                                    fontSize: '11px', fontWeight: 700,
+                                                    background: '#fee2e2', color: '#dc2626',
+                                                    border: '1px solid #fca5a5'
+                                                }}>
+                                                    ↩️ {activeReturnItems.length} Return{activeReturnItems.length > 1 ? 's' : ''}
+                                                </span>
+                                            )}
                                             <span style={{ fontSize: '11px', color: '#94a3b8' }}>
                                                 {new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
                                             </span>
@@ -257,7 +286,8 @@ const OrdersTab = () => {
                                         <div style={{
                                             display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
                                             gap: '2px', minWidth: '130px',
-                                            background: '#f0fdf4', border: '1px solid #bbf7d0',
+                                            background: hasActiveReturns ? '#fff5f5' : '#f0fdf4',
+                                            border: `1px solid ${hasActiveReturns ? '#fecaca' : '#bbf7d0'}`,
                                             borderRadius: '10px', padding: '8px 10px'
                                         }}>
                                             {/* Selling Price */}
@@ -276,24 +306,35 @@ const OrdersTab = () => {
                                                     </span>
                                                 </div>
                                             )}
+                                            {/* Return deduction — shown when items are returned */}
+                                            {returnEarningDeduction > 0 && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: '8px' }}>
+                                                    <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: 600 }}>↩️ Returns</span>
+                                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#dc2626' }}>
+                                                        − ₹{returnEarningDeduction.toFixed(0)}
+                                                    </span>
+                                                </div>
+                                            )}
                                             {/* Divider */}
-                                            <div style={{ width: '100%', height: '1px', background: '#86efac', margin: '2px 0' }} />
-                                            {/* Net Earnings — highlighted */}
+                                            <div style={{ width: '100%', height: '1px', background: hasActiveReturns ? '#fecaca' : '#86efac', margin: '2px 0' }} />
+                                            {/* Net Earnings — adjusted */}
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '8px' }}>
-                                                <span style={{ fontSize: '10px', color: '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                                                <span style={{ fontSize: '10px', color: hasActiveReturns ? '#991b1b' : '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
                                                     You Receive
                                                 </span>
-                                                <span style={{ fontSize: '14px', fontWeight: 900, color: '#15803d' }}>
-                                                    ₹{(order.sellerEarning || (order.sellingPriceTotal || order.totalAmount || 0)).toFixed(0)}
+                                                <span style={{ fontSize: '14px', fontWeight: 900, color: hasActiveReturns ? '#dc2626' : '#15803d' }}>
+                                                    ₹{adjustedEarning.toFixed(0)}
                                                 </span>
                                             </div>
                                             {/* Status label */}
                                             <div style={{ fontSize: '9px', color: '#64748b', alignSelf: 'flex-end', marginTop: '1px' }}>
-                                                {order.walletSettlementStatus === 'Settled'
-                                                    ? '✅ Settled to wallet'
-                                                    : order.status === 'Delivered'
-                                                        ? '🕐 Pending settlement'
-                                                        : '⏳ Est. after delivery'}
+                                                {hasActiveReturns && returnEarningDeduction > 0
+                                                    ? '⚠️ Adj. for returns'
+                                                    : order.walletSettlementStatus === 'Settled'
+                                                        ? '✅ Settled to wallet'
+                                                        : order.status === 'Delivered'
+                                                            ? '🕐 Pending settlement'
+                                                            : '⏳ Est. after delivery'}
                                             </div>
                                         </div>
                                     </div>
@@ -306,6 +347,7 @@ const OrdersTab = () => {
                                         borderRadius: '8px', marginBottom: '12px',
                                         fontSize: '12px', color: '#475569'
                                     }}>
+
                                         <span>👤 {maskName(customer)}</span>
                                         <span>📞 {maskPhone(phone) || 'N/A'}</span>
                                         <span style={{ flex: 1, minWidth: '120px' }}>
