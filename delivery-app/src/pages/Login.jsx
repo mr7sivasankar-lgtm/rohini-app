@@ -337,7 +337,14 @@ export default function Login() {
                                 </select>
                             </div>
                         </div>
-                        <button type="submit" className="btn-submit">Continue →</button>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button type="button"
+                                onClick={() => { setStep('otp'); setOtp(''); setError(''); }}
+                                style={{ flex: 1, padding: 12, background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>
+                                ← Back
+                            </button>
+                            <button type="submit" className="btn-submit" style={{ flex: 2 }}>Continue →</button>
+                        </div>
                     </form>
                 )}
 

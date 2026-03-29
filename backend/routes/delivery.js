@@ -90,12 +90,22 @@ router.post('/verify-otp', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid OTP' });
         }
 
-        const isNewPartner = !partner.isProfileComplete;
+        // isNewPartner = true only if they haven't completed their profile.
+        // Old partners (registered via password) won't have isProfileComplete set,
+        // but they DO have a real name and vehicleNumber — so treat them as existing.
+        const hasRealProfile = partner.name && partner.name !== 'Delivery Partner' && partner.vehicleNumber;
+        const isNewPartner = !partner.isProfileComplete && !hasRealProfile;
+
+        // Auto-update isProfileComplete for legacy partners so future logins are instant
+        if (hasRealProfile && !partner.isProfileComplete) {
+            partner.isProfileComplete = true;
+        }
 
         partner.isVerified = true;
         partner.otp = undefined;
         partner.otpExpiry = undefined;
         await partner.save();
+
 
         const token = jwt.sign({ id: partner._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
