@@ -340,7 +340,7 @@ router.get('/orders', protectDelivery, async (req, res) => {
     try {
         const orders = await Order.find({
             deliveryPartner: req.partner._id,
-            deliveryStatus: { $in: ['Assigned', 'Picked Up', 'Out for Delivery', 'Collected'] }
+            deliveryStatus: { $in: ['Assigned', 'Picked Up', 'Out for Delivery'] }
         })
         .populate('user', 'name phone')
         .sort({ createdAt: -1 });

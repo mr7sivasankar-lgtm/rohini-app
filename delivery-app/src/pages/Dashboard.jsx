@@ -245,31 +245,82 @@ export default function Dashboard() {
         return () => { googleMapRef.current = null; dpMarkerRef.current = null; setMapReady(false); };
     }, []);
 
-    // ── Update scooter marker when GPS changes ──
+    // ── Radar pulse overlay when GPS changes ──
     useEffect(() => {
         const map = googleMapRef.current;
         if (!mapReady || !map || !dpPosition) return;
         const { lat, lng } = dpPosition;
 
-        const scooterIcon = {
-            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
-                `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 42 42"><text y="38" font-size="36">🛵</text></svg>`
-            ),
-            scaledSize: new window.google.maps.Size(42, 42),
-            anchor: new window.google.maps.Point(21, 21),
-        };
+        // Remove old marker if it exists (switch to overlay)
+        if (dpMarkerRef.current && dpMarkerRef.current.setMap) {
+            dpMarkerRef.current.setMap(null);
+            dpMarkerRef.current = null;
+        }
+
+        // Build a radar pulse OverlayView
+        class RadarOverlay extends window.google.maps.OverlayView {
+            constructor(position) {
+                super();
+                this._pos = position;
+                this._div = null;
+            }
+            onAdd() {
+                const div = document.createElement('div');
+                div.style.cssText = 'position:absolute;width:0;height:0;';
+                div.innerHTML = `
+                    <style>
+                        @keyframes radarPulse {
+                            0%   { transform:translate(-50%,-50%) scale(0.3); opacity:0.9; }
+                            100% { transform:translate(-50%,-50%) scale(3.5); opacity:0; }
+                        }
+                        .radar-ring { position:absolute; border-radius:50%;
+                            width:40px; height:40px;
+                            border:2px solid #22c55e;
+                            top:0; left:0;
+                            transform:translate(-50%,-50%) scale(0.3);
+                            animation: radarPulse 1.8s ease-out infinite; }
+                        .radar-ring:nth-child(2) { animation-delay:0.6s; }
+                        .radar-ring:nth-child(3) { animation-delay:1.2s; }
+                        .radar-dot { position:absolute; width:14px; height:14px;
+                            background:#16a34a; border-radius:50%;
+                            top:0; left:0; transform:translate(-50%,-50%);
+                            border:2.5px solid white;
+                            box-shadow:0 0 0 2px #22c55e, 0 2px 8px rgba(22,163,74,0.5); }
+                    </style>
+                    <div class='radar-ring'></div>
+                    <div class='radar-ring'></div>
+                    <div class='radar-ring'></div>
+                    <div class='radar-dot'></div>
+                `;
+                this._div = div;
+                this.getPanes().overlayMouseTarget.appendChild(div);
+            }
+            draw() {
+                const proj = this.getProjection();
+                if (!proj) return;
+                const point = proj.fromLatLngToDivPixel(this._pos);
+                if (point && this._div) {
+                    this._div.style.left = point.x + 'px';
+                    this._div.style.top  = point.y + 'px';
+                }
+            }
+            onRemove() {
+                if (this._div) { this._div.parentNode?.removeChild(this._div); this._div = null; }
+            }
+            updatePosition(newPos) {
+                this._pos = newPos;
+                this.draw();
+            }
+        }
 
         if (!dpMarkerRef.current) {
-            dpMarkerRef.current = new window.google.maps.Marker({
-                position: { lat, lng },
-                map,
-                icon: scooterIcon,
-                title: 'Your Location',
-            });
+            const overlay = new RadarOverlay(new window.google.maps.LatLng(lat, lng));
+            overlay.setMap(map);
+            dpMarkerRef.current = overlay;
             map.setCenter({ lat, lng });
             map.setZoom(15);
         } else {
-            dpMarkerRef.current.setPosition({ lat, lng });
+            dpMarkerRef.current.updatePosition(new window.google.maps.LatLng(lat, lng));
         }
     }, [mapReady, dpPosition]);
 
