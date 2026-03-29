@@ -1205,7 +1205,12 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
             if (order.deliveryPartner) {
                 const partnerToCredit = await DeliveryPartner.findById(order.deliveryPartner);
                 if (partnerToCredit) {
-                    partnerToCredit.walletBalance += (order.deliveryEarning || 0);
+                    // Use deliveryEarning; fall back to deliveryFee for older orders where deliveryEarning may be 0
+                    const dpEarning = order.deliveryEarning > 0
+                        ? order.deliveryEarning
+                        : (order.deliveryFee || 20);
+
+                    partnerToCredit.walletBalance += dpEarning;
                     partnerToCredit.activeOrdersCount = Math.max(0, partnerToCredit.activeOrdersCount - 1);
                     partnerToCredit.totalDeliveries += 1;
                     await partnerToCredit.save();
@@ -1213,13 +1218,18 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
                     await WalletTransaction.create({
                         userType: 'DeliveryPartner',
                         userId: partnerToCredit._id,
-                        amount: (order.deliveryEarning || 0),
+                        amount: dpEarning,
                         type: 'Delivery Earning',
                         status: 'Success',
                         orderId: order._id,
-                        description: `Delivery fee credited for Order ${order.orderId}`,
+                        description: `Delivery fee ₹${dpEarning} credited for Order ${order.orderId}`,
                         balanceAfter: partnerToCredit.walletBalance
                     });
+
+                    // Sync deliveryEarning on order if it was missing
+                    if (!order.deliveryEarning || order.deliveryEarning !== dpEarning) {
+                        order.deliveryEarning = dpEarning;
+                    }
                 }
             }
 

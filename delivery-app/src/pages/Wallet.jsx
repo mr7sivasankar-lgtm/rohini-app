@@ -50,6 +50,19 @@ const Wallet = () => {
         }
     };
 
+    // Determine if a transaction is a credit (earning) or debit (withdrawal/deduction)
+    const isCredit = (txn) => {
+        const creditTypes = ['Delivery Earning', 'Order Earning'];
+        return creditTypes.includes(txn.type) || txn.amount > 0;
+    };
+
+    // Status color: DB stores 'Success', 'Pending', 'Failed'
+    const statusColor = (status) => {
+        if (status === 'Success') return '#166534';
+        if (status === 'Pending') return '#b45309';
+        return '#991b1b';
+    };
+
     if (loading) return <div style={{ padding: 20 }}>Loading wallet data...</div>;
 
     return (
@@ -78,23 +91,34 @@ const Wallet = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {transactions.map(txn => (
                         <div key={txn._id} style={{ background: 'white', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
+                            <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
                                 <div style={{ fontSize: 14, color: '#1e293b', fontWeight: 600, marginBottom: 4 }}>
                                     {txn.description}
                                 </div>
-                                <div style={{ fontSize: 12, color: '#64748b', display: 'flex', gap: 8 }}>
-                                    <span>{new Date(txn.createdAt).toLocaleDateString()}</span>
+                                <div style={{ fontSize: 12, color: '#64748b', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <span>{new Date(txn.createdAt).toLocaleDateString('en-IN')}</span>
                                     <span style={{ 
-                                        color: txn.status === 'COMPLETED' ? '#166534' : txn.status === 'PENDING' ? '#b45309' : '#991b1b',
+                                        color: statusColor(txn.status),
                                         fontSize: 11, fontWeight: 700 
                                     }}>
                                         • {txn.status}
                                     </span>
+                                    <span style={{
+                                        background: isCredit(txn) ? '#dcfce7' : '#fee2e2',
+                                        color: isCredit(txn) ? '#15803d' : '#b91c1c',
+                                        fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4
+                                    }}>
+                                        {txn.type}
+                                    </span>
                                 </div>
-                                {txn.orderId && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Order: {txn.orderId.substring(0,8)}...</div>}
+                                {txn.orderId && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Order: {txn.orderId.toString().substring(0,8)}...</div>}
                             </div>
-                            <div style={{ fontSize: 16, fontWeight: 800, color: txn.type === 'CREDIT' ? '#10b981' : '#dc2626' }}>
-                                {txn.type === 'CREDIT' ? '+' : '-'}₹{txn.amount.toFixed(2)}
+                            <div style={{ 
+                                fontSize: 17, fontWeight: 800, 
+                                color: isCredit(txn) ? '#10b981' : '#dc2626',
+                                whiteSpace: 'nowrap'
+                            }}>
+                                {isCredit(txn) ? '+' : '-'}₹{Math.abs(txn.amount).toFixed(2)}
                             </div>
                         </div>
                     ))}
