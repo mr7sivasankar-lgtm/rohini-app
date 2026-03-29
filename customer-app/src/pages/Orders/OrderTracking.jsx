@@ -399,7 +399,29 @@ const OrderTracking = () => {
 
     // ─── Timeline steps ───
     const statusSteps = ['Placed', 'Accepted', 'Packed', 'Picked Up', 'Out for Delivery', 'Delivered'];
-    const currentStepIndex = statusSteps.indexOf(order?.status);
+
+    // Map non-standard statuses to their timeline equivalent
+    const STATUS_ALIAS = {
+        'Assigned': 'Accepted',  // DP assigned = at least Accepted
+        'Picked Up': 'Picked Up',
+    };
+    const effectiveStatus = STATUS_ALIAS[order?.status] || order?.status;
+
+    // Use the highest step found in statusHistory (most reliable), fall back to order.status
+    const currentStepIndex = (() => {
+        // Check statusHistory first — find highest completed step
+        if (order?.statusHistory?.length > 0) {
+            let highest = -1;
+            statusSteps.forEach((step, idx) => {
+                if (order.statusHistory.find(h => h.status === step)) {
+                    highest = idx;
+                }
+            });
+            if (highest >= 0) return highest;
+        }
+        // Fallback: look up effective status in steps
+        return statusSteps.indexOf(effectiveStatus);
+    })();
 
     // ─── Loading / empty ───
     if (loading) {

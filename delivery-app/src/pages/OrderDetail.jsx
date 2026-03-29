@@ -101,22 +101,46 @@ export default function OrderDetail() {
         : '';
 
     const navigateToPickup = () => {
-        const sel = order.sellerLocation;
-        if (sel && sel.lat && sel.lng) {
-            window.open(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${sel.lat},${sel.lng}`);
-        } else if (order.sellerShopAddress) {
-            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.sellerShopAddress)}`);
+        if (isReturnPickup) {
+            // Return pickup: go to CUSTOMER address to pick up
+            const { latitude, longitude, fullAddress, city } = order.shippingAddress || {};
+            if (latitude && longitude) {
+                window.open(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${latitude},${longitude}`);
+            } else {
+                window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${fullAddress}, ${city}`)}`);
+            }
         } else {
-            alert('Seller location not available.');
+            // Normal: go to seller/shop
+            const sel = order.sellerLocation;
+            if (sel && sel.lat && sel.lng) {
+                window.open(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${sel.lat},${sel.lng}`);
+            } else if (order.sellerShopAddress) {
+                window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.sellerShopAddress)}`);
+            } else {
+                alert('Seller location not available.');
+            }
         }
     };
 
     const navigateToCustomer = () => {
-        const { latitude, longitude, fullAddress, city } = order.shippingAddress || {};
-        if (latitude && longitude) {
-            window.open(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${latitude},${longitude}`);
+        if (isReturnPickup) {
+            // Return pickup: deliver TO the shop
+            const sel = order.sellerLocation;
+            if (sel && sel.lat && sel.lng) {
+                window.open(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${sel.lat},${sel.lng}`);
+            } else if (order.sellerShopAddress) {
+                window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.sellerShopAddress)}`);
+            } else {
+                alert('Shop location not available.');
+            }
         } else {
-            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${fullAddress}, ${city}`)}`);
+            // Normal: deliver to customer address
+            const { latitude, longitude, fullAddress, city } = order.shippingAddress || {};
+            if (latitude && longitude) {
+                window.open(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${latitude},${longitude}`);
+            } else {
+                window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${fullAddress}, ${city}`)}`);
+            }
         }
     };
 
@@ -172,46 +196,81 @@ export default function OrderDetail() {
                 </div>
             )}
 
-            {/* Pickup Location */}
+            {/* Pickup Location — for Return: pickup FROM customer */}
             <div className="detail-card location-card">
-                <h3>🏪 Pickup From</h3>
-                <div className="detail-row">
-                    <span>Shop</span>
-                    <strong>{order.sellerShopName || order.items?.[0]?.sellerShopName || 'Seller Shop'}</strong>
-                </div>
-                {order.sellerShopAddress && (
-                    <div className="detail-row">
-                        <span>Address</span>
-                        <strong>📍 {order.sellerShopAddress}</strong>
-                    </div>
+                <h3>{isReturnPickup ? '👤 Pickup From (Customer)' : '🏪 Pickup From'}</h3>
+                {isReturnPickup ? (
+                    <>
+                        <div className="detail-row"><span>Name</span><strong>{order.shippingAddress?.fullName || order.user?.name || 'Customer'}</strong></div>
+                        <div className="detail-row"><span>Phone</span><strong>{order.contactInfo?.phone || order.user?.phone}</strong></div>
+                        <div className="detail-row">
+                            <span>Address</span>
+                            <strong>📍 {order.shippingAddress?.fullAddress}, {order.shippingAddress?.city}, {order.shippingAddress?.pincode}</strong>
+                        </div>
+                        <div className="nav-buttons-row">
+                            <button className="action-btn call-btn" onClick={callCustomer}>
+                                <span>📞</span> Call Customer
+                            </button>
+                            <button className="map-nav-btn pickup-nav-btn" onClick={navigateToPickup}>
+                                🗺️ Navigate to Customer
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="detail-row">
+                            <span>Shop</span>
+                            <strong>{order.sellerShopName || order.items?.[0]?.sellerShopName || 'Seller Shop'}</strong>
+                        </div>
+                        {order.sellerShopAddress && (
+                            <div className="detail-row">
+                                <span>Address</span>
+                                <strong>📍 {order.sellerShopAddress}</strong>
+                            </div>
+                        )}
+                        <button className="map-nav-btn pickup-nav-btn" onClick={navigateToPickup}>
+                            🗺️ Navigate to Pickup
+                        </button>
+                    </>
                 )}
-                <button className="map-nav-btn pickup-nav-btn" onClick={navigateToPickup}>
-                    🗺️ Navigate to Pickup
-                </button>
             </div>
 
-            {/* Customer Info */}
+            {/* Deliver To — for Return: deliver TO seller shop */}
             <div className="detail-card location-card">
-                <h3>📦 Deliver To</h3>
-                <div className="detail-row"><span>Name</span><strong>{order.shippingAddress?.fullName || order.user?.name || 'Customer'}</strong></div>
-                <div className="detail-row"><span>Phone</span><strong>{order.contactInfo?.phone || order.user?.phone}</strong></div>
-                <div className="detail-row">
-                    <span>Address</span>
-                    <strong>📍 {order.shippingAddress?.fullAddress}, {order.shippingAddress?.city}, {order.shippingAddress?.pincode}</strong>
-                </div>
-                <div className="nav-buttons-row">
-                    <button className="action-btn call-btn" onClick={callCustomer}>
-                        <span>📞</span> Call Customer
-                    </button>
-                    <button className="map-nav-btn customer-nav-btn" onClick={navigateToCustomer}>
-                        🗺️ Navigate to Customer
-                    </button>
-                </div>
+                <h3>{isReturnPickup ? '🏪 Return To (Shop)' : '📦 Deliver To'}</h3>
+                {isReturnPickup ? (
+                    <>
+                        <div className="detail-row"><span>Shop</span><strong>{order.sellerShopName || 'Seller Shop'}</strong></div>
+                        {order.sellerShopAddress && (
+                            <div className="detail-row"><span>Address</span><strong>📍 {order.sellerShopAddress}</strong></div>
+                        )}
+                        <button className="map-nav-btn customer-nav-btn" onClick={navigateToCustomer}>
+                            🗺️ Navigate to Shop
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <div className="detail-row"><span>Name</span><strong>{order.shippingAddress?.fullName || order.user?.name || 'Customer'}</strong></div>
+                        <div className="detail-row"><span>Phone</span><strong>{order.contactInfo?.phone || order.user?.phone}</strong></div>
+                        <div className="detail-row">
+                            <span>Address</span>
+                            <strong>📍 {order.shippingAddress?.fullAddress}, {order.shippingAddress?.city}, {order.shippingAddress?.pincode}</strong>
+                        </div>
+                        <div className="nav-buttons-row">
+                            <button className="action-btn call-btn" onClick={callCustomer}>
+                                <span>📞</span> Call Customer
+                            </button>
+                            <button className="map-nav-btn customer-nav-btn" onClick={navigateToCustomer}>
+                                🗺️ Navigate to Customer
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Items */}
             <div className="detail-card">
-                <h3>🛍️ Items</h3>
+                <h3>🛒 Items</h3>
                 {order.items?.map((item, idx) => (
                     <div key={idx} className="item-row">
                         <div className="item-img-wrap">
@@ -228,7 +287,10 @@ export default function OrderDetail() {
                         <div className="item-price">₹{item.sellingPrice || item.price}</div>
                     </div>
                 ))}
-                <div className="total-row"><span>Total Order Value</span><strong>₹{order.total?.toFixed(2)}</strong></div>
+                <div className="total-row">
+                    <span>Total Order Value</span>
+                    <strong>₹{(order.totalAmount || order.sellingPriceTotal || order.total || 0).toFixed(2)}</strong>
+                </div>
             </div>
 
             {/* Status Update Button */}

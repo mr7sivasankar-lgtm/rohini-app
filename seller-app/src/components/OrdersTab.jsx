@@ -391,6 +391,16 @@ const OrdersTab = () => {
                                                             {item.name}
                                                         </div>
 
+                                                        {/* Product Code */}
+                                                        {item.productCode && (
+                                                            <div style={{
+                                                                fontSize: '10px', color: '#64748b', fontFamily: 'monospace',
+                                                                fontWeight: 600, marginTop: '2px', letterSpacing: '0.3px'
+                                                            }}>
+                                                                # {item.productCode}
+                                                            </div>
+                                                        )}
+
                                                         <div className="item-attrs" style={{
                                                             display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap'
                                                         }}>
