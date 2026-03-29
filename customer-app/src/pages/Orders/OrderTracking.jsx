@@ -12,7 +12,7 @@ function loadGM(cb) {
     _gmapsLoading = true;
     window.__gmOTReady = () => { _gmapsLoaded = true; _gmapsLoading = false; _gmapsCbs.forEach(f => f()); _gmapsCbs = []; };
     const s = document.createElement('script');
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAP_KEY}&callback=__gmOTReady`;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAP_KEY}&callback=__gmOTReady&libraries=directions`;
     s.async = true; s.defer = true;
     document.head.appendChild(s);
 }
@@ -39,6 +39,7 @@ const OrderTracking = () => {
     const googleMapRef = useRef(null);
     const dpMarkerRef = useRef(null);
     const markersAddedRef = useRef(false);
+    const routePolylineRef = useRef(null);
 
     // ─── Return window countdown ───
     const calculateTimeLeft = (deliveredTimestamp) => {
@@ -90,11 +91,10 @@ const OrderTracking = () => {
     }, [order?.status, order?.deliveryPartner]);
 
     // ─── Derived values ───
-    const ACTIVE = ['Assigned', 'Picked Up', 'Out for Delivery'];
+    // Show map as soon as a delivery partner is ASSIGNED (deliveryPartner exists + has location)
     const showMap = !!(
         order?.deliveryPartner &&
-        order.deliveryPartner.location?.coordinates?.length >= 2 &&
-        ACTIVE.includes(order?.status)
+        order.deliveryPartner.location?.coordinates?.length >= 2
     );
     const dpLat = showMap ? order.deliveryPartner.location.coordinates[1] : null;
     const dpLng = showMap ? order.deliveryPartner.location.coordinates[0] : null;
@@ -113,6 +113,10 @@ const OrderTracking = () => {
                 streetViewControl: false,
                 fullscreenControl: false,
                 gestureHandling: 'greedy',
+                styles: [
+                    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#f0f0f0' }] },
+                    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#e0e0e0' }] },
+                ]
             });
             googleMapRef.current = map;
             setMapReady(true);
@@ -122,30 +126,86 @@ const OrderTracking = () => {
             googleMapRef.current = null;
             dpMarkerRef.current = null;
             markersAddedRef.current = false;
+            routePolylineRef.current = null;
             setMapReady(false);
         };
     }, [showMap]);
 
-    // ─── Google Maps: Add / update markers ───
+    // Delivery person SVG marker (scooter + rider with bag, like reference image)
+    const makeDeliveryMarkerIcon = (size = 56) => ({
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size * 1.1}" viewBox="0 0 56 62">
+  <!-- Shadow -->
+  <ellipse cx="28" cy="59" rx="14" ry="3" fill="rgba(0,0,0,0.15)"/>
+  <!-- Scooter body -->
+  <rect x="10" y="36" width="36" height="12" rx="6" fill="#e53935"/>
+  <!-- Front fender -->
+  <path d="M40 36 Q50 36 50 44 Q50 48 44 48 L38 48 L38 36 Z" fill="#c62828"/>
+  <!-- Rear body -->
+  <path d="M10 36 Q6 36 6 44 Q6 48 12 48 L18 48 L18 36 Z" fill="#c62828"/>
+  <!-- Wheels -->
+  <circle cx="14" cy="49" r="6" fill="#333"/>
+  <circle cx="14" cy="49" r="3" fill="#888"/>
+  <circle cx="42" cy="49" r="6" fill="#333"/>
+  <circle cx="42" cy="49" r="3" fill="#888"/>
+  <!-- Delivery box/bag on rear -->
+  <rect x="10" y="24" width="16" height="14" rx="3" fill="#1565c0"/>
+  <rect x="12" y="26" width="12" height="3" rx="1" fill="#1976d2"/>
+  <text x="18" y="36" text-anchor="middle" font-size="7" fill="white" font-weight="bold">ROHINI</text>
+  <!-- Handlebar -->
+  <rect x="37" y="29" width="2" height="9" rx="1" fill="#555"/>
+  <rect x="33" y="29" width="8" height="2" rx="1" fill="#444"/>
+  <!-- Seat -->
+  <rect x="22" y="30" width="14" height="5" rx="3" fill="#880e0e"/>
+  <!-- Rider body -->
+  <ellipse cx="30" cy="22" rx="7" ry="9" fill="#1b5e20"/>
+  <!-- Rider head -->
+  <circle cx="30" cy="11" r="6" fill="#f9a825"/>
+  <!-- Helmet -->
+  <path d="M24 11 Q24 4 30 4 Q36 4 36 11 Q36 14 30 14 Q24 14 24 11Z" fill="#e53935"/>
+  <rect x="25" y="12" width="10" height="2" rx="1" fill="#ffcdd2"/>
+  <!-- Visor -->
+  <path d="M26 10 Q30 8 34 10" stroke="white" stroke-width="1.5" fill="none"/>
+  <!-- Arms -->
+  <line x1="30" y1="20" x2="37" y2="27" stroke="#1b5e20" stroke-width="3" stroke-linecap="round"/>
+</svg>`),
+        scaledSize: new window.google.maps.Size(size, Math.round(size * 1.1)),
+        anchor: new window.google.maps.Point(size / 2, Math.round(size * 1.0)),
+    });
+
+    const makeIcon = (emoji, size = 36) => ({
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><text y="${size * 0.85}" font-size="${size * 0.85}">${emoji}</text></svg>`
+        ),
+        scaledSize: new window.google.maps.Size(size, size),
+        anchor: new window.google.maps.Point(size / 2, size / 2),
+    });
+
+    // Home pin icon (green circle + house icon)
+    const makeHomePinIcon = () => ({
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="52" viewBox="0 0 40 52">
+  <circle cx="20" cy="20" r="20" fill="#1b5e20"/>
+  <path d="M20 7 L8 18 L12 18 L12 32 L17 32 L17 24 L23 24 L23 32 L28 32 L28 18 L32 18 Z" fill="white"/>
+  <path d="M20 45 L14 32 L26 32 Z" fill="#1b5e20"/>
+</svg>`),
+        scaledSize: new window.google.maps.Size(40, 52),
+        anchor: new window.google.maps.Point(20, 50),
+    });
+
+    // ─── Google Maps: Add / update markers + blue route ───
     useEffect(() => {
         const map = googleMapRef.current;
         if (!mapReady || !map || dpLat === null || dpLng === null) return;
-
-        const makeIcon = (emoji, size = 36) => ({
-            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
-                `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><text y="${size * 0.85}" font-size="${size * 0.85}">${emoji}</text></svg>`
-            ),
-            scaledSize: new window.google.maps.Size(size, size),
-            anchor: new window.google.maps.Point(size / 2, size / 2),
-        });
 
         if (!markersAddedRef.current) {
             // ── First load: place all markers ──
             dpMarkerRef.current = new window.google.maps.Marker({
                 position: { lat: dpLat, lng: dpLng },
                 map,
-                icon: makeIcon('🛵', 36),
+                icon: makeDeliveryMarkerIcon(56),
                 title: 'Delivery Partner',
+                zIndex: 10,
             });
 
             const shopC = order?.seller?.location?.coordinates;
@@ -158,12 +218,49 @@ const OrderTracking = () => {
                 });
             }
 
-            if (order?.shippingAddress?.latitude && order?.shippingAddress?.longitude) {
+            const destLat = order?.shippingAddress?.latitude;
+            const destLng = order?.shippingAddress?.longitude;
+            if (destLat && destLng) {
                 new window.google.maps.Marker({
-                    position: { lat: order.shippingAddress.latitude, lng: order.shippingAddress.longitude },
+                    position: { lat: destLat, lng: destLng },
                     map,
-                    icon: makeIcon('📍', 32),
+                    icon: makeHomePinIcon(),
                     title: 'Delivery Address',
+                    zIndex: 9,
+                });
+
+                // ── Draw blue route from DP to customer ──
+                const directionsService = new window.google.maps.DirectionsService();
+                directionsService.route({
+                    origin: { lat: dpLat, lng: dpLng },
+                    destination: { lat: destLat, lng: destLng },
+                    travelMode: window.google.maps.TravelMode.DRIVING,
+                }, (result, status) => {
+                    if (status === 'OK') {
+                        // Use raw polyline for better control
+                        const path = result.routes[0].overview_path;
+                        if (routePolylineRef.current) routePolylineRef.current.setMap(null);
+                        routePolylineRef.current = new window.google.maps.Polyline({
+                            path,
+                            geodesic: true,
+                            strokeColor: '#1565C0',
+                            strokeOpacity: 1,
+                            strokeWeight: 4,
+                            map,
+                        });
+                    } else {
+                        // Fallback: straight dashed line
+                        if (routePolylineRef.current) routePolylineRef.current.setMap(null);
+                        routePolylineRef.current = new window.google.maps.Polyline({
+                            path: [{ lat: dpLat, lng: dpLng }, { lat: destLat, lng: destLng }],
+                            geodesic: true,
+                            strokeColor: '#1565C0',
+                            strokeOpacity: 0.7,
+                            strokeWeight: 3,
+                            icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 }, offset: '0', repeat: '10px' }],
+                            map,
+                        });
+                    }
                 });
             }
 
@@ -172,13 +269,34 @@ const OrderTracking = () => {
             bounds.extend({ lat: dpLat, lng: dpLng });
             if (shopC?.length >= 2) bounds.extend({ lat: shopC[1], lng: shopC[0] });
             if (order?.shippingAddress?.latitude) bounds.extend({ lat: order.shippingAddress.latitude, lng: order.shippingAddress.longitude });
-            map.fitBounds(bounds, { top: 60, bottom: 60, left: 40, right: 40 });
+            map.fitBounds(bounds, { top: 80, bottom: 60, left: 40, right: 40 });
 
             markersAddedRef.current = true;
         } else {
-            // ── Subsequent polls: only move scooter ──
+            // ── Subsequent polls: move scooter + update route ──
             dpMarkerRef.current?.setPosition({ lat: dpLat, lng: dpLng });
-            map.panTo({ lat: dpLat, lng: dpLng });
+
+            // Re-draw route from updated DP position
+            const destLat = order?.shippingAddress?.latitude;
+            const destLng = order?.shippingAddress?.longitude;
+            if (destLat && destLng) {
+                const directionsService = new window.google.maps.DirectionsService();
+                directionsService.route({
+                    origin: { lat: dpLat, lng: dpLng },
+                    destination: { lat: destLat, lng: destLng },
+                    travelMode: window.google.maps.TravelMode.DRIVING,
+                }, (result, status) => {
+                    if (status === 'OK') {
+                        const path = result.routes[0].overview_path;
+                        if (routePolylineRef.current) routePolylineRef.current.setPath(path);
+                    } else if (routePolylineRef.current) {
+                        routePolylineRef.current.setPath([
+                            { lat: dpLat, lng: dpLng },
+                            { lat: destLat, lng: destLng }
+                        ]);
+                    }
+                });
+            }
         }
     }, [mapReady, dpLat, dpLng]);
 
@@ -310,15 +428,17 @@ const OrderTracking = () => {
             {/* ══ BODY ══ */}
             <div className="ot-body">
 
-                {/* Green ETA banner */}
+                {/* Green ETA / status banner */}
                 {showMap && (
                     <div className="ot-eta-banner">
                         <span className="ot-eta-icon">🛵</span>
                         <span className="ot-eta-text">
-                            Deliveryman arriving in&nbsp;
-                            <strong>
-                                {etaMins == null ? '...' : etaMins <= 1 ? 'less than a minute' : `${etaMins} mins`}
-                            </strong>
+                            {order?.deliveryStatus === 'Assigned'
+                                ? <><strong>{order.deliveryPartner?.name || 'Your delivery partner'}</strong>&nbsp;has accepted your order &amp; is heading to pick it up</>
+                                : order?.deliveryStatus === 'Picked Up'
+                                ? <>Order picked up! Arriving in&nbsp;<strong>{etaMins == null ? '...' : etaMins <= 1 ? 'less than a minute' : `${etaMins} mins`}</strong></>
+                                : <>Deliveryman arriving in&nbsp;<strong>{etaMins == null ? '...' : etaMins <= 1 ? 'less than a minute' : `${etaMins} mins`}</strong></>
+                            }
                         </span>
                     </div>
                 )}
