@@ -85,16 +85,18 @@ const OrderTracking = () => {
     // ─── Live polling ───
     useEffect(() => {
         if (!order?.deliveryPartner) return;
-        if (!['Assigned', 'Picked Up', 'Out for Delivery'].includes(order.status)) return;
+        if (!['Assigned', 'Picked Up', 'Out for Delivery'].includes(order?.deliveryStatus)) return;
         const interval = setInterval(fetchOrder, 10000);
         return () => clearInterval(interval);
-    }, [order?.status, order?.deliveryPartner]);
+    }, [order?.deliveryStatus, order?.deliveryPartner]);
 
     // ─── Derived values ───
-    // Show map as soon as a delivery partner is ASSIGNED (deliveryPartner exists + has location)
+    // Only show map while delivery is actively in progress (not for Delivered/Cancelled)
+    const ACTIVE_DELIVERY = ['Assigned', 'Picked Up', 'Out for Delivery'];
     const showMap = !!(
         order?.deliveryPartner &&
-        order.deliveryPartner.location?.coordinates?.length >= 2
+        order.deliveryPartner.location?.coordinates?.length >= 2 &&
+        ACTIVE_DELIVERY.includes(order?.deliveryStatus)
     );
     const dpLat = showMap ? order.deliveryPartner.location.coordinates[1] : null;
     const dpLng = showMap ? order.deliveryPartner.location.coordinates[0] : null;
@@ -131,46 +133,62 @@ const OrderTracking = () => {
         };
     }, [showMap]);
 
-    // Delivery person SVG marker (scooter + rider with bag, like reference image)
-    const makeDeliveryMarkerIcon = (size = 56) => ({
+    // Delivery person SVG marker — flat bold side-view scooter + rider (like reference)
+    const makeDeliveryMarkerIcon = (size = 72) => ({
         url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size * 1.1}" viewBox="0 0 56 62">
-  <!-- Shadow -->
-  <ellipse cx="28" cy="59" rx="14" ry="3" fill="rgba(0,0,0,0.15)"/>
-  <!-- Scooter body -->
-  <rect x="10" y="36" width="36" height="12" rx="6" fill="#e53935"/>
-  <!-- Front fender -->
-  <path d="M40 36 Q50 36 50 44 Q50 48 44 48 L38 48 L38 36 Z" fill="#c62828"/>
-  <!-- Rear body -->
-  <path d="M10 36 Q6 36 6 44 Q6 48 12 48 L18 48 L18 36 Z" fill="#c62828"/>
-  <!-- Wheels -->
-  <circle cx="14" cy="49" r="6" fill="#333"/>
-  <circle cx="14" cy="49" r="3" fill="#888"/>
-  <circle cx="42" cy="49" r="6" fill="#333"/>
-  <circle cx="42" cy="49" r="3" fill="#888"/>
-  <!-- Delivery box/bag on rear -->
-  <rect x="10" y="24" width="16" height="14" rx="3" fill="#1565c0"/>
-  <rect x="12" y="26" width="12" height="3" rx="1" fill="#1976d2"/>
-  <text x="18" y="36" text-anchor="middle" font-size="7" fill="white" font-weight="bold">ROHINI</text>
-  <!-- Handlebar -->
-  <rect x="37" y="29" width="2" height="9" rx="1" fill="#555"/>
-  <rect x="33" y="29" width="8" height="2" rx="1" fill="#444"/>
-  <!-- Seat -->
-  <rect x="22" y="30" width="14" height="5" rx="3" fill="#880e0e"/>
-  <!-- Rider body -->
-  <ellipse cx="30" cy="22" rx="7" ry="9" fill="#1b5e20"/>
-  <!-- Rider head -->
-  <circle cx="30" cy="11" r="6" fill="#f9a825"/>
-  <!-- Helmet -->
-  <path d="M24 11 Q24 4 30 4 Q36 4 36 11 Q36 14 30 14 Q24 14 24 11Z" fill="#e53935"/>
-  <rect x="25" y="12" width="10" height="2" rx="1" fill="#ffcdd2"/>
-  <!-- Visor -->
-  <path d="M26 10 Q30 8 34 10" stroke="white" stroke-width="1.5" fill="none"/>
-  <!-- Arms -->
-  <line x1="30" y1="20" x2="37" y2="27" stroke="#1b5e20" stroke-width="3" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 72" width="${size}" height="${Math.round(size*0.72)}">
+  <!-- BACK WHEEL -->
+  <circle cx="22" cy="54" r="14" fill="#111"/>
+  <circle cx="22" cy="54" r="8" fill="#fff"/>
+  <circle cx="22" cy="54" r="3" fill="#111"/>
+  <!-- FRONT WHEEL -->
+  <circle cx="78" cy="54" r="14" fill="#111"/>
+  <circle cx="78" cy="54" r="8" fill="#fff"/>
+  <circle cx="78" cy="54" r="3" fill="#111"/>
+  <!-- SCOOTER MAIN BODY -->
+  <path d="M22 54 Q22 38 38 36 L62 34 Q74 34 78 42 L78 54 Z" fill="#cc1111"/>
+  <!-- SCOOTER REAR CURVE -->
+  <path d="M22 54 Q22 44 30 40 L38 36" fill="none" stroke="#111" stroke-width="3"/>
+  <!-- FRONT FORK -->
+  <path d="M78 54 L74 36" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+  <path d="M74 36 L80 32" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+  <!-- HANDLEBAR -->
+  <path d="M74 34 L84 30" stroke="#111" stroke-width="4" stroke-linecap="round"/>
+  <!-- SEAT -->
+  <path d="M44 34 Q54 30 64 32 L62 34 L44 36 Z" fill="#880000"/>
+  <!-- ENGINE BLOCK (connects frame) -->
+  <path d="M38 36 Q40 46 50 48 L62 48 L62 34" fill="#aa0000"/>
+  <!-- FRONT FOOT REST -->
+  <path d="M62 48 L70 54" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+  <!-- EXHAUST -->
+  <path d="M26 50 Q18 52 12 54" stroke="#888" stroke-width="2" stroke-linecap="round"/>
+  <!-- ORANGE DELIVERY BOX (back left) -->
+  <rect x="4" y="26" width="28" height="22" rx="3" fill="#e8630a"/>
+  <polygon points="4,26 32,26 28,20 8,20" fill="#ff8c2a"/>
+  <rect x="8" y="30" width="10" height="3" rx="1.5" fill="#fff" opacity="0.6"/>
+  <rect x="8" y="36" width="14" height="2" rx="1" fill="#fff" opacity="0.3"/>
+  <!-- Box bracket connecting to scooter -->
+  <line x1="32" y1="36" x2="40" y2="38" stroke="#555" stroke-width="2"/>
+  <!-- RIDER BODY (red jacket) -->
+  <path d="M55 34 Q55 22 60 18 L68 18 Q76 18 76 26 L74 34 Z" fill="#cc1111"/>
+  <!-- RIDER ARM reaching to handlebar -->
+  <path d="M74 26 Q78 26 82 30" stroke="#cc1111" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <circle cx="82" cy="30" r="3" fill="#ffcba4"/>
+  <!-- RIDER LOWER BODY / LEGS -->
+  <path d="M55 34 L52 44 L62 46 L64 36" fill="#111"/>
+  <!-- RIDER HEAD -->
+  <circle cx="65" cy="14" r="10" fill="#ffcba4"/>
+  <!-- RED HELMET -->
+  <path d="M55 12 Q55 2 65 2 Q75 2 75 12 Q75 18 65 18 Q55 18 55 12 Z" fill="#cc1111"/>
+  <!-- HELMET VISOR -->
+  <path d="M57 14 Q65 11 73 14" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- WHITE VISOR STRIP -->
+  <rect x="58" y="14" width="14" height="4" rx="2" fill="white" opacity="0.85"/>
+  <!-- HELMET CHIN -->
+  <path d="M57 16 Q57 20 65 20 Q73 20 73 16" fill="#aa0000"/>
 </svg>`),
-        scaledSize: new window.google.maps.Size(size, Math.round(size * 1.1)),
-        anchor: new window.google.maps.Point(size / 2, Math.round(size * 1.0)),
+        scaledSize: new window.google.maps.Size(size, Math.round(size * 0.72)),
+        anchor: new window.google.maps.Point(Math.round(size * 0.5), Math.round(size * 0.68)),
     });
 
     const makeIcon = (emoji, size = 36) => ({
