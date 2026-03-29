@@ -7,6 +7,7 @@ import User from '../models/User.js';
 import Seller from '../models/Seller.js';
 import WalletTransaction from '../models/WalletTransaction.js';
 import PartnerStatusLog from '../models/PartnerStatusLog.js';
+import Product from '../models/Product.js';
 import { sendPush } from '../utils/notify.js';
 import { uploadSingle } from '../middleware/upload.js';
 import sendOTP from '../utils/sms.js';
@@ -390,15 +391,21 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
                     if (item.status === 'Return Approved') {
                         item.status = 'Return Completed';
                         item.returnCompletedAt = now;
-                        // Restore stock
-                        const Product = (await import('../models/Product.js')).default;
-                        const product = await Product.findById(item.product?._id || item.product);
-                        if (product) {
-                            product.stock += item.quantity;
-                            await product.save();
+                        // Restore stock (wrap in try-catch so missing product doesn't kill the request)
+                        try {
+                            const productId = item.product?._id || item.product;
+                            const prod = await Product.findById(productId);
+                            if (prod) {
+                                prod.stock += (item.quantity || 1);
+                                await prod.save();
+                                console.log(`[Return] Restored ${item.quantity} stock for product ${productId}`);
+                            }
+                        } catch (stockErr) {
+                            console.warn(`[Return] Stock restore failed for item ${item._id}:`, stockErr.message);
                         }
                     }
                 }
+                order.status = 'Return Completed';
                 order.statusHistory.push({ status: 'Return Completed', timestamp: now, note: 'Return collected by delivery partner' });
                 await DeliveryPartner.findByIdAndUpdate(req.partner._id, {
                     $inc: { activeOrdersCount: -1, totalDeliveries: 1 }
