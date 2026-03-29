@@ -42,6 +42,26 @@ export default function Login() {
 
     const handle = (e) => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
+    // Compress image to max 800px wide at 60% JPEG quality before base64 encoding
+    // This keeps the payload well under 1MB even for large camera photos
+    const compressImage = (file) => new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = new Image();
+            img.onload = () => {
+                const MAX_W = 800;
+                const scale = img.width > MAX_W ? MAX_W / img.width : 1;
+                const canvas = document.createElement('canvas');
+                canvas.width  = Math.round(img.width  * scale);
+                canvas.height = Math.round(img.height * scale);
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.6)); // 60% quality JPEG
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
     // ── Phone step ────────────────────────────────────────────────────────────
     const handlePhoneChange = (e) => {
         const v = e.target.value.replace(/\D/g, '');
@@ -367,12 +387,12 @@ export default function Login() {
                                 cursor: 'pointer', background: '#f8fafc', transition: 'border-color 0.2s'
                             }}>
                                 <input type="file" accept="image/*" style={{ display: 'none' }}
-                                    onChange={e => {
+                                    onChange={async e => {
                                         const file = e.target.files[0];
                                         if (!file) return;
-                                        const reader = new FileReader();
-                                        reader.onload = ev => setForm(p => ({ ...p, aadhaarImage: ev.target.result }));
-                                        reader.readAsDataURL(file);
+                                        // Compress before storing to keep payload small
+                                        const compressed = await compressImage(file);
+                                        setForm(p => ({ ...p, aadhaarImage: compressed }));
                                     }}
                                 />
                                 {form.aadhaarImage
@@ -397,12 +417,12 @@ export default function Login() {
                                 cursor: 'pointer', background: '#f8fafc'
                             }}>
                                 <input type="file" accept="image/*" style={{ display: 'none' }}
-                                    onChange={e => {
+                                    onChange={async e => {
                                         const file = e.target.files[0];
                                         if (!file) return;
-                                        const reader = new FileReader();
-                                        reader.onload = ev => setForm(p => ({ ...p, panImage: ev.target.result }));
-                                        reader.readAsDataURL(file);
+                                        // Compress before storing to keep payload small
+                                        const compressed = await compressImage(file);
+                                        setForm(p => ({ ...p, panImage: compressed }));
                                     }}
                                 />
                                 {form.panImage

@@ -239,11 +239,12 @@ const Register = () => {
                                     ✅ Location pinned — Lat: {location.coordinates[1].toFixed(4)}, Lng: {location.coordinates[0].toFixed(4)}
                                 </div>
                             )}
+                            {/* Full-width stacked layout — avoids overflow on mobile */}
                             <div className="form-group full-width"><label>Full Address *</label><textarea name="shopAddress" value={form.shopAddress} onChange={handleChange} rows={2} required /></div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                                <div className="form-group"><label>City *</label><input type="text" name="city" value={form.city} onChange={handleChange} required /></div>
-                                <div className="form-group"><label>State *</label><input type="text" name="state" value={form.state} onChange={handleChange} required /></div>
-                                <div className="form-group"><label>Pincode *</label><input type="text" name="pincode" value={form.pincode} onChange={handleChange} required /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div className="form-group"><label>City *</label><input type="text" name="city" value={form.city} onChange={handleChange} required placeholder="e.g. Tirupati" /></div>
+                                <div className="form-group"><label>State *</label><input type="text" name="state" value={form.state} onChange={handleChange} required placeholder="e.g. Andhra Pradesh" /></div>
+                                <div className="form-group"><label>Pincode *</label><input type="text" name="pincode" value={form.pincode} onChange={handleChange} required inputMode="numeric" maxLength={6} placeholder="6-digit pincode" /></div>
                             </div>
                         </div>
                     )}

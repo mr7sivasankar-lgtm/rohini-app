@@ -362,6 +362,18 @@ const Home = () => {
                     </div>
                     {loading ? (
                         <div className="loading-state">Loading amazing shops...</div>
+                    ) : topRatedShops.length === 0 ? (
+                        // No shops registered yet — friendly empty state
+                        <div style={{
+                            margin: '0 20px 16px', background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                            border: '1.5px dashed #86efac', borderRadius: 20, padding: '28px 20px', textAlign: 'center'
+                        }}>
+                            <div style={{ fontSize: 48, marginBottom: 10 }}>🏪</div>
+                            <h3 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 800, color: '#15803d' }}>No Shops Available Yet</h3>
+                            <p style={{ margin: 0, fontSize: 13, color: '#16a34a', lineHeight: 1.6 }}>
+                                We're onboarding sellers in your area. Check back soon — great shops are coming! 🚀
+                            </p>
+                        </div>
                     ) : (
                         <HeroSlideshow shops={topRatedShops} banners={banners} navigate={navigate} />
                     )}
@@ -447,6 +459,19 @@ const Home = () => {
                                 <ShopCard key={shop._id} shop={shop} onClick={() => navigate(`/shop/${shop._id}`)} nearby />
                             ))}
                         </div>
+                    </div>
+                )}
+
+                {/* Show when location is known but no nearby shops found */}
+                {latitude && longitude && !loading && nearbyShops.length === 0 && topRatedShops.length === 0 && (
+                    <div style={{
+                        margin: '8px 20px 24px', textAlign: 'center',
+                        padding: '20px 16px', background: '#f8fafc',
+                        borderRadius: 16, border: '1px solid #e2e8f0'
+                    }}>
+                        <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
+                            🔍 No shops found near your location yet. More are coming soon!
+                        </p>
                     </div>
                 )}
 

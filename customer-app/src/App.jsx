@@ -187,7 +187,8 @@ const AppRoutes = () => {
         <Route path="*" element={<Navigate to="/home" />} />
       </Routes>
 
-      {isAuthenticated && <BottomNav />}
+      {/* Hide BottomNav on address form pages — they have their own fixed bottom bar */}
+      {isAuthenticated && !location.pathname.startsWith('/addresses/new') && !location.pathname.startsWith('/addresses/edit') && <BottomNav />}
     </>
   );
 };

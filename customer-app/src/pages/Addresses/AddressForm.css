@@ -161,15 +161,16 @@
     color: #ef4444; cursor: pointer; padding: 4px;
 }
 
-/* Fixed Bottom Bar */
+/* Fixed Bottom Bar — sits above Android system nav bar */
 .address-bottom-bar {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 16px 20px 24px;
+    /* Use env(safe-area-inset-bottom) to clear Android gesture nav bar */
+    padding: 12px 20px calc(env(safe-area-inset-bottom, 0px) + 16px);
     background: #fff;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
     z-index: 2000;
 }
 .address-bottom-bar .bottom-btn {
