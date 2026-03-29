@@ -472,20 +472,28 @@ router.get('/seller/sales-analytics', sellerProtect, async (req, res) => {
             if (orderDate >= startOfMonth) stats.month.orders++;
             stats.total.orders++;
 
-            // Revenue & Top Products (Only for Delivered orders)
+            // Revenue & Top Products (Only for Delivered orders, minus returned items)
             if (isDelivered) {
-                if (orderDate >= startOfDay) stats.today.revenue += order.totalAmount;
-                if (orderDate >= startOfWeek) stats.week.revenue += order.totalAmount;
-                if (orderDate >= startOfMonth) stats.month.revenue += order.totalAmount;
-                stats.total.revenue += order.totalAmount;
+                // Only count non-returned items
+                const EXCLUDED_RETURN_STATUSES = ['Return Completed', 'Return Approved', 'Return Requested', 'Exchange Completed'];
+                
+                // Calculate net revenue: seller earning minus any return deductions already applied
+                // Use sellerEarning which is already reduced on the order when returns are processed
+                const netRevenue = order.sellerEarning || order.sellingPriceTotal || order.totalAmount || 0;
+
+                if (orderDate >= startOfDay) stats.today.revenue += netRevenue;
+                if (orderDate >= startOfWeek) stats.week.revenue += netRevenue;
+                if (orderDate >= startOfMonth) stats.month.revenue += netRevenue;
+                stats.total.revenue += netRevenue;
 
                 // Daily Trend
                 if (trendMap[dateStr]) {
-                    trendMap[dateStr].revenue += order.totalAmount;
+                    trendMap[dateStr].revenue += netRevenue;
                 }
 
-                // Top Products calculation
+                // Top Products calculation — exclude returned items
                 order.items.forEach(item => {
+                    if (EXCLUDED_RETURN_STATUSES.includes(item.status)) return; // skip returned
                     const pid = item.product.toString();
                     if (!productSales[pid]) {
                         productSales[pid] = { name: item.name, image: item.image, orders: 0, revenue: 0 };

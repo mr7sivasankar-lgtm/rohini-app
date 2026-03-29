@@ -39,7 +39,7 @@ const SalesTab = () => {
         <div className="sales-tab">
             <div className="section-header" style={{ marginBottom: '24px' }}>
                 <h2>Sales & Revenue</h2>
-                <p>Track your shop's financial performance (Note: Only Delivered orders count towards revenue)</p>
+                <p>Track your shop's financial performance <span style={{ color: '#64748b' }}>(Only Delivered orders • Returns deducted)</span></p>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '16px', marginBottom: '32px' }}>

@@ -1,6 +1,43 @@
 import { useState, useEffect } from 'react';
 import api, { getImageUrl } from '../utils/api';
 
+const OrderItemDetailModal = ({ item, order, onClose }) => {
+    if (!item) return null;
+    const statusColor = item.status?.includes('Return') ? '#f59e0b' : item.status === 'Delivered' ? '#22c55e' : '#64748b';
+    return (
+        <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, padding: 16 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 20, width: '100%', maxWidth: 440, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 20px 0' }}>
+                    <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0f172a' }}>📦 Item Details</h3>
+                    <button onClick={onClose} style={{ background: '#f1f5f9', border: 'none', width: 34, height: 34, borderRadius: '50%', fontSize: 16, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                </div>
+                <div style={{ padding: '16px 20px 24px' }}>
+                    <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 16, padding: 14, background: '#f8fafc', borderRadius: 14, border: '1px solid #e2e8f0' }}>
+                        {item.image && <img src={getImageUrl(item.image)} alt={item.name} style={{ width: 90, height: 90, borderRadius: 10, objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }} />}
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: 16, color: '#0f172a', marginBottom: 4 }}>{item.name}</div>
+                            {item.productCode && <div style={{ fontSize: 12, color: '#94a3b8', fontFamily: 'monospace', marginBottom: 6 }}>SKU: {item.productCode}</div>}
+                            {item.status && <span style={{ background: statusColor + '20', color: statusColor, border: '1px solid ' + statusColor + '40', borderRadius: 6, padding: '3px 10px', fontSize: 12, fontWeight: 700 }}>{item.status}</span>}
+                        </div>
+                    </div>
+                    {[['Size', item.size], ['Color', item.color], ['Quantity', item.quantity], ['Selling Price', item.sellingPrice ? '\u20b9' + item.sellingPrice : null], ['Line Total', item.sellingPrice ? '\u20b9' + (item.sellingPrice * item.quantity).toFixed(0) : null], ['Order No.', order?.orderId], ['Order Status', order?.status]].filter(([, v]) => v).map(([label, value]) => (
+                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #f1f5f9' }}>
+                            <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>{label}</span>
+                            <span style={{ fontSize: 14, color: '#1e293b', fontWeight: 700 }}>{value}</span>
+                        </div>
+                    ))}
+                    {item.actionReason && (
+                        <div style={{ marginTop: 14, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '10px 14px' }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>📝 Customer Return Reason</div>
+                            <div style={{ fontSize: 14, color: '#78350f' }}>{'"'}{item.actionReason}{'"'}</div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const maskName = (name) => {
     if (!name) return 'Customer';
     const parts = name.trim().split(' ');
@@ -39,6 +76,7 @@ const TABS = [
 ];
 
 const OrdersTab = () => {
+    const [selectedItem, setSelectedItem] = useState(null);
     const [orders, setOrders]       = useState([]);
     const [loading, setLoading]     = useState(true);
     const [activeTab, setActiveTab] = useState('New');
@@ -368,7 +406,8 @@ const OrdersTab = () => {
                                                     padding: '10px', borderRadius: '10px',
                                                     background: itemReturnPending ? '#fff7ed' : '#fafbfc',
                                                     border: itemReturnPending ? '1px solid #fed7aa' : '1px solid #f1f5f9',
-                                                }}>
+                                                    cursor: 'pointer',
+                                                }} onClick={(e) => { e.stopPropagation(); setSelectedItem({ item, order }); }}>
                                                     {/* Image */}
                                                     <img
                                                         src={getImageUrl(item.image)}
@@ -600,6 +639,14 @@ const OrdersTab = () => {
                         );
                     })}
                 </div>
+            )}
+            {/* Item Detail Modal */}
+            {selectedItem && (
+                <OrderItemDetailModal
+                    item={selectedItem.item}
+                    order={selectedItem.order}
+                    onClose={() => setSelectedItem(null)}
+                />
             )}
         </div>
     );
