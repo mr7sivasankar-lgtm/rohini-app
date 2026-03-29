@@ -24,7 +24,8 @@ const BottomNav = () => {
                     const orders = response.data.data;
                     // Sort by newest first, find the most recent active order
                     const sorted = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                    const active = sorted.find(o => o.status !== 'Delivered' && o.status !== 'Cancelled' && o.status !== 'Rejected');
+                    const TERMINAL_STATUSES = ['Delivered', 'Cancelled', 'Rejected', 'Return Completed'];
+                    const active = sorted.find(o => !TERMINAL_STATUSES.includes(o.status));
                     setActiveOrder(active);
                     // Reset dismissed when a NEW order appears
                     setDismissed(false);

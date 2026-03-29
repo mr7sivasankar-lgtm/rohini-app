@@ -465,20 +465,22 @@ router.get('/seller/sales-analytics', sellerProtect, async (req, res) => {
             const orderDate = new Date(order.createdAt);
             const dateStr = orderDate.toISOString().split('T')[0];
             const isDelivered = order.status === 'Delivered';
+            // Only count productive orders (not cancelled, not rejected)
+            const isCounted = ['Delivered', 'Return Completed', 'Out for Delivery', 'Accepted', 'Placed', 'Ready for Pickup', 'Packed'].includes(order.status);
 
-            // General Order Counts
-            if (orderDate >= startOfDay) stats.today.orders++;
-            if (orderDate >= startOfWeek) stats.week.orders++;
-            if (orderDate >= startOfMonth) stats.month.orders++;
-            stats.total.orders++;
+            // General Order Counts (only non-cancelled/rejected orders)
+            if (isCounted) {
+                if (orderDate >= startOfDay) stats.today.orders++;
+                if (orderDate >= startOfWeek) stats.week.orders++;
+                if (orderDate >= startOfMonth) stats.month.orders++;
+                stats.total.orders++;
+            }
 
             // Revenue & Top Products (Only for Delivered orders, minus returned items)
             if (isDelivered) {
-                // Only count non-returned items
                 const EXCLUDED_RETURN_STATUSES = ['Return Completed', 'Return Approved', 'Return Requested', 'Exchange Completed'];
                 
                 // Calculate net revenue: seller earning minus any return deductions already applied
-                // Use sellerEarning which is already reduced on the order when returns are processed
                 const netRevenue = order.sellerEarning || order.sellingPriceTotal || order.totalAmount || 0;
 
                 if (orderDate >= startOfDay) stats.today.revenue += netRevenue;
@@ -697,62 +699,69 @@ router.put('/seller/:id/item-received', sellerProtect, async (req, res) => {
         const item = order.items.id(itemId);
         if (!item) return res.status(404).json({ success: false, message: 'Item not found in order' });
 
-        if (item.status !== 'Return Approved') {
-            return res.status(400).json({ success: false, message: `Item must be in 'Return Approved' state (current: ${item.status})` });
+        // Accept both 'Return Approved' (normal flow after delivery partner collects) or
+        // 'Return Completed' (if DP already marked it — just skip financial processing again)
+        const alreadyCompleted = item.status === 'Return Completed';
+        if (item.status !== 'Return Approved' && !alreadyCompleted) {
+            return res.status(400).json({ success: false, message: `Item must be in 'Return Approved' or 'Return Completed' state (current: ${item.status})` });
         }
 
         const now = new Date();
         item.status = 'Return Completed';
         item.returnCompletedAt = now;
+        order.status = 'Return Completed';
         order.statusHistory.push({ status: 'Return Completed', timestamp: now, note: 'Item received back by seller.' });
 
-        // ── Earnings Reversal ──────────────────────────────────────────────────
-        // Calculate this item's proportional share of seller earnings
-        const itemGrossValue = (item.sellingPrice || 0) * (item.quantity || 1);
-        const totalSellingPrice = order.sellingPriceTotal || order.totalAmount || 1;
-        // Proportional seller earning for this item
-        const earningDeduction = Math.round((itemGrossValue / totalSellingPrice) * (order.sellerEarning || 0));
+        // ── Earnings Reversal (only if not already processed) ──────────────────
+        let earningDeduction = 0;
+        if (!alreadyCompleted) {
+            const itemGrossValue = (item.sellingPrice || 0) * (item.quantity || 1);
+            const totalSellingPrice = order.sellingPriceTotal || order.totalAmount || 1;
+            earningDeduction = Math.round((itemGrossValue / totalSellingPrice) * (order.sellerEarning || 0));
 
-        // Reduce the recorded seller earning on the order
-        order.sellerEarning = Math.max(0, (order.sellerEarning || 0) - earningDeduction);
+            // Reduce the recorded seller earning on the order
+            order.sellerEarning = Math.max(0, (order.sellerEarning || 0) - earningDeduction);
 
-        // If wallet was already settled, debit from seller's wallet balance
-        if (order.walletSettlementStatus === 'Settled' && earningDeduction > 0) {
-            try {
-                const SellerObj = (await import('../models/Seller.js')).default;
-                const seller = await SellerObj.findById(order.seller);
-                if (seller) {
-                    seller.walletBalance = Math.max(0, seller.walletBalance - earningDeduction);
-                    await seller.save();
+            // If wallet was already settled, debit from seller's wallet balance
+            if (order.walletSettlementStatus === 'Settled' && earningDeduction > 0) {
+                try {
+                    const SellerObj = (await import('../models/Seller.js')).default;
+                    const seller = await SellerObj.findById(order.seller);
+                    if (seller) {
+                        seller.walletBalance = Math.max(0, seller.walletBalance - earningDeduction);
+                        await seller.save();
 
-                    await WalletTransaction.create({
-                        userType: 'Seller',
-                        userId: seller._id,
-                        amount: -earningDeduction,
-                        type: 'Refund',
-                        status: 'Success',
-                        orderId: order._id,
-                        description: `Return deduction: "${item.name}" returned in Order ${order.orderId} (−₹${earningDeduction})`,
-                        balanceAfter: seller.walletBalance
-                    });
-                    console.log(`[Return] Seller wallet debited ₹${earningDeduction} for returned item "${item.name}"`);
+                        await WalletTransaction.create({
+                            userType: 'Seller',
+                            userId: seller._id,
+                            amount: -earningDeduction,
+                            type: 'Refund',
+                            status: 'Success',
+                            orderId: order._id,
+                            description: `Return deduction: "${item.name}" returned in Order ${order.orderId} (−₹${earningDeduction})`,
+                            balanceAfter: seller.walletBalance
+                        });
+                        console.log(`[Return] Seller wallet debited ₹${earningDeduction} for returned item "${item.name}"`);
+                    }
+                } catch (walletErr) {
+                    console.warn('[Return] Wallet deduction failed:', walletErr.message);
                 }
-            } catch (walletErr) {
-                console.warn('[Return] Wallet deduction failed:', walletErr.message);
             }
         }
         // ── End Earnings Reversal ──────────────────────────────────────────────
 
-        // Restore stock
-        try {
-            const product = await Product.findById(item.product);
-            if (product) {
-                product.stock += item.quantity;
-                await product.save();
-                console.log(`[Return] Stock restored: +${item.quantity} for ${product.name}`);
+        // Restore stock (only if not already done by delivery partner)
+        if (!alreadyCompleted) {
+            try {
+                const product = await Product.findById(item.product);
+                if (product) {
+                    product.stock += item.quantity;
+                    await product.save();
+                    console.log(`[Return] Stock restored: +${item.quantity} for ${product.name}`);
+                }
+            } catch (stockErr) {
+                console.warn('[Return] Stock restore failed:', stockErr.message);
             }
-        } catch (stockErr) {
-            console.warn('[Return] Stock restore failed:', stockErr.message);
         }
 
         await order.save();

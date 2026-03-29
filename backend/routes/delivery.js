@@ -388,29 +388,13 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
         order.deliveryStatus = deliveryStatus;
 
         if (isReturnPickup) {
-            // Return Pickup: when collected, mark all Return Approved items as Return Completed
+            // Return Pickup: when Collected, delivery is done but seller must still confirm receipt
             if (deliveryStatus === 'Collected') {
                 const now = new Date();
-                for (const item of order.items) {
-                    if (item.status === 'Return Approved') {
-                        item.status = 'Return Completed';
-                        item.returnCompletedAt = now;
-                        // Restore stock (wrap in try-catch so missing product doesn't kill the request)
-                        try {
-                            const productId = item.product?._id || item.product;
-                            const prod = await Product.findById(productId);
-                            if (prod) {
-                                prod.stock += (item.quantity || 1);
-                                await prod.save();
-                                console.log(`[Return] Restored ${item.quantity} stock for product ${productId}`);
-                            }
-                        } catch (stockErr) {
-                            console.warn(`[Return] Stock restore failed for item ${item._id}:`, stockErr.message);
-                        }
-                    }
-                }
-                order.status = 'Return Completed';
-                order.statusHistory.push({ status: 'Return Completed', timestamp: now, note: 'Return collected by delivery partner' });
+                // DO NOT change item.status here — keep it 'Return Approved'
+                // so the seller can still call /item-received to confirm receipt,
+                // deduct wallet, restore stock, and mark Return Completed.
+                order.statusHistory.push({ status: 'Collected', timestamp: now, note: 'Return collected by delivery partner — awaiting seller confirmation' });
                 await DeliveryPartner.findByIdAndUpdate(req.partner._id, {
                     $inc: { activeOrdersCount: -1, totalDeliveries: 1 }
                 });
