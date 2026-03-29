@@ -4,6 +4,139 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
 import './Dashboard.css';
 
+// ─── Pending Approval Screen ─────────────────────────────────────────────────
+function PendingApprovalScreen({ partner, onApproved }) {
+    const { logout } = useAuth();
+    const [checking, setChecking] = useState(false);
+    const [rejected, setRejected] = useState(partner?.status === 'Rejected');
+
+    // Poll every 15s to check if admin approved
+    useEffect(() => {
+        const poll = setInterval(async () => {
+            try {
+                const res = await api.get('/delivery/profile');
+                const p = res.data.data;
+                if (p.status === 'Approved' && p.isActive) {
+                    clearInterval(poll);
+                    onApproved(p);
+                } else if (p.status === 'Rejected') {
+                    setRejected(true);
+                    clearInterval(poll);
+                }
+            } catch { /* silent */ }
+        }, 15000);
+        return () => clearInterval(poll);
+    }, [onApproved]);
+
+    const checkNow = async () => {
+        setChecking(true);
+        try {
+            const res = await api.get('/delivery/profile');
+            const p = res.data.data;
+            if (p.status === 'Approved' && p.isActive) onApproved(p);
+            else if (p.status === 'Rejected') setRejected(true);
+        } catch { /* silent */ }
+        finally { setChecking(false); }
+    };
+
+    return (
+        <div style={{
+            minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 60%, #f0fdf4 100%)',
+            padding: '32px 24px', fontFamily: "'Inter','Segoe UI',sans-serif",
+            textAlign: 'center',
+        }}>
+            {/* Animated icon */}
+            <div style={{
+                width: 100, height: 100, borderRadius: '50%',
+                background: rejected ? '#fef2f2' : 'white',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 48, marginBottom: 28,
+                boxShadow: rejected
+                    ? '0 8px 32px rgba(239,68,68,0.15)'
+                    : '0 8px 32px rgba(34,197,94,0.15)',
+                border: rejected ? '2px solid #fecaca' : '2px solid #bbf7d0',
+                animation: rejected ? 'none' : 'pendingPulse 2s ease-in-out infinite',
+            }}>
+                {rejected ? '❌' : '⏳'}
+            </div>
+
+            <style>{`
+                @keyframes pendingPulse {
+                    0%, 100% { transform: scale(1); box-shadow: 0 8px 32px rgba(34,197,94,0.15); }
+                    50% { transform: scale(1.05); box-shadow: 0 12px 40px rgba(34,197,94,0.25); }
+                }
+            `}</style>
+
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: rejected ? '#dc2626' : '#166534', marginBottom: 10 }}>
+                {rejected ? 'Application Rejected' : 'Application Submitted!'}
+            </h1>
+
+            <p style={{ fontSize: 15, color: '#374151', maxWidth: 320, lineHeight: 1.6, marginBottom: 28 }}>
+                {rejected
+                    ? 'Your application was not approved. Please contact support for more details.'
+                    : "Our admin team is reviewing your profile. You'll get access as soon as it's approved — usually within 24 hours."}
+            </p>
+
+            {/* Status card */}
+            <div style={{
+                background: 'white', borderRadius: 16, padding: '20px 28px', width: '100%', maxWidth: 340,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.07)', marginBottom: 24,
+                border: '1px solid #e2e8f0',
+            }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {[
+                        { label: 'Name', value: partner?.name },
+                        { label: 'Phone', value: partner?.phone },
+                        { label: 'Vehicle', value: `${partner?.vehicleType || '—'} ${partner?.vehicleNumber ? `· ${partner.vehicleNumber}` : ''}` },
+                        { label: 'Status', value: partner?.status || 'Pending Approval',
+                          color: rejected ? '#dc2626' : '#f59e0b' },
+                    ].map(row => (
+                        <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: 13, color: '#64748b' }}>{row.label}</span>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: row.color || '#111827' }}>{row.value}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {!rejected && (
+                <button
+                    onClick={checkNow}
+                    disabled={checking}
+                    style={{
+                        width: '100%', maxWidth: 340, padding: '14px',
+                        background: checking ? '#d1fae5' : '#22c55e',
+                        color: 'white', border: 'none', borderRadius: 12,
+                        fontSize: 15, fontWeight: 700, cursor: checking ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 4px 16px rgba(34,197,94,0.3)',
+                        transition: 'all 0.2s', marginBottom: 12,
+                    }}
+                >
+                    {checking ? '⏳ Checking...' : '🔄 Check Approval Status'}
+                </button>
+            )}
+
+            <button
+                onClick={logout}
+                style={{
+                    width: '100%', maxWidth: 340, padding: '12px',
+                    background: 'none', border: '1.5px solid #e2e8f0',
+                    color: '#6b7280', borderRadius: 12, fontSize: 14,
+                    fontWeight: 600, cursor: 'pointer',
+                }}
+            >
+                Sign Out
+            </button>
+
+            <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 20 }}>
+                {rejected ? 'Contact support: support@rohini.app' : 'This page auto-refreshes every 15 seconds'}
+            </p>
+        </div>
+    );
+}
+
 const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyCXNIpwQ6rNmeH6oLU0j7y1bMECzZ65BpA';
 const DELIVERY_TYPE_LABELS = { Normal: '🚚 Normal', 'Return Pickup': '↩️ Return', 'Exchange Pickup': '🔄 Exchange' };
 const STATUS_COLORS = { Assigned: '#f59e0b', 'Picked Up': '#22c55e', 'Out for Delivery': '#16a34a' };
@@ -26,6 +159,13 @@ export default function Dashboard() {
     const { partner, updatePartner } = useAuth();
     const navigate = useNavigate();
 
+    // Approval gate — computed first (not a hook)
+    const isApproved = !!(partner?.isActive && partner?.status === 'Approved');
+    const handleApproved = useCallback((updatedPartner) => {
+        if (updatePartner) updatePartner(updatedPartner);
+    }, [updatePartner]);
+
+    // ── ALL hooks must be called unconditionally (Rules of Hooks) ──
     const [isOnline, setIsOnline] = useState(partner?.isOnline || false);
     const [stats, setStats] = useState({ assigned: 0, pending: 0, deliveredToday: 0, returnPickups: 0, exchangePickups: 0 });
     const [orders, setOrders] = useState([]);
@@ -48,8 +188,10 @@ export default function Dashboard() {
 
     // ── Fetch stats + orders ──
     const fetchData = useCallback(async () => {
+        if (!isApproved) return; // skip when not approved
         try {
             const [statsRes, ordersRes] = await Promise.all([
+
                 api.get('/delivery/stats'),
                 api.get('/delivery/orders'),
             ]);
@@ -258,6 +400,12 @@ export default function Dashboard() {
         null: 'Active Deliveries', assigned: 'Assigned Orders', pending: 'Pending Orders',
         deliveredToday: 'Delivered Today', returnPickups: 'Return Pickups',
     };
+
+    // ── Approval gate — placed after ALL hooks ──
+    if (!isApproved) {
+        return <PendingApprovalScreen partner={partner} onApproved={handleApproved} />;
+    }
+
 
     return (
         <div className="dashboard-page">
