@@ -428,18 +428,56 @@ const OrderTracking = () => {
             {/* ══ BODY ══ */}
             <div className="ot-body">
 
-                {/* Green ETA / status banner */}
+                {/* Green ETA / status banner — compact */}
                 {showMap && (
                     <div className="ot-eta-banner">
                         <span className="ot-eta-icon">🛵</span>
                         <span className="ot-eta-text">
                             {order?.deliveryStatus === 'Assigned'
-                                ? <><strong>{order.deliveryPartner?.name || 'Your delivery partner'}</strong>&nbsp;has accepted your order &amp; is heading to pick it up</>
+                                ? <><strong>{order.deliveryPartner?.name || 'Your delivery partner'}</strong>&nbsp;accepted · heading to pick up</>
                                 : order?.deliveryStatus === 'Picked Up'
-                                ? <>Order picked up! Arriving in&nbsp;<strong>{etaMins == null ? '...' : etaMins <= 1 ? 'less than a minute' : `${etaMins} mins`}</strong></>
-                                : <>Deliveryman arriving in&nbsp;<strong>{etaMins == null ? '...' : etaMins <= 1 ? 'less than a minute' : `${etaMins} mins`}</strong></>
+                                ? <>Picked up! Arriving in&nbsp;<strong>{etaMins == null ? '...' : etaMins <= 1 ? '< 1 min' : `${etaMins} mins`}</strong></>
+                                : <>On the way — arriving in&nbsp;<strong>{etaMins == null ? '...' : etaMins <= 1 ? '< 1 min' : `${etaMins} mins`}</strong></>
                             }
                         </span>
+                    </div>
+                )}
+
+                {/* ══ TIMELINE (shown right below map/banner when map is active) ══ */}
+                {showMap && (
+                    <div className="ot-timeline-card ot-timeline-compact">
+                        <h4 className="ot-section-title" style={{ fontSize: '13px', marginBottom: '10px' }}>Order Timeline</h4>
+                        <div className="ot-timeline-h">
+                            {statusSteps.map((step, idx) => {
+                                const isCompleted = idx < currentStepIndex ||
+                                    (idx === currentStepIndex && idx === statusSteps.length - 1);
+                                const isCurrent = idx === currentStepIndex;
+                                let ts = null;
+                                if (idx <= currentStepIndex && order.statusHistory) {
+                                    const h = order.statusHistory.find(x => x.status === step);
+                                    if (h?.timestamp) {
+                                        const d = new Date(h.timestamp);
+                                        ts = `${d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}`;
+                                    }
+                                }
+                                return (
+                                    <div key={step} className={`ot-h-step${idx <= currentStepIndex ? ' active' : ''}`}>
+                                        <div className="ot-h-indicator">
+                                            <div className={`ot-h-dot${isCompleted ? ' completed' : isCurrent ? ' current' : ''}`}>
+                                                {isCompleted && <span className="ot-h-check">✓</span>}
+                                            </div>
+                                            {idx < statusSteps.length - 1 && (
+                                                <div className={`ot-h-line${isCompleted ? ' done' : ''}`} />
+                                            )}
+                                        </div>
+                                        <div className="ot-h-content">
+                                            <h5>{step}</h5>
+                                            {ts && <p style={{ fontSize: '9px' }}>{ts}</p>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
 
@@ -627,7 +665,8 @@ const OrderTracking = () => {
                     </div>
                 </div>
 
-                {/* ══ TIMELINE ══ */}
+                {/* ══ TIMELINE (at bottom when no map) ══ */}
+                {!showMap && (
                 <div className="ot-timeline-card">
                     <h4 className="ot-section-title">Order Timeline</h4>
                     <div className="ot-timeline-h">
@@ -662,6 +701,7 @@ const OrderTracking = () => {
                         })}
                     </div>
                 </div>
+                )}
 
             </div>{/* end ot-body */}
 
