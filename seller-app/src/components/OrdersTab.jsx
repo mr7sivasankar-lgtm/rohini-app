@@ -89,6 +89,21 @@ const OrdersTab = () => {
         }
     };
 
+    // Item-level: seller marks returned item as physically received
+    const handleItemReceived = async (orderId, itemId, itemName) => {
+        if (!window.confirm(`Confirm you have physically received "${itemName}" back at your shop?`)) return;
+        setProcessing(orderId + itemId + 'recv');
+        try {
+            await api.put(`/orders/seller/${orderId}/item-received`, { itemId });
+            await fetchOrders();
+            alert('✅ Item marked as received! Return Completed. Stock has been restored.');
+        } catch (e) {
+            alert(e.response?.data?.message || 'Error marking item as received');
+        } finally {
+            setProcessing(null);
+        }
+    };
+
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px' }}>
             <div style={{ width: '32px', height: '32px', border: '3px solid #e2e8f0', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
@@ -358,8 +373,22 @@ const OrdersTab = () => {
                                                         {/* Return status badge or action buttons */}
                                                         {itemReturnPending && (
                                                             <div style={{ marginTop: '8px' }}>
+                                                                {/* Customer return reason */}
+                                                                {item.actionReason && (
+                                                                    <div style={{
+                                                                        background: '#fff7ed',
+                                                                        border: '1px solid #fed7aa',
+                                                                        borderRadius: '6px',
+                                                                        padding: '6px 10px',
+                                                                        marginBottom: '8px',
+                                                                        fontSize: '12px',
+                                                                    }}>
+                                                                        <span style={{ fontWeight: 700, color: '#92400e' }}>📝 Customer's reason: </span>
+                                                                        <span style={{ color: '#78350f' }}>"{item.actionReason}"</span>
+                                                                    </div>
+                                                                )}
                                                                 <div style={{ fontSize: '11px', color: '#92400e', marginBottom: '6px', fontWeight: 600 }}>
-                                                                    ↩️ Customer requested a return{item.actionReason ? `: "${item.actionReason}"` : ''}
+                                                                    ↩️ Customer requested a return
                                                                 </div>
                                                                 <div className="return-btns" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                                                     <button
@@ -392,15 +421,67 @@ const OrdersTab = () => {
                                                             </div>
                                                         )}
 
-                                                        {itemReturnDone && (
+                                                        {/* Return Approved — show pickup status + Mark Received button */}
+                                                        {item.status === 'Return Approved' && (() => {
+                                                            const isRecvProcessing = processing === (order._id + item._id + 'recv');
+                                                            return (
+                                                                <div style={{ marginTop: '8px' }}>
+                                                                    {/* Return reason if any */}
+                                                                    {item.actionReason && (
+                                                                        <div style={{
+                                                                            background: '#fff7ed', border: '1px solid #fed7aa',
+                                                                            borderRadius: '6px', padding: '6px 10px', marginBottom: '8px', fontSize: '12px',
+                                                                        }}>
+                                                                            <span style={{ fontWeight: 700, color: '#92400e' }}>📝 Return reason: </span>
+                                                                            <span style={{ color: '#78350f' }}>"{item.actionReason}"</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {/* Pickup status banner */}
+                                                                    <div style={{
+                                                                        background: '#eff6ff', border: '1px solid #bfdbfe',
+                                                                        borderRadius: '6px', padding: '6px 10px',
+                                                                        fontSize: '11px', color: '#1d4ed8', marginBottom: '8px',
+                                                                        fontWeight: 600
+                                                                    }}>
+                                                                        🚴 Return Approved — Delivery partner will collect item from customer
+                                                                    </div>
+                                                                    {/* Mark Item Received */}
+                                                                    <button
+                                                                        disabled={isRecvProcessing}
+                                                                        onClick={() => handleItemReceived(order._id, item._id, item.name)}
+                                                                        style={{
+                                                                            width: '100%', padding: '8px 14px',
+                                                                            background: isRecvProcessing ? '#e2e8f0' : '#6366f1',
+                                                                            color: 'white', border: 'none', borderRadius: '8px',
+                                                                            fontWeight: 700, cursor: isRecvProcessing ? 'not-allowed' : 'pointer',
+                                                                            fontSize: '12px',
+                                                                        }}
+                                                                    >
+                                                                        {isRecvProcessing ? '⏳ Processing…' : '📦 Mark Item Received at Shop'}
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })()}
+
+                                                        {/* Other non-pending return statuses (Completed / Rejected) */}
+                                                        {itemReturnDone && item.status !== 'Return Approved' && (
                                                             <div style={{ marginTop: '6px' }}>
+                                                                {item.actionReason && (
+                                                                    <div style={{
+                                                                        background: '#f8fafc', border: '1px solid #e2e8f0',
+                                                                        borderRadius: '6px', padding: '5px 8px', marginBottom: '5px', fontSize: '11px', color: '#64748b'
+                                                                    }}>
+                                                                        📝 Reason: "{item.actionReason}"
+                                                                    </div>
+                                                                )}
                                                                 <span style={{
                                                                     display: 'inline-block', padding: '3px 8px',
-                                                                    background: item.status?.includes('Rejected') ? '#fee2e2' : '#dcfce7',
+                                                                    background: item.status?.includes('Rejected') ? '#fee2e2'
+                                                                              : item.status === 'Return Completed' ? '#dcfce7' : '#dcfce7',
                                                                     color: item.status?.includes('Rejected') ? '#dc2626' : '#16a34a',
                                                                     borderRadius: '6px', fontSize: '11px', fontWeight: 700
                                                                 }}>
-                                                                    {item.status}
+                                                                    {item.status === 'Return Completed' ? '✅ Return Completed — Item Received' : item.status}
                                                                 </span>
                                                             </div>
                                                         )}

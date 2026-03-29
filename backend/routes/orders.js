@@ -610,6 +610,12 @@ router.put('/seller/:id/item-return', sellerProtect, async (req, res) => {
             item.returnApprovedAt = now;
             order.statusHistory.push({ status: 'Return Approved', timestamp: now, note: 'Return approved by seller.' });
 
+            // ── KEY FIX: reset delivery assignment so return pickup appears in broadcasts ──
+            // The original delivery already set deliveryPartner + deliveryStatus.
+            // Broadcasts query requires deliveryPartner: null + deliveryStatus: '' to show up.
+            order.deliveryPartner = null;
+            order.deliveryStatus = '';
+
             await order.save();
 
             // Broadcast return pickup to delivery partners — same as normal order broadcast
@@ -664,6 +670,70 @@ router.put('/seller/:id/item-return', sellerProtect, async (req, res) => {
     } catch (error) {
         console.error('Seller item-return error:', error);
         res.status(500).json({ success: false, message: 'Error processing return request' });
+    }
+});
+
+// @route   PUT /api/orders/seller/:id/item-received
+// @desc    Seller marks returned item as physically received back at shop → Return Completed
+// @access  Private/Seller
+router.put('/seller/:id/item-received', sellerProtect, async (req, res) => {
+    try {
+        const { itemId } = req.body;
+
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+        if (order.seller.toString() !== req.seller._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
+
+        const item = order.items.id(itemId);
+        if (!item) return res.status(404).json({ success: false, message: 'Item not found in order' });
+
+        if (item.status !== 'Return Approved') {
+            return res.status(400).json({ success: false, message: `Item must be in 'Return Approved' state (current: ${item.status})` });
+        }
+
+        const now = new Date();
+        item.status = 'Return Completed';
+        item.returnCompletedAt = now;
+        order.statusHistory.push({ status: 'Return Completed', timestamp: now, note: 'Item received back by seller.' });
+
+        // Restore stock
+        try {
+            const product = await Product.findById(item.product);
+            if (product) {
+                product.stock += item.quantity;
+                await product.save();
+                console.log(`[Return] Stock restored: +${item.quantity} for ${product.name}`);
+            }
+        } catch (stockErr) {
+            console.warn('[Return] Stock restore failed:', stockErr.message);
+        }
+
+        await order.save();
+
+        // Notify customer
+        try {
+            const customer = await User.findById(order.user);
+            if (customer?.pushSubscription) {
+                await sendPush(customer.pushSubscription, {
+                    title: '📦 Return Completed!',
+                    body: `We received your returned item "${item.name}". Refund will be processed shortly.`,
+                    icon: '/icons/icon-192.png',
+                    tag: `return-completed-${order._id}`,
+                    url: `/orders/${order.orderId}`
+                });
+            }
+        } catch (e) { console.warn('[Push] Return completed notify failed:', e.message); }
+
+        res.status(200).json({
+            success: true,
+            message: 'Item marked as received. Return Completed.',
+            data: order
+        });
+    } catch (error) {
+        console.error('Seller item-received error:', error);
+        res.status(500).json({ success: false, message: 'Error marking item as received' });
     }
 });
 
