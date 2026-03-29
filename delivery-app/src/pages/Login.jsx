@@ -23,6 +23,7 @@ export default function Login() {
         name: '',
         email: '', dob: '', gender: '',
         aadhaarNumber: '', panNumber: '',
+        aadhaarImage: '', panImage: '',
         vehicleType: 'Bike', vehicleNumber: '',
         address: '', city: '', state: '', pincode: '',
         location: { type: 'Point', coordinates: [0, 0] },
@@ -356,13 +357,61 @@ export default function Login() {
                             <label>Aadhaar Number *</label>
                             <input name="aadhaarNumber" placeholder="12-digit Aadhaar" value={form.aadhaarNumber} onChange={handle} maxLength={12} inputMode="numeric" />
                         </div>
+
+                        {/* Aadhaar Card Image */}
+                        <div className="input-group">
+                            <label>Aadhaar Card Photo *</label>
+                            <label style={{
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                gap: 6, padding: '14px', border: '2px dashed #cbd5e1', borderRadius: 10,
+                                cursor: 'pointer', background: '#f8fafc', transition: 'border-color 0.2s'
+                            }}>
+                                <input type="file" accept="image/*" style={{ display: 'none' }}
+                                    onChange={e => {
+                                        const file = e.target.files[0];
+                                        if (!file) return;
+                                        const reader = new FileReader();
+                                        reader.onload = ev => setForm(p => ({ ...p, aadhaarImage: ev.target.result }));
+                                        reader.readAsDataURL(file);
+                                    }}
+                                />
+                                {form.aadhaarImage
+                                    ? <img src={form.aadhaarImage} alt="Aadhaar" style={{ width: '100%', maxHeight: 120, objectFit: 'cover', borderRadius: 8 }} />
+                                    : <><span style={{ fontSize: 28 }}>📷</span><span style={{ fontSize: 13, color: '#64748b' }}>Tap to upload Aadhaar card</span></>}
+                            </label>
+                        </div>
+
                         <div className="input-group">
                             <label>PAN Card Number *</label>
                             <input name="panNumber" placeholder="ABCDE1234F" value={form.panNumber}
                                 onChange={e => setForm(p => ({ ...p, panNumber: e.target.value.toUpperCase() }))}
                                 maxLength={10} style={{ textTransform: 'uppercase' }} />
                         </div>
-                        <p style={{ fontSize: 12, color: '#64748b' }}>* Document uploads will be requested on admin verification.</p>
+
+                        {/* PAN Card Image */}
+                        <div className="input-group">
+                            <label>PAN Card Photo *</label>
+                            <label style={{
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                gap: 6, padding: '14px', border: '2px dashed #cbd5e1', borderRadius: 10,
+                                cursor: 'pointer', background: '#f8fafc'
+                            }}>
+                                <input type="file" accept="image/*" style={{ display: 'none' }}
+                                    onChange={e => {
+                                        const file = e.target.files[0];
+                                        if (!file) return;
+                                        const reader = new FileReader();
+                                        reader.onload = ev => setForm(p => ({ ...p, panImage: ev.target.result }));
+                                        reader.readAsDataURL(file);
+                                    }}
+                                />
+                                {form.panImage
+                                    ? <img src={form.panImage} alt="PAN" style={{ width: '100%', maxHeight: 120, objectFit: 'cover', borderRadius: 8 }} />
+                                    : <><span style={{ fontSize: 28 }}>📷</span><span style={{ fontSize: 13, color: '#64748b' }}>Tap to upload PAN card</span></>}
+                            </label>
+                        </div>
+
+                        <p style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>📎 Images are securely stored for admin verification.</p>
                         <div style={{ display: 'flex', gap: 10 }}>
                             <button type="button" onClick={() => { setStep('name'); setError(''); }}
                                 style={{ flex: 1, padding: 12, background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>

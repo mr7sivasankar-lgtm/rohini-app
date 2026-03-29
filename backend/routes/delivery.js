@@ -143,6 +143,7 @@ router.post('/register', async (req, res) => {
             name, phone, vehicleType, vehicleNumber, 
             address, city, state, pincode, location,
             email, dob, gender, aadhaarNumber, panNumber,
+            aadhaarImage, panImage,
             bankAccountName, bankAccountNumber, bankIfsc, bankName
         } = req.body;
 
@@ -168,6 +169,8 @@ router.post('/register', async (req, res) => {
         if (gender) partner.gender = gender;
         if (aadhaarNumber) partner.aadhaarNumber = aadhaarNumber.trim();
         if (panNumber) partner.panNumber = panNumber.trim().toUpperCase();
+        if (aadhaarImage) partner.documentAadhaar = aadhaarImage; // base64 image from KYC step
+        if (panImage) partner.documentPan = panImage;             // base64 image from KYC step
         if (bankAccountName) partner.bankAccountName = bankAccountName.trim();
         if (bankAccountNumber) partner.bankAccountNumber = bankAccountNumber.trim();
         if (bankIfsc) partner.bankIfsc = bankIfsc.trim().toUpperCase();
@@ -317,11 +320,11 @@ router.get('/stats', protectDelivery, async (req, res) => {
         const today = new Date(); today.setHours(0, 0, 0, 0);
 
         const [assigned, pending, deliveredToday, returnPickups, exchangePickups] = await Promise.all([
-            Order.countDocuments({ deliveryPartner: partnerId, deliveryStatus: { $in: ['Assigned', 'Picked Up', 'Out for Delivery'] } }),
-            Order.countDocuments({ deliveryPartner: partnerId, deliveryStatus: { $in: ['Assigned', 'Picked Up'] } }),
-            Order.countDocuments({ deliveryPartner: partnerId, deliveryStatus: 'Delivered', deliveredAt: { $gte: today } }),
-            Order.countDocuments({ deliveryPartner: partnerId, deliveryType: 'Return Pickup', deliveryStatus: { $ne: 'Delivered' } }),
-            Order.countDocuments({ deliveryPartner: partnerId, deliveryType: 'Exchange Pickup', deliveryStatus: { $ne: 'Delivered' } }),
+            Order.countDocuments({ deliveryPartner: partnerId, deliveryStatus: { $in: ['Assigned'] } }),
+            Order.countDocuments({ deliveryPartner: partnerId, deliveryStatus: { $in: ['Picked Up', 'Out for Delivery'] } }),
+            Order.countDocuments({ deliveryPartner: partnerId, deliveryStatus: { $in: ['Delivered', 'Collected'] }, deliveredAt: { $gte: today } }),
+            Order.countDocuments({ deliveryPartner: partnerId, deliveryType: 'Return Pickup', deliveryStatus: { $nin: ['Delivered', 'Collected'] } }),
+            Order.countDocuments({ deliveryPartner: partnerId, deliveryType: 'Exchange Pickup', deliveryStatus: { $nin: ['Delivered', 'Collected'] } }),
         ]);
 
         res.json({ success: true, data: { assigned, pending, deliveredToday, returnPickups, exchangePickups } });
@@ -337,10 +340,11 @@ router.get('/orders', protectDelivery, async (req, res) => {
     try {
         const orders = await Order.find({
             deliveryPartner: req.partner._id,
-            deliveryStatus: { $in: ['Assigned', 'Picked Up', 'Out for Delivery'] }
+            deliveryStatus: { $in: ['Assigned', 'Picked Up', 'Out for Delivery', 'Collected'] }
         })
         .populate('user', 'name phone')
         .sort({ createdAt: -1 });
+
 
         res.json({ success: true, data: orders });
     } catch (err) {

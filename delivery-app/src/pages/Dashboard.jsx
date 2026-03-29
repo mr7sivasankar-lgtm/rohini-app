@@ -381,9 +381,15 @@ export default function Dashboard() {
             case 'pending':        return orders.filter(o => ['Picked Up', 'Out for Delivery'].includes(o.deliveryStatus));
             case 'deliveredToday': {
                 const today = new Date().toDateString();
-                return orders.filter(o => o.deliveryStatus === 'Delivered' && new Date(o.updatedAt).toDateString() === today);
+                return orders.filter(o =>
+                    ['Delivered', 'Collected'].includes(o.deliveryStatus) &&
+                    new Date(o.updatedAt).toDateString() === today
+                );
             }
-            case 'returnPickups': return orders.filter(o => o.deliveryType === 'Return Pickup');
+            case 'returnPickups': return orders.filter(o =>
+                o.deliveryType === 'Return Pickup' &&
+                !['Delivered', 'Collected'].includes(o.deliveryStatus)
+            );
             default: return orders;
         }
     };
