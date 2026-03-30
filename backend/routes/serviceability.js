@@ -292,6 +292,29 @@ router.get('/areas/coverage-summary', protect, adminOnly, async (req, res) => {
 });
 
 // ============================================================
+// ADMIN: All registered sellers + DPs with location info
+// GET /api/serviceability/areas/coverage-entities
+// ============================================================
+router.get('/areas/coverage-entities', protect, adminOnly, async (req, res) => {
+    try {
+        const sellers = await Seller.find(
+            {},
+            { shopName: 1, ownerName: 1, city: 1, state: 1, pincode: 1, status: 1, createdAt: 1, shopCategory: 1, phone: 1 }
+        ).sort({ createdAt: -1 }).lean();
+
+        const dps = await DeliveryPartner.find(
+            {},
+            { name: 1, phone: 1, city: 1, pincode: 1, isActive: 1, isOnline: 1, createdAt: 1 }
+        ).sort({ createdAt: -1 }).lean();
+
+        res.json({ success: true, data: { sellers, deliveryPartners: dps } });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching entities' });
+    }
+});
+
+
+// ============================================================
 // ADMIN: List all serviceable areas WITH coverage stats
 // GET /api/serviceability/areas
 // ============================================================

@@ -459,7 +459,7 @@ const Home = () => {
                 )}
 
                 {/* Premium empty-state when location known but no shops nearby */}
-                {latitude && longitude && !loading && nearbyShops.length === 0 && topRatedShops.length === 0 && (
+                {latitude && longitude && !loading && nearbyShops.length === 0 && (
                     <div style={{
                         margin: '8px 20px 32px',
                         background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%)',
