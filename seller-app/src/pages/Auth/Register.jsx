@@ -53,7 +53,7 @@ const Register = () => {
 
     const [form, setForm] = useState({
         ownerName: '', email: '', password: '', confirmPassword: '',
-        shopName: '', shopCategory: 'Clothing Store', gstNumber: '', businessPan: '',
+        shopName: '', shopCategory: 'Mixed Fashion Store', gstNumber: '', businessPan: '',
         shopAddress: '', city: '', state: '', pincode: '',
         bankAccountName: '', bankName: '', bankAccountNumber: '', bankIfsc: '', upiId: '',
         openingTime: '10:00', closingTime: '21:00', commissionAgreementAccepted: false

@@ -59,7 +59,10 @@ const sellerSchema = new mongoose.Schema({
     },
     shopCategory: {
         type: String,
-        enum: ['Men Clothing', 'Women Clothing', 'Kids Clothing', 'Mixed Fashion Store'],
+        enum: [
+            'Men Clothing', 'Women Clothing', 'Kids Clothing', 'Mixed Fashion Store',
+            'Clothing Store', 'Boutique', 'Tailor'
+        ],
         default: 'Mixed Fashion Store'
     },
     businessCategory: {

@@ -10,7 +10,7 @@ const ProfileTab = ({ seller }) => {
     const [formData, setFormData] = useState({
         ownerName: '', email: '',
         phone: '', shopName: '',
-        shopCategory: 'Clothing Store',
+        shopCategory: 'Mixed Fashion Store',
         shopAddress: '', city: '', state: '', pincode: '',
         description: '', gstNumber: '', businessPan: '',
         openingTime: '10:00', closingTime: '21:00',
@@ -39,7 +39,7 @@ const ProfileTab = ({ seller }) => {
                 email: seller.email || '',
                 phone: seller.phone || '',
                 shopName: seller.shopName || '',
-                shopCategory: seller.shopCategory || 'Clothing Store',
+                shopCategory: seller.shopCategory || 'Mixed Fashion Store',
                 shopAddress: seller.shopAddress || '',
                 city: seller.city || '',
                 state: seller.state || '',
