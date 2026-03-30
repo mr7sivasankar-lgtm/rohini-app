@@ -688,7 +688,9 @@ const OrderTracking = () => {
                         <div className="ot-bill-total-row">
                             <span className="ot-payment-label">
                                 <span className="ot-payment-check">✅</span>
-                                Pay via {getPaymentLabel(order.paymentMethod)}
+                                {order.status === 'Delivered'
+                                    ? `Paid via ${getPaymentLabel(order.paymentMethod)}`
+                                    : `Pay via ${getPaymentLabel(order.paymentMethod)}`}
                             </span>
                             <strong className="ot-grand-total">₹{(order.totalAmount || 0).toFixed(2)}</strong>
                         </div>

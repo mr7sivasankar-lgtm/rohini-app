@@ -401,7 +401,7 @@ router.get('/seller/dashboard-stats', sellerProtect, async (req, res) => {
             if (order.status === 'Delivered') {
                 stats.delivered++;
                 if (isToday) {
-                    stats.revenueToday += order.totalAmount;
+                    stats.revenueToday += (order.sellerEarning || 0);
                 }
             }
 

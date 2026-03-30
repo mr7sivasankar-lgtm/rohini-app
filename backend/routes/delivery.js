@@ -699,7 +699,7 @@ router.get('/broadcasts', protectDelivery, async (req, res) => {
                     sellerShopAddress: order.sellerShopAddress || order.seller?.shopAddress,
                     pickupKm: parseFloat(pickupKm.toFixed(1)),
                     deliveryKm: parseFloat(deliveryKm.toFixed(1)),
-                    deliveryFee: order.deliveryFee || 20,
+                    deliveryFee: order.deliveryEarning ?? order.deliveryFee ?? 0,
                     totalAmount: order.totalAmount,
                     timeSinceBroadcast,
                     itemsSummary: order.items?.length > 0
@@ -765,7 +765,7 @@ export const broadcastOrder = async (orderId, deliveryType = 'Normal') => {
                 try {
                     await sendPush(p.pushSubscription, {
                         title: '🔔 New Delivery Request!',
-                        body: `Earn ₹${assignedOrder.deliveryFee || 20} - Pick up from ${assignedOrder?.sellerShopName || 'nearest shop'}`,
+                        body: `Earn ₹${(assignedOrder.deliveryEarning ?? assignedOrder.deliveryFee ?? 0).toFixed(0)} - Pick up from ${assignedOrder?.sellerShopName || 'nearest shop'}`,
                         icon: '/icons/icon-192.png',
                         vibrate: [300, 100, 300],
                         url: '/'
