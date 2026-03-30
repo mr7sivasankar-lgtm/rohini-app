@@ -283,7 +283,7 @@ router.get('/areas/coverage-summary', protect, adminOnly, async (req, res) => {
         const totalAreas = areas.length;
         const activeAreas = areas.filter(a => a.isActive).length;
         const inactiveAreas = totalAreas - activeAreas;
-        const totalSellers = await Seller.countDocuments({});
+        const totalSellers = await Seller.countDocuments({ status: 'Approved' });
         const totalDPs = await DeliveryPartner.countDocuments({ isActive: true });
         res.json({ success: true, data: { totalAreas, activeAreas, inactiveAreas, totalSellers, totalDPs } });
     } catch (error) {
@@ -299,8 +299,8 @@ router.get('/areas', protect, adminOnly, async (req, res) => {
     try {
         const areas = await ServiceableArea.find().sort({ createdAt: -1 });
 
-        // Fetch all sellers and delivery partners for counting
-        const sellers = await Seller.find({}, { city: 1, pincode: 1, status: 1 }).lean();
+        // Fetch only Approved sellers and active delivery partners for counting
+        const sellers = await Seller.find({ status: 'Approved' }, { city: 1, pincode: 1, state: 1 }).lean();
         const dps = await DeliveryPartner.find({ isActive: true }, { city: 1, pincode: 1 }).lean();
 
         const enriched = areas.map(area => {
@@ -309,19 +309,30 @@ router.get('/areas', protect, adminOnly, async (req, res) => {
             let dpCount = 0;
 
             if (area.type === 'city') {
-                const areaCity = (area.city || '').toLowerCase();
-                const areaName = (area.name || '').toLowerCase();
-                sellerCount = sellers.filter(s =>
-                    (s.city || '').toLowerCase() === areaCity ||
-                    (s.city || '').toLowerCase() === areaName
-                ).length;
-                dpCount = dps.filter(d =>
-                    (d.city || '').toLowerCase() === areaCity ||
-                    (d.city || '').toLowerCase() === areaName
-                ).length;
+                const areaCity = (area.city || '').toLowerCase().trim();
+                const areaName = (area.name || '').toLowerCase().trim();
+                sellerCount = sellers.filter(s => {
+                    const sCity = (s.city || '').toLowerCase().trim();
+                    return sCity === areaCity || sCity === areaName;
+                }).length;
+                dpCount = dps.filter(d => {
+                    const dCity = (d.city || '').toLowerCase().trim();
+                    return dCity === areaCity || dCity === areaName;
+                }).length;
             } else if (area.type === 'pincode') {
-                sellerCount = sellers.filter(s => (s.pincode || '') === (area.pincode || '')).length;
-                dpCount = dps.filter(d => (d.pincode || '') === (area.pincode || '')).length;
+                const areaPincode = (area.pincode || '').trim();
+                const areaName = (area.name || '').toLowerCase().trim();
+                // Match by pincode OR by city name (fallback for sellers who filled city but not pincode)
+                sellerCount = sellers.filter(s => {
+                    const sPincode = (s.pincode || '').trim();
+                    const sCity = (s.city || '').toLowerCase().trim();
+                    return (sPincode && sPincode === areaPincode) || sCity === areaName;
+                }).length;
+                dpCount = dps.filter(d => {
+                    const dPincode = (d.pincode || '').trim();
+                    const dCity = (d.city || '').toLowerCase().trim();
+                    return (dPincode && dPincode === areaPincode) || dCity === areaName;
+                }).length;
             } else {
                 // For radius type — count all (rough estimate)
                 sellerCount = sellers.length;
