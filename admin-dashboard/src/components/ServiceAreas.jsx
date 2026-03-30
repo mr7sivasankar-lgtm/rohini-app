@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
+import LocationIntelligence from './LocationIntelligence';
+
 
 // ─── Coverage Status Helpers ───────────────────────────────────────────────
 const COVERAGE_CONFIG = {
@@ -541,9 +543,15 @@ const ServiceAreas = () => {
                     </div>
                 </div>
             )}
+
+            {/* ── Location Intelligence ─────────────────────────────── */}
+            <div style={{ marginTop: 40, borderTop: '2px solid #e2e8f0', paddingTop: 32 }}>
+                <LocationIntelligence />
+            </div>
         </div>
     );
 };
+
 
 // ─── Style tokens ──────────────────────────────────────────────────────────
 const lbl = { display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 };

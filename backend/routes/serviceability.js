@@ -3,6 +3,9 @@ import ServiceableArea from '../models/ServiceableArea.js';
 import { protect, adminOnly } from '../middleware/auth.js';
 import Seller from '../models/Seller.js';
 import DeliveryPartner from '../models/DeliveryPartner.js';
+import Address from '../models/Address.js';
+import User from '../models/User.js';
+
 
 // Helper: compute coverage status from counts
 function computeCoverageStatus(sellers, deliveryPartners) {
@@ -270,6 +273,153 @@ router.get('/geocode/reverse', async (req, res) => {
                 pincode: ''
             } 
         });
+    }
+});
+
+// ============================================================
+// ADMIN: Location Intelligence — cluster all entities by pincode
+// GET /api/serviceability/areas/location-intelligence
+// ============================================================
+router.get('/areas/location-intelligence', protect, adminOnly, async (req, res) => {
+    try {
+        // Fetch all entities in parallel
+        const [sellers, dps, addresses] = await Promise.all([
+            Seller.find({}, {
+                shopName: 1, ownerName: 1, phone: 1, city: 1, state: 1, pincode: 1,
+                status: 1, createdAt: 1, shopCategory: 1,
+                'location.coordinates': 1
+            }).lean(),
+            DeliveryPartner.find({}, {
+                name: 1, phone: 1, city: 1, state: 1, pincode: 1,
+                isActive: 1, isOnline: 1, createdAt: 1, vehicleType: 1, status: 1,
+                'location.coordinates': 1
+            }).lean(),
+            Address.find({}, { userId: 1, city: 1, state: 1, pincode: 1 }).lean()
+        ]);
+
+        // ── Build cluster map keyed by pincode ──────────────────────────
+        const clusterMap = {};
+
+        const getOrCreate = (pincode, city, state) => {
+            const key = (pincode || '').trim();
+            if (!key) return null; // Skip blank pincodes
+            if (!clusterMap[key]) {
+                clusterMap[key] = {
+                    pincode: key, city: city || '', state: state || '',
+                    sellers: [], dps: [], userIds: new Set()
+                };
+            }
+            // Fill city/state from first entity that has it
+            if (!clusterMap[key].city && city) clusterMap[key].city = city;
+            if (!clusterMap[key].state && state) clusterMap[key].state = state;
+            return clusterMap[key];
+        };
+
+        sellers.forEach(s => {
+            const c = getOrCreate(s.pincode, s.city, s.state);
+            if (c) c.sellers.push(s);
+        });
+
+        dps.forEach(d => {
+            const c = getOrCreate(d.pincode, d.city, d.state);
+            if (c) c.dps.push(d);
+        });
+
+        addresses.forEach(a => {
+            const c = getOrCreate(a.pincode, a.city, a.state);
+            if (c && a.userId) c.userIds.add(a.userId.toString());
+        });
+
+        // ── Score & enrich each cluster ─────────────────────────────────
+        const clusters = Object.values(clusterMap).map(c => {
+            const approvedSellers = c.sellers.filter(s => s.status === 'Approved').length;
+            const pendingSellers  = c.sellers.filter(s => s.status === 'Pending Approval').length;
+            const activeDPs  = c.dps.filter(d => d.isActive).length;
+            const onlineDPs  = c.dps.filter(d => d.isOnline).length;
+            const userCount  = c.userIds.size;
+
+            // Coverage Score (0–100)
+            let score = 0;
+            if (approvedSellers > 0)                          score += 40;
+            if (activeDPs > 0)                                score += 30;
+            if (activeDPs > 0 && approvedSellers > 0 &&
+                approvedSellers / activeDPs <= 3)             score += 20;
+            if (userCount > 0)                                score += 10;
+
+            // Status
+            let status;
+            if (score >= 90)             status = 'Active';
+            else if (score >= 60)        status = 'Low Coverage';
+            else if (approvedSellers === 0 && activeDPs === 0 && userCount === 0)
+                                         status = 'Untapped';
+            else if (approvedSellers === 0 && activeDPs > 0)
+                                         status = 'No Sellers';
+            else if (activeDPs === 0 && approvedSellers > 0)
+                                         status = 'No Delivery Partners';
+            else                         status = 'Low Coverage';
+
+            // Auto-suggestions
+            const suggestions = [];
+            if (approvedSellers > 0 && activeDPs === 0)
+                suggestions.push('⚠️ No delivery partner in this area — sellers cannot fulfill orders. Recruit a delivery partner here.');
+            if (activeDPs > 0 && approvedSellers === 0)
+                suggestions.push('⚠️ Delivery partner registered but no approved sellers — partner is idle. Onboard a seller here.');
+            if (approvedSellers >= 3 && activeDPs <= 1)
+                suggestions.push('📦 High seller load on ' + (activeDPs === 0 ? 'no' : 'only 1') + ' delivery partner — add 1–2 more partners.');
+            if (userCount > 5 && approvedSellers === 0)
+                suggestions.push('🎯 ' + userCount + ' users have registered addresses here — high demand area with no sellers. Recruit sellers urgently.');
+            if (userCount > 10 && activeDPs === 0)
+                suggestions.push('🚀 ' + userCount + ' users in this area with zero delivery coverage — prioritise adding delivery partners.');
+            if (pendingSellers > 0)
+                suggestions.push('🕐 ' + pendingSellers + ' seller application(s) pending approval — review and approve to activate coverage.');
+            if (status === 'Untapped' && c.pincode)
+                suggestions.push('💡 No entities in pincode ' + c.pincode + ' — consider outreach to sellers and delivery partners in this area.');
+            if (status === 'Active')
+                suggestions.push('✅ Coverage looks healthy — keep monitoring to sustain service quality.');
+
+            // GPS distance between first seller and first DP (if coords available)
+            let distanceKm = null;
+            const sellerCoords = c.sellers.find(s => s.location?.coordinates?.length === 2)?.location?.coordinates;
+            const dpCoords     = c.dps.find(d => d.location?.coordinates?.length === 2)?.location?.coordinates;
+            if (sellerCoords && dpCoords) {
+                distanceKm = Math.round(haversineDistance(
+                    sellerCoords[1], sellerCoords[0],
+                    dpCoords[1], dpCoords[0]
+                ) * 10) / 10;
+            }
+
+            return {
+                pincode: c.pincode,
+                city: c.city || '—',
+                state: c.state || '',
+                sellers: {
+                    total: c.sellers.length, approved: approvedSellers,
+                    pending: pendingSellers, list: c.sellers
+                },
+                deliveryPartners: {
+                    total: c.dps.length, active: activeDPs,
+                    online: onlineDPs, list: c.dps
+                },
+                users:           { total: userCount },
+                coverageScore:   score,
+                status,
+                suggestions,
+                distanceKm
+            };
+        }).sort((a, b) => b.coverageScore - a.coverageScore || b.sellers.total - a.sellers.total);
+
+        const summary = {
+            totalClusters:   clusters.length,
+            fullyActive:     clusters.filter(c => c.status === 'Active').length,
+            needsAttention:  clusters.filter(c => c.status !== 'Active' && c.status !== 'Untapped').length,
+            untapped:        clusters.filter(c => c.status === 'Untapped').length,
+            totalUsers:      clusters.reduce((sum, c) => sum + c.users.total, 0)
+        };
+
+        res.json({ success: true, data: { clusters, summary } });
+    } catch (error) {
+        console.error('Location intelligence error:', error);
+        res.status(500).json({ success: false, message: 'Error building location intelligence' });
     }
 });
 
