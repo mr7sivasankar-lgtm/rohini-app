@@ -172,16 +172,16 @@ const ShopProfile = () => {
                     </svg>
                 </button>
                 <div className="shop-banner-container" style={{ position: 'relative' }}>
-                    {(shop.bannerImage || shop.logoImage) ? (
+                    {(shop.bannerImage && shop.bannerImage.trim()) ? (
                         <img
-                            src={getImageUrl(shop.bannerImage || shop.logoImage)}
+                            src={getImageUrl(shop.bannerImage.trim())}
                             alt={shop.shopName}
                             className="shop-banner-img"
-                            onError={(e) => { e.target.src = '/default-shop-banner.png'; }}
+                            onError={(e) => { e.target.src = '/default-shop-banner.jpg'; }}
                         />
                     ) : (
                         <img
-                            src="/default-shop-banner.png"
+                            src="/default-shop-banner.jpg"
                             alt="Default banner"
                             className="shop-banner-img"
                         />

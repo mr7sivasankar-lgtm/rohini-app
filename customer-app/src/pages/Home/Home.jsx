@@ -701,23 +701,22 @@ const ShopCard = ({ shop, onClick, nearby }) => {
 
             {/* Banner */}
             <div className="scc-banner">
-                {/* Only show image if the URL is a non-empty string */}
-                {(shop.bannerImage?.trim() || shop.logoImage?.trim()) ? (
+                {/* Show default clothing image when no banner uploaded */}
+                {(shop.bannerImage?.trim()) ? (
                     <img
-                        src={getImageUrl(shop.bannerImage?.trim() || shop.logoImage?.trim())}
+                        src={getImageUrl(shop.bannerImage.trim())}
                         alt={shop.shopName}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentNode.classList.add('scc-banner-fallback');
+                            e.target.src = '/default-shop-banner.jpg';
                         }}
                     />
                 ) : (
-                    // No image uploaded — clean gradient placeholder with shop initial
-                    <div className="scc-banner-fallback" style={{ width: '100%', height: '100%' }}>
-                        <span style={{ fontSize: 36 }}>🏪</span>
-                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 700, marginTop: 4 }}>{shop.shopName}</span>
-                    </div>
+                    <img
+                        src="/default-shop-banner.jpg"
+                        alt="Default banner"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
                 )}
                 <div className="scc-overlay" />
 
