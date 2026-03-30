@@ -212,17 +212,40 @@ export default function Dashboard() {
 
     // ── GPS watch → update state + backend ──
     useEffect(() => {
-        if (!navigator.geolocation) return;
-        const watchId = navigator.geolocation.watchPosition(
-            (pos) => {
-                const { latitude, longitude } = pos.coords;
-                setDpPosition({ lat: latitude, lng: longitude });
-                api.put('/delivery/location', { coordinates: [longitude, latitude] }).catch(() => {});
-            },
-            (err) => console.warn('GPS:', err.message),
-            { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
-        );
-        return () => navigator.geolocation.clearWatch(watchId);
+        // On Android, we must request location permission at runtime (not just in manifest)
+        const startGPS = () => {
+            if (!navigator.geolocation) return;
+            const watchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    setDpPosition({ lat: latitude, lng: longitude });
+                    api.put('/delivery/location', { coordinates: [longitude, latitude] }).catch(() => {});
+                },
+                (err) => console.warn('GPS:', err.message),
+                { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+            );
+            return watchId;
+        };
+
+        let watchId;
+        // Try Capacitor Geolocation plugin first (handles Android runtime permission dialog)
+        import('@capacitor/geolocation').then(({ Geolocation }) => {
+            Geolocation.requestPermissions().then(({ location }) => {
+                if (location === 'granted' || location === 'limited') {
+                    watchId = startGPS();
+                } else {
+                    console.warn('Location permission denied by user');
+                }
+            }).catch(() => {
+                // Fallback for browser/web — just start GPS directly
+                watchId = startGPS();
+            });
+        }).catch(() => {
+            // Capacitor not available (web dev mode) — start GPS directly
+            watchId = startGPS();
+        });
+
+        return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
     }, []);
 
     // ── Init Google Map ──

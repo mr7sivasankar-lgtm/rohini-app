@@ -155,6 +155,10 @@ router.post('/register', upload.fields([
 
         const sellerData = {
             shopName, ownerName, phone, password, shopAddress,
+            // Save city, state, pincode as top-level fields for admin service area matching
+            city: req.body.city || '',
+            state: req.body.state || '',
+            pincode: req.body.pincode || '',
             shopCategory: shopCategory || 'Mixed Fashion Store',
             gstNumber, openingTime, closingTime,
             email, businessPan, bankAccountName, bankAccountNumber, bankIfsc, bankName, upiId,
@@ -519,7 +523,19 @@ router.get('/top-rated', async (req, res) => {
             .lean();
 
         // 3. Merge and limit to 6
-        const mergedShops = [...featuredShops, ...autoShops].slice(0, 6);
+        let mergedShops = [...featuredShops, ...autoShops].slice(0, 6);
+
+        // 4. Fallback: if still no shops, return recently-approved sellers so home page isn't empty
+        //    This ensures new sellers (not yet featured/reviewed) still appear on the home page
+        if (mergedShops.length === 0) {
+            const fallbackShops = await Seller.find({
+                status: 'Approved'
+            })
+                .sort({ createdAt: -1 })
+                .limit(6)
+                .lean();
+            mergedShops = fallbackShops;
+        }
 
         const annotated = await Promise.all(mergedShops.map(async shopDoc => {
             const obj = shopDoc.toObject ? shopDoc.toObject() : shopDoc;

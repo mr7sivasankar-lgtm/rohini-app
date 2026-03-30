@@ -362,8 +362,8 @@ const Home = () => {
                     </div>
                     {loading ? (
                         <div className="loading-state">Loading amazing shops...</div>
-                    ) : topRatedShops.length === 0 ? (
-                        // No shops registered yet — friendly empty state
+                    ) : topRatedShops.length === 0 && nearbyShops.length === 0 ? (
+                        // Only show "No Shops" when truly no shops exist anywhere (not just no top-rated)
                         <div style={{
                             margin: '0 20px 16px', background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
                             border: '1.5px dashed #86efac', borderRadius: 20, padding: '28px 20px', textAlign: 'center'
@@ -630,14 +630,23 @@ const ShopCard = ({ shop, onClick, nearby }) => {
                         src={getImageUrl(shop.bannerImage || shop.logoImage)}
                         alt={shop.shopName}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={(e) => { e.target.src = '/default-shop-banner.png'; }}
+                        onError={(e) => {
+                            // On error replace with gradient fallback — no broken image
+                            e.target.style.display = 'none';
+                            e.target.parentNode.style.background = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)';
+                        }}
                     />
                 ) : (
-                    <img
-                        src="/default-shop-banner.png"
-                        alt="Default banner"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
+                    // No image uploaded — show a clean gradient placeholder
+                    <div style={{
+                        width: '100%', height: '100%',
+                        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexDirection: 'column', gap: 6
+                    }}>
+                        <span style={{ fontSize: 32 }}>🏪</span>
+                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{shop.shopName}</span>
+                    </div>
                 )}
                 <div className="scc-overlay" />
 

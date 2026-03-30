@@ -142,17 +142,17 @@
         display: none !important;
     }
 
-    /* 3. Main takes full width + leaves room for bottom nav */
+    /* 3. Main takes full width + leaves room for bottom nav + safe area */
     .dashboard-main {
         margin-left: 0 !important;
         max-width: 100vw;
-        padding-bottom: var(--bottom-nav-h);
+        padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
         min-height: 100dvh;
     }
 
-    /* 4. Compact header */
+    /* 4. Compact header — push below Android status bar */
     .dashboard-header {
-        padding: 12px 14px;
+        padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px 12px;
     }
     .dashboard-header h1 { font-size: 17px; }
     .mobile-header-actions { display: flex; align-items: center; gap: 8px; }
@@ -160,16 +160,20 @@
     /* 5. Compact content */
     .dashboard-content { padding: 12px; }
 
-    /* 6. Show mobile bottom nav */
+    /* 6. Show mobile bottom nav — extends into Android gesture nav area */
     .mobile-bottom-nav {
         display: flex !important;
         position: fixed;
         bottom: 0; left: 0; right: 0;
-        height: var(--bottom-nav-h);
+        /* Height includes safe-area-inset-bottom for gesture nav bar */
+        height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+        padding-bottom: env(safe-area-inset-bottom, 0px);
         background: white;
         border-top: 1px solid var(--border-color);
         box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
         z-index: 100;
+        align-items: flex-start;
+        padding-top: 6px;
     }
     .mobile-nav-item {
         flex: 1;

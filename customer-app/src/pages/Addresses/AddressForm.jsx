@@ -36,10 +36,12 @@ const AddressForm = () => {
     // Pre-fill receiver details from user profile (only for new addresses)
     useEffect(() => {
         if (!isEditMode && user) {
+            // user.phone may be stored as "+919700079239" — strip country code for the 10-digit field
+            const rawPhone = (user.phone || '').replace(/^\+91/, '').trim();
             setFormData(prev => ({
                 ...prev,
                 name: prev.name || user.name || '',
-                phone: prev.phone || user.phone || ''
+                phone: prev.phone || rawPhone
             }));
         }
     }, [user, isEditMode]);

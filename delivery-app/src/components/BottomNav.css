@@ -3,14 +3,17 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 65px;
+    /* Height adapts to Android gesture bar safe area */
+    height: calc(65px + env(safe-area-inset-bottom, 0px));
     background: white;
     box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.05);
     display: flex;
     justify-content: space-around;
-    align-items: center;
+    align-items: flex-start;
+    padding-top: 8px;
+    /* Bottom padding pushes icons up above the Android gesture navigation bar */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 1000;
-    padding-bottom: env(safe-area-inset-bottom, 0px); /* For iPhones */
 }
 
 .nav-item {
