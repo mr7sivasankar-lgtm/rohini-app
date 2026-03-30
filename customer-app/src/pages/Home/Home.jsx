@@ -458,16 +458,102 @@ const Home = () => {
                     </div>
                 )}
 
-                {/* Show when location is known but no nearby shops found */}
+                {/* Premium empty-state when location known but no shops nearby */}
                 {latitude && longitude && !loading && nearbyShops.length === 0 && topRatedShops.length === 0 && (
                     <div style={{
-                        margin: '8px 20px 24px', textAlign: 'center',
-                        padding: '20px 16px', background: '#f8fafc',
-                        borderRadius: 16, border: '1px solid #e2e8f0'
+                        margin: '8px 20px 32px',
+                        background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%)',
+                        border: '1.5px solid #bbf7d0',
+                        borderRadius: 24,
+                        padding: '36px 24px 28px',
+                        textAlign: 'center',
+                        boxShadow: '0 4px 24px rgba(34,197,94,0.10)',
+                        position: 'relative',
+                        overflow: 'hidden'
                     }}>
-                        <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
-                            🔍 No shops found near your location yet. More are coming soon!
+                        {/* Background decoration */}
+                        <div style={{
+                            position: 'absolute', top: -20, right: -20,
+                            width: 100, height: 100, borderRadius: '50%',
+                            background: 'rgba(34,197,94,0.08)'
+                        }} />
+                        <div style={{
+                            position: 'absolute', bottom: -30, left: -15,
+                            width: 80, height: 80, borderRadius: '50%',
+                            background: 'rgba(16,185,129,0.07)'
+                        }} />
+
+                        {/* Animated emoji */}
+                        <div style={{
+                            fontSize: 56, marginBottom: 14,
+                            display: 'inline-block',
+                            animation: 'shopBounce 2s ease-in-out infinite'
+                        }}>🏪</div>
+
+                        <h3 style={{
+                            margin: '0 0 8px',
+                            fontSize: 18,
+                            fontWeight: 800,
+                            color: '#14532d',
+                            letterSpacing: '-0.3px'
+                        }}>
+                            No Shops Near You Yet
+                        </h3>
+
+                        <p style={{
+                            margin: '0 0 6px',
+                            fontSize: 14,
+                            color: '#166534',
+                            lineHeight: 1.6,
+                            fontWeight: 500
+                        }}>
+                            We're expanding to <strong>{city || locality || 'your area'}</strong> soon!
                         </p>
+
+                        <p style={{
+                            margin: '0 0 22px',
+                            fontSize: 13,
+                            color: '#4ade80',
+                            lineHeight: 1.5
+                        }}>
+                            Our team is onboarding local shops. Check back in a bit 🚀
+                        </p>
+
+                        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <button
+                                onClick={() => setShowLocationPicker(true)}
+                                style={{
+                                    padding: '11px 22px',
+                                    background: 'linear-gradient(135deg, #16a34a, #15803d)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: 14,
+                                    fontSize: 14,
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 14px rgba(22,163,74,0.35)',
+                                    letterSpacing: '0.2px'
+                                }}
+                            >
+                                📍 Try Another Area
+                            </button>
+                            <button
+                                onClick={() => navigate('/search')}
+                                style={{
+                                    padding: '11px 22px',
+                                    background: 'white',
+                                    color: '#15803d',
+                                    border: '1.5px solid #86efac',
+                                    borderRadius: 14,
+                                    fontSize: 14,
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    letterSpacing: '0.2px'
+                                }}
+                            >
+                                🔍 Browse All
+                            </button>
+                        </div>
                     </div>
                 )}
 
