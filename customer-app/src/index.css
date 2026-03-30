@@ -55,8 +55,8 @@ html {
   --spacing-lg: 24px;
   --spacing-xl: 32px;
 
-  /* Bottom Nav Height */
-  --bottom-nav-height: 70px;
+  /* Bottom Nav Height — base height (safe-area handled per-component via env()) */
+  --bottom-nav-height: 75px;
 }
 
 body {

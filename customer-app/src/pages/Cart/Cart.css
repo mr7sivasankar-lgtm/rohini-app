@@ -234,8 +234,11 @@
     background: #fff;
     border-top: 1px solid #eee;
     padding: 14px 20px 16px;
+    /* Add safe area for Samsung/Android gesture bar */
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
     z-index: 100;
+    box-sizing: border-box;
 }
 
 .summary-rows {

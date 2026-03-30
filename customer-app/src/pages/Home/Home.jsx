@@ -252,6 +252,18 @@ const Home = () => {
 
                                     <div style={{ height: '1px', background: '#f1f5f9', margin: '0 0 0 44px' }} />
 
+                                    {/* Place pin on map option */}
+                                    <div className="drawer-action-row" onClick={() => { setShowMapPicker(true); }}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" style={{ width: '24px', flexShrink: 0 }}>
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                            <circle cx="12" cy="10" r="3" />
+                                        </svg>
+                                        <span style={{ color: '#ef4444', fontWeight: '600', flex: 1, fontSize: '15px' }}>Place pin on map</span>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+                                    </div>
+
+                                    <div style={{ height: '1px', background: '#f1f5f9', margin: '0 0 0 44px' }} />
+
                                     <div className="drawer-action-row" onClick={handleAutoDetect} style={{ alignItems: 'flex-start' }}>
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" style={{ marginTop: '2px', width: '24px', flexShrink: 0 }}>
                                             <circle cx="12" cy="12" r="10" />
@@ -317,7 +329,8 @@ const Home = () => {
             )}
 
             {/* ── Service Not Available Banner ─────────────────────────── */}
-            {serviceable === false && !locLoading && (city || pincode) && (
+            {/* Only show when serviceable===false AND no nearby shops exist */}
+            {serviceable === false && !locLoading && !loading && nearbyShops.length === 0 && (city || pincode) && (
                 <div style={{
                     margin: '20px 16px',
                     background: 'linear-gradient(135deg, #fff7ed, #fef3c7)',
@@ -352,30 +365,13 @@ const Home = () => {
                 </div>
             )}
 
-            {/* ── Main Content (only when serviceable or no area check) ── */}
-            {serviceable !== false && (
+            {/* ── Welcome / Banner Slideshow (always show when shops exist or loading) ── */}
+            {(nearbyShops.length > 0 || loading || serviceable !== false) && (
                 <div className="discovery-block" style={{ marginTop: '16px' }}>
-                    <div className="section-header" style={{ padding: '0 20px', marginBottom: '12px' }}>
-                        <h2 style={{ fontSize: '20px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            ⭐ Top Picks
-                        </h2>
-                    </div>
                     {loading ? (
-                        <div className="loading-state">Loading amazing shops...</div>
-                    ) : topRatedShops.length === 0 && nearbyShops.length === 0 ? (
-                        // Only show "No Shops" when truly no shops exist anywhere (not just no top-rated)
-                        <div style={{
-                            margin: '0 20px 16px', background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
-                            border: '1.5px dashed #86efac', borderRadius: 20, padding: '28px 20px', textAlign: 'center'
-                        }}>
-                            <div style={{ fontSize: 48, marginBottom: 10 }}>🏪</div>
-                            <h3 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 800, color: '#15803d' }}>No Shops Available Yet</h3>
-                            <p style={{ margin: 0, fontSize: 13, color: '#16a34a', lineHeight: 1.6 }}>
-                                We're onboarding sellers in your area. Check back soon — great shops are coming! 🚀
-                            </p>
-                        </div>
+                        <div className="loading-state" style={{ padding: '20px' }}>Loading shops...</div>
                     ) : (
-                        <HeroSlideshow shops={topRatedShops} banners={banners} navigate={navigate} />
+                        <HeroSlideshow banners={banners} navigate={navigate} />
                     )}
                 </div>
             )}
@@ -499,21 +495,15 @@ const getShopTags = (shop) => {
     return ['Ethnic Wear', 'Tops', 'Kurtas'];
 };
 
-/* ---- Auto Slideshow for Top Rated + Banners (Hero) ---- */
-const HeroSlideshow = ({ shops, banners, navigate }) => {
-    // 1. Build slides array
+/* ---- Auto Slideshow for Banners only (Top Picks) ---- */
+const HeroSlideshow = ({ banners, navigate }) => {
+    // Build slides — banners only (no top-rated shops in hero)
     const slides = [];
 
-    // Banners go first
     if (banners && banners.length > 0) {
         banners.forEach(b => slides.push({ type: 'banner', data: b }));
     } else {
         slides.push({ type: 'welcome' });
-    }
-
-    // Top rated shops go next
-    if (shops && shops.length > 0) {
-        shops.forEach(s => slides.push({ type: 'shop', data: s }));
     }
 
     const [active, setActive] = useState(0);
@@ -625,27 +615,22 @@ const ShopCard = ({ shop, onClick, nearby }) => {
 
             {/* Banner */}
             <div className="scc-banner">
-                {(shop.bannerImage || shop.logoImage) ? (
+                {/* Only show image if the URL is a non-empty string */}
+                {(shop.bannerImage?.trim() || shop.logoImage?.trim()) ? (
                     <img
-                        src={getImageUrl(shop.bannerImage || shop.logoImage)}
+                        src={getImageUrl(shop.bannerImage?.trim() || shop.logoImage?.trim())}
                         alt={shop.shopName}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => {
-                            // On error replace with gradient fallback — no broken image
                             e.target.style.display = 'none';
-                            e.target.parentNode.style.background = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)';
+                            e.target.parentNode.classList.add('scc-banner-fallback');
                         }}
                     />
                 ) : (
-                    // No image uploaded — show a clean gradient placeholder
-                    <div style={{
-                        width: '100%', height: '100%',
-                        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexDirection: 'column', gap: 6
-                    }}>
-                        <span style={{ fontSize: 32 }}>🏪</span>
-                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{shop.shopName}</span>
+                    // No image uploaded — clean gradient placeholder with shop initial
+                    <div className="scc-banner-fallback" style={{ width: '100%', height: '100%' }}>
+                        <span style={{ fontSize: 36 }}>🏪</span>
+                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 700, marginTop: 4 }}>{shop.shopName}</span>
                     </div>
                 )}
                 <div className="scc-overlay" />
