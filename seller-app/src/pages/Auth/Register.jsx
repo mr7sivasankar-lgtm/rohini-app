@@ -50,6 +50,8 @@ const Register = () => {
     const [devOtp, setDevOtp] = useState('');
     const [phoneVerified, setPhoneVerified] = useState(false);
     const [commissionRate, setCommissionRate] = useState(null); // dynamic from backend
+    const [bankSearch, setBankSearch] = useState('');
+    const [showBankDropdown, setShowBankDropdown] = useState(false);
 
     const [form, setForm] = useState({
         ownerName: '', email: '', password: '', confirmPassword: '',
@@ -258,22 +260,74 @@ const Register = () => {
                             {/* Bank Details */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
                                 <div className="form-group"><label>Account Holder Name *</label><input type="text" name="bankAccountName" value={form.bankAccountName} onChange={handleChange} required /></div>
-                                <div className="form-group">
+                                <div className="form-group" style={{ position: 'relative' }}>
                                     <label>Bank Name *</label>
-                                    {/* Bank name with datalist autocomplete */}
-                                    <input
-                                        type="text"
-                                        name="bankName"
-                                        value={form.bankName}
-                                        onChange={handleChange}
-                                        list="bank-list"
-                                        placeholder="Type to search bank..."
-                                        required
-                                        autoComplete="off"
-                                    />
-                                    <datalist id="bank-list">
-                                        {INDIAN_BANKS.map(b => <option key={b} value={b} />)}
-                                    </datalist>
+                                    {/* Custom searchable bank dropdown — works on Android */}
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Type to search bank..."
+                                            value={bankSearch || form.bankName}
+                                            autoComplete="off"
+                                            required={!form.bankName}
+                                            onFocus={() => { setBankSearch(''); setShowBankDropdown(true); }}
+                                            onChange={e => { setBankSearch(e.target.value); setShowBankDropdown(true); }}
+                                            style={{ width: '100%', paddingRight: '32px' }}
+                                        />
+                                        <span style={{
+                                            position: 'absolute', right: '10px', top: '50%',
+                                            transform: 'translateY(-50%)', pointerEvents: 'none',
+                                            color: '#94a3b8', fontSize: '12px'
+                                        }}>▼</span>
+                                    </div>
+                                    {showBankDropdown && (
+                                        <div style={{
+                                            position: 'absolute', top: '100%', left: 0, right: 0,
+                                            background: '#fff', border: '1.5px solid #3b82f6',
+                                            borderRadius: '8px', zIndex: 999,
+                                            maxHeight: '200px', overflowY: 'auto',
+                                            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                                            marginTop: '2px'
+                                        }}>
+                                            {INDIAN_BANKS
+                                                .filter(b => b.toLowerCase().includes((bankSearch || '').toLowerCase()))
+                                                .map(b => (
+                                                    <div
+                                                        key={b}
+                                                        onMouseDown={e => e.preventDefault()}
+                                                        onClick={() => {
+                                                            setForm(f => ({ ...f, bankName: b }));
+                                                            setBankSearch('');
+                                                            setShowBankDropdown(false);
+                                                        }}
+                                                        style={{
+                                                            padding: '11px 14px',
+                                                            fontSize: '14px',
+                                                            cursor: 'pointer',
+                                                            borderBottom: '1px solid #f1f5f9',
+                                                            background: form.bankName === b ? '#eff6ff' : '#fff',
+                                                            color: form.bankName === b ? '#2563eb' : '#1e293b',
+                                                            fontWeight: form.bankName === b ? 700 : 400
+                                                        }}
+                                                    >
+                                                        {b}
+                                                    </div>
+                                                ))
+                                            }
+                                            {INDIAN_BANKS.filter(b => b.toLowerCase().includes((bankSearch || '').toLowerCase())).length === 0 && (
+                                                <div style={{ padding: '12px 14px', color: '#94a3b8', fontSize: '13px' }}>No banks found</div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {/* Hidden input to satisfy required validation */}
+                                    <input type="hidden" name="bankName" value={form.bankName} required />
+                                    {/* Overlay to close dropdown on outside click */}
+                                    {showBankDropdown && (
+                                        <div
+                                            style={{ position: 'fixed', inset: 0, zIndex: 998 }}
+                                            onClick={() => { setShowBankDropdown(false); setBankSearch(''); }}
+                                        />
+                                    )}
                                 </div>
                                 <div className="form-group"><label>Account Number *</label><input type="text" name="bankAccountNumber" value={form.bankAccountNumber} onChange={handleChange} required /></div>
                                 <div className="form-group"><label>IFSC Code *</label><input type="text" name="bankIfsc" value={form.bankIfsc} onChange={handleChange} style={{ textTransform: 'uppercase' }} required /></div>
