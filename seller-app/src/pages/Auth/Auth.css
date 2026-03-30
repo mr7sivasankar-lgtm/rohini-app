@@ -8,6 +8,20 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+@media (max-width: 520px) {
+    .auth-container {
+        padding: 12px 8px;
+        align-items: flex-start;
+    }
+    .auth-card {
+        padding: 24px 16px !important;
+        border-radius: 14px;
+    }
+    .auth-card.register-card {
+        max-width: 100% !important;
+    }
+}
+
 .auth-card {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
@@ -59,9 +73,10 @@
     gap: 20px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 520px) {
     .two-col-form {
         grid-template-columns: 1fr;
+        gap: 12px;
     }
 }
 

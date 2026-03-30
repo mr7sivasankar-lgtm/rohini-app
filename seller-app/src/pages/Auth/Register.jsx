@@ -216,15 +216,15 @@ const Register = () => {
                     {step === 3 && (
                         <div className="auth-form">
                             <h3>🏪 Shop & Owner Details</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                            <div className="two-col-form">
                                 <div className="form-group"><label>Owner Name *</label><input type="text" name="ownerName" value={form.ownerName} onChange={handleChange} required /></div>
                                 <div className="form-group"><label>Email (Optional)</label><input type="email" name="email" value={form.email} onChange={handleChange} /></div>
                                 <div className="form-group"><label>Password *</label><input type="password" name="password" value={form.password} onChange={handleChange} required /></div>
                                 <div className="form-group"><label>Confirm *</label><input type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} required /></div>
-                                <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Shop Name *</label><input type="text" name="shopName" value={form.shopName} onChange={handleChange} required /></div>
+                                <div className="form-group full-width"><label>Shop Name *</label><input type="text" name="shopName" value={form.shopName} onChange={handleChange} required /></div>
                                 <div className="form-group"><label>Shop Category</label><select name="shopCategory" value={form.shopCategory} onChange={handleChange} className="styled-select">{SHOP_CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
                                 <div className="form-group"><label>GSTIN (Optional)</label><input type="text" name="gstNumber" value={form.gstNumber} onChange={handleChange} style={{ textTransform: 'uppercase' }} /></div>
-                                <div className="form-group"><label>Business PAN (Optional)</label><input type="text" name="businessPan" value={form.businessPan} onChange={handleChange} style={{ textTransform: 'uppercase' }} maxLength={10} /></div>
+                                <div className="form-group full-width"><label>Business PAN (Optional)</label><input type="text" name="businessPan" value={form.businessPan} onChange={handleChange} style={{ textTransform: 'uppercase' }} maxLength={10} /></div>
                             </div>
                         </div>
                     )}
@@ -258,7 +258,7 @@ const Register = () => {
                             <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '15px' }}>Only Aadhaar & PAN are mandatory for KYC. Bank details are required for payouts.</p>
 
                             {/* Bank Details */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                            <div className="two-col-form">
                                 <div className="form-group"><label>Account Holder Name *</label><input type="text" name="bankAccountName" value={form.bankAccountName} onChange={handleChange} required /></div>
                                 <div className="form-group" style={{ position: 'relative' }}>
                                     <label>Bank Name *</label>
@@ -331,7 +331,7 @@ const Register = () => {
                                 </div>
                                 <div className="form-group"><label>Account Number *</label><input type="text" name="bankAccountNumber" value={form.bankAccountNumber} onChange={handleChange} required /></div>
                                 <div className="form-group"><label>IFSC Code *</label><input type="text" name="bankIfsc" value={form.bankIfsc} onChange={handleChange} style={{ textTransform: 'uppercase' }} required /></div>
-                                <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>UPI ID (Optional)</label><input type="text" name="upiId" value={form.upiId} onChange={handleChange} placeholder="merchant@upi" /></div>
+                                <div className="form-group full-width"><label>UPI ID (Optional)</label><input type="text" name="upiId" value={form.upiId} onChange={handleChange} placeholder="merchant@upi" /></div>
                             </div>
 
                             {/* Documents */}
