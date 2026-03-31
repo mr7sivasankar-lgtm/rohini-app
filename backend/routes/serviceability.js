@@ -294,7 +294,8 @@ router.get('/areas/location-intelligence', protect, adminOnly, async (req, res) 
                 isActive: 1, isOnline: 1, createdAt: 1, vehicleType: 1, status: 1,
                 'location.coordinates': 1
             }).lean(),
-            Address.find({}, { userId: 1, city: 1, state: 1, pincode: 1 }).lean()
+            Address.find({}, { userId: 1, city: 1, state: 1, pincode: 1 })
+                .populate('userId', 'name phone createdAt').lean()
         ]);
 
         // ── Build cluster map keyed by pincode ──────────────────────────
@@ -302,11 +303,11 @@ router.get('/areas/location-intelligence', protect, adminOnly, async (req, res) 
 
         const getOrCreate = (pincode, city, state) => {
             const key = (pincode || '').trim();
-            if (!key) return null; // Skip blank pincodes
+            if (!key) return null;
             if (!clusterMap[key]) {
                 clusterMap[key] = {
                     pincode: key, city: city || '', state: state || '',
-                    sellers: [], dps: [], userIds: new Set()
+                    sellers: [], dps: [], userIds: new Set(), userList: []
                 };
             }
             // Fill city/state from first entity that has it
@@ -327,7 +328,21 @@ router.get('/areas/location-intelligence', protect, adminOnly, async (req, res) 
 
         addresses.forEach(a => {
             const c = getOrCreate(a.pincode, a.city, a.state);
-            if (c && a.userId) c.userIds.add(a.userId.toString());
+            if (c && a.userId) {
+                const uid = (a.userId._id || a.userId).toString();
+                if (!c.userIds.has(uid)) {
+                    c.userIds.add(uid);
+                    // Store user detail once per unique user
+                    if (a.userId && typeof a.userId === 'object') {
+                        c.userList.push({
+                            _id:       a.userId._id,
+                            name:      a.userId.name || '—',
+                            phone:     a.userId.phone || '—',
+                            createdAt: a.userId.createdAt
+                        });
+                    }
+                }
+            }
         });
 
         // ── Score & enrich each cluster ─────────────────────────────────
@@ -400,8 +415,8 @@ router.get('/areas/location-intelligence', protect, adminOnly, async (req, res) 
                     total: c.dps.length, active: activeDPs,
                     online: onlineDPs, list: c.dps
                 },
-                users:           { total: userCount },
-                coverageScore:   score,
+                users:         { total: userCount, list: c.userList },
+                coverageScore: score,
                 status,
                 suggestions,
                 distanceKm

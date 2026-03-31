@@ -46,7 +46,6 @@ const StatCard = ({ icon, label, value, bg, color }) => (
 const ServiceAreas = () => {
     const [areas, setAreas] = useState([]);
     const [summary, setSummary] = useState(null);
-    const [entities, setEntities] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -59,14 +58,12 @@ const ServiceAreas = () => {
     const fetchAll = async () => {
         setLoading(true);
         try {
-            const [areasRes, summaryRes, entitiesRes] = await Promise.all([
+            const [areasRes, summaryRes] = await Promise.all([
                 api.get('/serviceability/areas'),
-                api.get('/serviceability/areas/coverage-summary').catch(() => ({ data: { success: false } })),
-                api.get('/serviceability/areas/coverage-entities').catch(() => ({ data: { success: false } }))
+                api.get('/serviceability/areas/coverage-summary').catch(() => ({ data: { success: false } }))
             ]);
             if (areasRes.data.success) setAreas(areasRes.data.data);
             if (summaryRes.data.success) setSummary(summaryRes.data.data);
-            if (entitiesRes.data.success) setEntities(entitiesRes.data.data);
         } catch (err) {
             console.error('Error fetching areas:', err);
         } finally {
@@ -427,125 +424,8 @@ const ServiceAreas = () => {
                 </div>
             )}
 
-            {/* ── Registered Entities Panel ─────────────────────────── */}
-            {entities && (
-                <div style={{ marginTop: 32 }}>
-
-                    {/* Sellers */}
-                    <div style={{ marginBottom: 28 }}>
-                        <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            🏪 Registered Sellers
-                            <span style={{ fontSize: 12, fontWeight: 600, background: '#fef3c7', color: '#92400e', padding: '2px 10px', borderRadius: 20, marginLeft: 4 }}>
-                                {entities.sellers.length} total
-                            </span>
-                        </h3>
-                        {entities.sellers.length === 0 ? (
-                            <div style={{ padding: '20px', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
-                                No sellers registered yet.
-                            </div>
-                        ) : (
-                            <div style={{ background: 'white', borderRadius: 14, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-                                <div style={{ overflowX: 'auto' }}>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                        <thead>
-                                            <tr style={{ background: '#fffbeb', borderBottom: '2px solid #fde68a' }}>
-                                                {['Shop Name', 'Owner', 'Phone', 'Category', 'Location', 'Status', 'Registered On'].map(h => (
-                                                    <th key={h} style={th}>{h}</th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {entities.sellers.map((s, i) => (
-                                                <tr key={s._id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? 'white' : '#fafafa' }}>
-                                                    <td style={td}><span style={{ fontWeight: 700, color: '#0f172a' }}>{s.shopName || '—'}</span></td>
-                                                    <td style={td}>{s.ownerName || '—'}</td>
-                                                    <td style={td}><span style={{ fontFamily: 'monospace', fontSize: 13 }}>{s.phone || '—'}</span></td>
-                                                    <td style={td}><span style={{ fontSize: 12, background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: 8, fontWeight: 600 }}>{s.shopCategory || '—'}</span></td>
-                                                    <td style={td}>
-                                                        <span style={{ fontSize: 13, color: '#475569' }}>
-                                                            {[s.city, s.state].filter(Boolean).join(', ') || '—'}
-                                                            {s.pincode && <span style={{ marginLeft: 6, background: '#f1f5f9', color: '#64748b', fontSize: 11, padding: '1px 6px', borderRadius: 6 }}>{s.pincode}</span>}
-                                                        </span>
-                                                    </td>
-                                                    <td style={td}>
-                                                        <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700,
-                                                            background: s.status === 'Approved' ? '#d1fae5' : s.status === 'Rejected' ? '#fee2e2' : '#fef3c7',
-                                                            color: s.status === 'Approved' ? '#065f46' : s.status === 'Rejected' ? '#991b1b' : '#92400e'
-                                                        }}>{s.status}</span>
-                                                    </td>
-                                                    <td style={{ ...td, fontSize: 12, color: '#64748b' }}>
-                                                        {s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Delivery Partners */}
-                    <div>
-                        <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            🛵 Delivery Partners
-                            <span style={{ fontSize: 12, fontWeight: 600, background: '#fce7f3', color: '#9d174d', padding: '2px 10px', borderRadius: 20, marginLeft: 4 }}>
-                                {entities.deliveryPartners.length} total
-                            </span>
-                        </h3>
-                        {entities.deliveryPartners.length === 0 ? (
-                            <div style={{ padding: '20px', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
-                                No delivery partners registered yet.
-                            </div>
-                        ) : (
-                            <div style={{ background: 'white', borderRadius: 14, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-                                <div style={{ overflowX: 'auto' }}>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                        <thead>
-                                            <tr style={{ background: '#fdf4ff', borderBottom: '2px solid #e9d5ff' }}>
-                                                {['Name', 'Phone', 'Location', 'Coverage', 'Online Status', 'Registered On'].map(h => (
-                                                    <th key={h} style={th}>{h}</th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {entities.deliveryPartners.map((dp, i) => (
-                                                <tr key={dp._id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? 'white' : '#fafafa' }}>
-                                                    <td style={td}><span style={{ fontWeight: 700, color: '#0f172a' }}>{dp.name || '—'}</span></td>
-                                                    <td style={td}><span style={{ fontFamily: 'monospace', fontSize: 13 }}>{dp.phone || '—'}</span></td>
-                                                    <td style={td}>
-                                                        <span style={{ fontSize: 13, color: '#475569' }}>
-                                                            {dp.city || '—'}
-                                                            {dp.pincode && <span style={{ marginLeft: 6, background: '#f1f5f9', color: '#64748b', fontSize: 11, padding: '1px 6px', borderRadius: 6 }}>{dp.pincode}</span>}
-                                                        </span>
-                                                    </td>
-                                                    <td style={td}>
-                                                        <CoverageBadge status={dp.isActive ? 'Active' : 'No Delivery Partners'} />
-                                                    </td>
-                                                    <td style={td}>
-                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600,
-                                                            color: dp.isOnline ? '#065f46' : '#64748b'
-                                                        }}>
-                                                            <span style={{ width: 7, height: 7, borderRadius: '50%', background: dp.isOnline ? '#10b981' : '#cbd5e1' }} />
-                                                            {dp.isOnline ? 'Online' : 'Offline'}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ ...td, fontSize: 12, color: '#64748b' }}>
-                                                        {dp.createdAt ? new Date(dp.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
             {/* ── Location Intelligence ─────────────────────────────── */}
-            <div style={{ marginTop: 40, borderTop: '2px solid #e2e8f0', paddingTop: 32 }}>
+            <div style={{ marginTop: 32 }}>
                 <LocationIntelligence />
             </div>
         </div>

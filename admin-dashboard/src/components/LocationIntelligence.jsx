@@ -117,6 +117,13 @@ const ClusterCard = ({ cluster }) => {
         fmt(d.createdAt)
     ]);
 
+    const userList = cluster.users.list || [];
+    const userRows = userList.map(u => [
+        <span style={{ fontWeight: 700 }}>{u.name || '—'}</span>,
+        <a href={`tel:${u.phone}`} style={{ color: '#2563eb', fontFamily: 'monospace' }}>{u.phone || '—'}</a>,
+        fmt(u.createdAt)
+    ]);
+
     return (
         <div style={{
             background: cfg.bg, border: `1.5px solid ${cfg.border}`,
@@ -198,6 +205,12 @@ const ClusterCard = ({ cluster }) => {
                     headers={['Name', 'Phone', 'Vehicle', 'Active', 'Online', 'Registered']}
                     rows={dpRows}
                     emptyMsg="No delivery partners in this pincode"
+                />
+                <EntityTable
+                    title={`👥 Users (${cluster.users.total})`}
+                    headers={['Name', 'Phone', 'Joined On']}
+                    rows={userRows}
+                    emptyMsg="No users with saved addresses in this pincode"
                 />
             </div>
         </div>
