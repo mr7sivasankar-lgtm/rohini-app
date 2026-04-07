@@ -1,7 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Rohini</string>
-    <string name="title_activity_main">Rohini</string>
-    <string name="package_name">com.rohini.customerapp</string>
-    <string name="custom_url_scheme">com.rohini.customerapp</string>
+    <string name="app_name">Zunto</string>
+    <string name="title_activity_main">Zunto</string>
+    <string name="package_name">com.zunto.app</string>
+    <string name="custom_url_scheme">com.zunto.app</string>
 </resources>
+

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import SplashScreen from './components/SplashScreen/SplashScreen';
 import { App as CapApp } from '@capacitor/app';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
@@ -194,8 +195,11 @@ const AppRoutes = () => {
 };
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <ErrorBoundary>
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
       <BrowserRouter>
         <AuthProvider>
           <LocationProvider>

@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import SplashScreen from './components/SplashScreen/SplashScreen';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import Dashboard from './pages/Dashboard/Dashboard';
@@ -88,8 +90,11 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <AuthProvider>
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />

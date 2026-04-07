@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useAuth } from './contexts/AuthContext';
+import SplashScreen from './components/SplashScreen/SplashScreen';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import OrderDetail from './pages/OrderDetail';
@@ -23,17 +25,22 @@ const PrivateRoute = ({ children }) => {
 };
 
 export default function App() {
+    const [showSplash, setShowSplash] = useState(true);
+
     return (
-        <BrowserRouter>
-            <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-                <Route path="/order/:id" element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
-                <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-                <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
-                <Route path="/wallet" element={<PrivateRoute><Wallet /></PrivateRoute>} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-        </BrowserRouter>
+        <>
+            {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+            <BrowserRouter>
+                <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                    <Route path="/order/:id" element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
+                    <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+                    <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
+                    <Route path="/wallet" element={<PrivateRoute><Wallet /></PrivateRoute>} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </BrowserRouter>
+        </>
     );
 }

@@ -1,8 +1,9 @@
 {
-  "appId": "com.rohini.seller",
-  "appName": "Rohini Seller",
+  "appId": "com.zunto.seller",
+  "appName": "Zunto Seller",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
   }
 }
+

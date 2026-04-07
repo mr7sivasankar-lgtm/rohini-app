@@ -1,8 +1,9 @@
 {
-  "appId": "com.rohini.delivery",
-  "appName": "Rohini Delivery",
+  "appId": "com.zunto.partner",
+  "appName": "Zunto Partner",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
   }
 }
+

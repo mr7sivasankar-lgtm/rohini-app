@@ -10,9 +10,11 @@ import TopRatedShops from './components/TopRatedShops';
 import SettingsTab from './components/SettingsTab';
 import PayoutsTab from './components/PayoutsTab';
 import RevenueDashboard from './components/RevenueDashboard';
+import SplashScreen from './components/SplashScreen/SplashScreen';
 import './index.css';
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -295,6 +297,10 @@ function App() {
     setActiveTab(tab);
     setSidebarOpen(false); // Close sidebar on mobile
   };
+
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
 
   if (loading) {
     return <div className="loading"><div className="spinner"></div></div>;
