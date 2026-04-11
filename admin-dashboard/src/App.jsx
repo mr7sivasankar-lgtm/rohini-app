@@ -1056,6 +1056,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
           <th>Quantity</th>
           <th>Delivery Address</th>
           <th>Total</th>
+          <th style={{ minWidth: '140px' }}>Admin Profit</th>
           <th>Status</th>
           <th>Date</th>
           <th style={{ minWidth: '160px' }}>Delivery Partner</th>
@@ -1172,6 +1173,54 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                   )}
                 </td>
                 <td style={{ fontWeight: 600 }}>₹{(order.total ?? order.totalAmount ?? 0).toFixed(2)}</td>
+                <td style={{ minWidth: '140px' }}>
+                  {(() => {
+                    const commission = order.commissionAmount || 0;
+                    const platFee = order.platformFee || 0;
+                    const gwFee = order.paymentGatewayFee || 0;
+                    const netProfit = commission + platFee - gwFee;
+                    const sellerEarning = order.sellerEarning || 0;
+                    const deliveryEarning = order.deliveryEarning || order.deliveryFee || 0;
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {/* Net Profit Chip */}
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '5px',
+                          background: netProfit >= 0 ? '#f0fdf4' : '#fef2f2',
+                          color: netProfit >= 0 ? '#16a34a' : '#dc2626',
+                          border: `1px solid ${netProfit >= 0 ? '#86efac' : '#fca5a5'}`,
+                          borderRadius: '8px', padding: '5px 10px',
+                          fontWeight: 800, fontSize: '14px'
+                        }}>
+                          {netProfit >= 0 ? '💰' : '⚠️'} ₹{netProfit.toFixed(2)}
+                        </div>
+                        {/* Breakdown */}
+                        <div style={{ fontSize: '10px', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '2px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                            <span style={{ color: '#059669' }}>+ Commission</span>
+                            <span style={{ fontWeight: 600, color: '#059669' }}>₹{commission.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                            <span style={{ color: '#7c3aed' }}>+ Platform Fee</span>
+                            <span style={{ fontWeight: 600, color: '#7c3aed' }}>₹{platFee.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', borderTop: '1px dashed #e2e8f0', paddingTop: '2px', marginTop: '1px' }}>
+                            <span style={{ color: '#dc2626' }}>− Gateway Fee</span>
+                            <span style={{ fontWeight: 600, color: '#dc2626' }}>₹{gwFee.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '2px', marginTop: '1px' }}>
+                            <span style={{ color: '#3b82f6' }}>→ Seller Gets</span>
+                            <span style={{ fontWeight: 600, color: '#3b82f6' }}>₹{sellerEarning.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                            <span style={{ color: '#f97316' }}>→ Delivery Gets</span>
+                            <span style={{ fontWeight: 600, color: '#f97316' }}>₹{deliveryEarning.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </td>
                 <td>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
                     <span className={`status-badge status-${order.status?.toLowerCase().replace(/ /g, '-')}`}>
@@ -1370,7 +1419,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
               {/* Expandable History Row */}
               {expandedOrders[order._id] && (
                 <tr key={`hist-${order._id}`}>
-                  <td colSpan={14} style={{ background: '#f8fafc', padding: '0 12px 12px 40px', borderBottom: '2px solid #e2e8f0' }}>
+                  <td colSpan={15} style={{ background: '#f8fafc', padding: '0 12px 12px 40px', borderBottom: '2px solid #e2e8f0' }}>
                     <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', paddingTop: '12px' }}>
                       {/* Order Status Timeline */}
                       <div style={{ minWidth: '220px' }}>
