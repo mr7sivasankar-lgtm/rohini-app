@@ -345,6 +345,41 @@ router.get('/areas/location-intelligence', protect, adminOnly, async (req, res) 
             }
         });
 
+        // ── Enrich clusters with accurate city/town from India Post pincode API ──
+        const uniquePincodes = Object.keys(clusterMap);
+
+        const pincodeInfoMap = {};
+        await Promise.all(uniquePincodes.map(async (pin) => {
+            try {
+                const resp = await fetch(
+                    `https://api.postalpincode.in/pincode/${pin}`,
+                    { headers: { 'User-Agent': 'RohiniApp/1.0' }, signal: AbortSignal.timeout(4000) }
+                );
+                if (!resp.ok) return;
+                const json = await resp.json();
+                if (json?.[0]?.Status === 'Success' && json[0].PostOffice?.length > 0) {
+                    const po = json[0].PostOffice[0];
+                    pincodeInfoMap[pin] = {
+                        city:  po.Division || po.District || po.Name || '',
+                        taluk: po.Taluk || po.Block || '',   // town/taluk name
+                        district: po.District || '',
+                        state: po.State || '',
+                        name:  po.Name || ''
+                    };
+                }
+            } catch (_) { /* timeout or network — skip enrichment for this pin */ }
+        }));
+
+        // Apply enriched data to clusterMap
+        for (const [pin, info] of Object.entries(pincodeInfoMap)) {
+            if (clusterMap[pin]) {
+                // Prefer: Taluk/District as city label (more specific than Division)
+                const townName = info.taluk || info.district || info.city || '';
+                if (townName) clusterMap[pin].city = townName;
+                if (info.state) clusterMap[pin].state = info.state;
+            }
+        }
+
         // ── Score & enrich each cluster ─────────────────────────────────
         const clusters = Object.values(clusterMap).map(c => {
             const approvedSellers = c.sellers.filter(s => s.status === 'Approved').length;
