@@ -30,6 +30,8 @@ router.put('/', protect, adminOnly, async (req, res) => {
         if (req.body.baseDeliveryDistance !== undefined) config.baseDeliveryDistance = req.body.baseDeliveryDistance;
         if (req.body.paymentGatewayPercentage !== undefined) config.paymentGatewayPercentage = req.body.paymentGatewayPercentage;
         if (req.body.freeDeliveryThreshold !== undefined) config.freeDeliveryThreshold = req.body.freeDeliveryThreshold;
+        if (req.body.welcomePromoEnabled !== undefined) config.welcomePromoEnabled = req.body.welcomePromoEnabled;
+        if (req.body.welcomePromoCode !== undefined) config.welcomePromoCode = (req.body.welcomePromoCode || 'WELCOME').trim().toUpperCase();
 
         await config.save();
         res.json({ success: true, data: config, message: 'Configuration updated successfully' });

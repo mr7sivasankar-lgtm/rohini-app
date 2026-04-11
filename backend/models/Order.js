@@ -111,6 +111,15 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // === Promo Code ===
+    promoCode: {
+        type: String,
+        default: ''
+    },
+    deliverySubsidy: {
+        type: Number,
+        default: 0  // delivery fee absorbed by admin when promo applied
+    },
     totalAmount: {
         type: Number,
         required: true

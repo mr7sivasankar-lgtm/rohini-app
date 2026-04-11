@@ -27,12 +27,50 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 
 const router = express.Router();
 
+// @route   GET /api/orders/check-promo-eligibility
+// @desc    Check if current user is eligible for the welcome promo (first-time user)
+// @access  Private
+router.get('/check-promo-eligibility', protect, async (req, res) => {
+    try {
+        const config = await AdminConfig.getConfig();
+
+        if (!config.welcomePromoEnabled) {
+            return res.json({ success: true, eligible: false, reason: 'Promo not active' });
+        }
+
+        const user = await User.findById(req.user._id).select('hasUsedWelcomePromo');
+        if (user.hasUsedWelcomePromo) {
+            return res.json({ success: true, eligible: false, reason: 'Already used' });
+        }
+
+        // Check for any prior non-cancelled orders
+        const priorOrders = await Order.countDocuments({
+            user: req.user._id,
+            status: { $nin: ['Cancelled'] }
+        });
+
+        if (priorOrders > 0) {
+            return res.json({ success: true, eligible: false, reason: 'Not a new user' });
+        }
+
+        res.json({
+            success: true,
+            eligible: true,
+            promoCode: config.welcomePromoCode || 'WELCOME',
+            message: 'Free delivery on your first order!'
+        });
+    } catch (error) {
+        console.error('Promo eligibility check error:', error);
+        res.status(500).json({ success: false, message: 'Error checking promo eligibility' });
+    }
+});
+
 // @route   POST /api/orders
 // @desc    Create new order
 // @access  Private
 router.post('/', protect, async (req, res) => {
     try {
-        const { items, shippingAddress, contactInfo, deliveryFee = 50 } = req.body;
+        const { items, shippingAddress, contactInfo, deliveryFee = 50, promoCode: appliedPromoCode } = req.body;
 
         if (!items || items.length === 0) {
             return res.status(400).json({
@@ -187,11 +225,40 @@ router.post('/', protect, async (req, res) => {
         // Seller gets selling price minus commission
         const sellerEarning = sellingPriceTotal - commissionAmount;
 
-        // Delivery Partner natively earns the delivery fee
+        // Delivery Partner natively earns the delivery fee (always full — never reduced by promo)
         const deliveryEarning = finalDeliveryFee;
 
-        // Customer always pays sellingPrice + deliveryFee + platformFee
-        const totalAmount = sellingPriceTotal + finalDeliveryFee + platformFee;
+        // === Welcome Promo Validation ===
+        let deliverySubsidy = 0;
+        let customerDeliveryCharge = finalDeliveryFee;
+        let validatedPromoCode = '';
+
+        if (appliedPromoCode) {
+            const promoCodeUpper = appliedPromoCode.trim().toUpperCase();
+            const freshUser = await User.findById(req.user._id).select('hasUsedWelcomePromo');
+            const priorOrders = await Order.countDocuments({
+                user: req.user._id,
+                status: { $nin: ['Cancelled'] }
+            });
+
+            if (
+                config.welcomePromoEnabled &&
+                promoCodeUpper === (config.welcomePromoCode || 'WELCOME') &&
+                !freshUser.hasUsedWelcomePromo &&
+                priorOrders === 0
+            ) {
+                // Valid promo — waive delivery for customer, admin absorbs it
+                deliverySubsidy = finalDeliveryFee;
+                customerDeliveryCharge = 0;
+                validatedPromoCode = promoCodeUpper;
+                console.log(`[Promo] WELCOME promo applied for user ${req.user._id}. Delivery waived ₹${finalDeliveryFee}`);
+            } else {
+                console.log(`[Promo] Promo code "${promoCodeUpper}" rejected for user ${req.user._id}`);
+            }
+        }
+
+        // Customer pays sellingPrice + customerDeliveryCharge + platformFee
+        const totalAmount = sellingPriceTotal + customerDeliveryCharge + platformFee;
 
         // Payment gateway fee (estimated on full order total paid by customer)
         const paymentGatewayFee = Math.round(totalAmount * (paymentGatewayPercentage / 100));
@@ -208,19 +275,27 @@ router.post('/', protect, async (req, res) => {
             contactInfo,
             mrpTotal,
             sellingPriceTotal,
-            deliveryFee: finalDeliveryFee,
+            deliveryFee: customerDeliveryCharge,   // what customer paid
             platformFee,
             commissionAmount,
             sellerEarning,
-            deliveryEarning,
+            deliveryEarning,                        // always full fee for delivery partner
             totalAmount,
             paymentGatewayFee,
+            promoCode: validatedPromoCode,
+            deliverySubsidy,
             walletSettlementStatus: 'Pending',
             paymentMethod: 'COD'
         });
 
-        // Clear user's cart
+        // === Mark promo as used & increment count ===
         const user = await User.findById(req.user._id);
+        if (validatedPromoCode) {
+            user.hasUsedWelcomePromo = true;
+            config.welcomePromoUsageCount = (config.welcomePromoUsageCount || 0) + 1;
+            await config.save();
+        }
+        // Clear user's cart
         user.cart = [];
         await user.save();
 

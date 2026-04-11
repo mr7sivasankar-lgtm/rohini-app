@@ -34,6 +34,21 @@ const adminConfigSchema = new mongoose.Schema({
     freeDeliveryThreshold: {
         type: Number,
         default: 0 // ₹0 means disabled unless specified
+    },
+    // === Welcome Promo (Free Delivery for New Users) ===
+    welcomePromoEnabled: {
+        type: Boolean,
+        default: false
+    },
+    welcomePromoCode: {
+        type: String,
+        default: 'WELCOME',
+        trim: true,
+        uppercase: true
+    },
+    welcomePromoUsageCount: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true

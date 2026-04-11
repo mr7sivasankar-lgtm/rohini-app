@@ -72,6 +72,10 @@ const userSchema = new mongoose.Schema({
   pushSubscription: {
     type: mongoose.Schema.Types.Mixed,
     default: null
+  },
+  hasUsedWelcomePromo: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

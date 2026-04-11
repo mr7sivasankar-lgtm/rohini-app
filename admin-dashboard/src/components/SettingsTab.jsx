@@ -31,8 +31,8 @@ const SettingsTab = () => {
     };
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setConfig(prev => ({ ...prev, [name]: Number(value) }));
+        const { name, value, type, checked } = e.target;
+        setConfig(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value) }));
     };
 
     const handleSave = async (e) => {
@@ -220,6 +220,54 @@ const SettingsTab = () => {
                             <label style={labelStyle}>Free Delivery Threshold (₹)</label>
                             <input type="number" name="freeDeliveryThreshold" value={config.freeDeliveryThreshold} onChange={handleChange} min="0" style={inputStyle} disabled={!isEditing} required />
                             <small style={hintStyle}>Carts exceeding this total will completely waive delivery charges.</small>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Welcome Promo */}
+                <div style={cardStyle}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+                        <div style={{ width: 48, height: 48, borderRadius: 14, background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>
+                            🎁
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Welcome Promo (New Users)</h3>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '28px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <label style={labelStyle}>Enable Welcome Promo</label>
+                            <div
+                                onClick={() => isEditing && setConfig(prev => ({ ...prev, welcomePromoEnabled: !prev.welcomePromoEnabled }))}
+                                style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: isEditing ? 'pointer' : 'not-allowed' }}
+                            >
+                                <div style={{ width: 52, height: 28, borderRadius: 14, background: config.welcomePromoEnabled ? '#22c55e' : '#e2e8f0', position: 'relative', transition: 'background 0.3s', flexShrink: 0 }}>
+                                    <div style={{ position: 'absolute', top: 3, left: config.welcomePromoEnabled ? 27 : 3, width: 22, height: 22, borderRadius: '50%', background: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'left 0.3s' }} />
+                                </div>
+                                <span style={{ fontSize: '14px', fontWeight: 600, color: config.welcomePromoEnabled ? '#16a34a' : '#94a3b8' }}>
+                                    {config.welcomePromoEnabled ? 'Active — Showing to new users' : 'Inactive'}
+                                </span>
+                            </div>
+                            <small style={hintStyle}>New users (0 prior orders) will see the promo banner at checkout.</small>
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Promo Code</label>
+                            <input
+                                type="text"
+                                name="welcomePromoCode"
+                                value={config.welcomePromoCode || 'WELCOME'}
+                                onChange={e => setConfig(prev => ({ ...prev, welcomePromoCode: e.target.value.toUpperCase() }))}
+                                maxLength={20}
+                                style={{ ...inputStyle, textTransform: 'uppercase', letterSpacing: '2px', fontFamily: 'monospace', fontSize: '18px' }}
+                                disabled={!isEditing}
+                            />
+                            <small style={hintStyle}>Code shown to customers to get free delivery on their first order.</small>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={labelStyle}>Total Redemptions</label>
+                            <div style={{ padding: '16px 20px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span style={{ fontSize: '28px', fontWeight: 800, color: '#f97316' }}>{config.welcomePromoUsageCount || 0}</span>
+                                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>users used this promo</span>
+                            </div>
+                            <small style={hintStyle}>Auto-increments each time a new user successfully redeems the promo.</small>
                         </div>
                     </div>
                 </div>

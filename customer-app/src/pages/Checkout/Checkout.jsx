@@ -34,9 +34,16 @@ const Checkout = () => {
     const [paymentMethod, setPaymentMethod] = useState('COD'); // 'COD' | 'Online'
     const [adminConfig, setAdminConfig] = useState(null);
 
+    // === Promo Code State ===
+    const [promoEligible, setPromoEligible] = useState(false);
+    const [promoCode, setPromoCode] = useState('');
+    const [promoApplied, setPromoApplied] = useState(false);
+    const [promoMessage, setPromoMessage] = useState('');
+
     useEffect(() => {
         fetchConfig();
         fetchAddresses();
+        fetchPromoEligibility();
     }, []);
 
     const fetchConfig = async () => {
@@ -44,6 +51,19 @@ const Checkout = () => {
             const res = await api.get('/config');
             if (res.data.success) setAdminConfig(res.data.data);
         } catch (err) {}
+    };
+
+    const fetchPromoEligibility = async () => {
+        try {
+            const res = await api.get('/orders/check-promo-eligibility');
+            if (res.data.success && res.data.eligible) {
+                setPromoEligible(true);
+                setPromoCode(res.data.promoCode);
+                setPromoMessage(res.data.message);
+            }
+        } catch (err) {
+            // silently fail — promo is optional
+        }
     };
 
     const fetchAddresses = async () => {
@@ -101,6 +121,10 @@ const Checkout = () => {
         deliveryFee = (adminConfig.baseDeliveryCharge ?? 20) + Math.ceil(extraKm) * (adminConfig.deliveryChargePerKm ?? 5);
     }
 
+    // Promo: waive delivery fee for customer if applied
+    const originalDeliveryFee = deliveryFee;
+    if (promoApplied) deliveryFee = 0;
+
     const totalMrp = cart.reduce((sum, item) => sum + ((item.product.mrp || item.product.price || item.product.sellingPrice || 0) * item.quantity), 0);
     const totalDiscount = totalMrp > cartTotal ? totalMrp - cartTotal : 0;
     const total = cartTotal + deliveryFee + platformFee - discount;
@@ -124,7 +148,8 @@ const Checkout = () => {
         contactInfo: { phone: selectedAddress?.phone || user?.phone || '', email: email || user?.email || '' },
         deliveryFee,
         platformFee,
-        discount
+        discount,
+        promoCode: promoApplied ? promoCode : ''
     });
 
     // ── COD Flow ───────────────────────────────────────────────────────────────
@@ -316,6 +341,56 @@ const Checkout = () => {
 
                     <div className="billing-details">
                         <h3 className="billing-title">Price Details ({cart.length} {cart.length === 1 ? 'Item' : 'Items'})</h3>
+
+                        {/* === Welcome Promo Banner === */}
+                        {promoEligible && (
+                            <div style={{
+                                background: promoApplied
+                                    ? 'linear-gradient(135deg, #f0fdf4, #dcfce7)'
+                                    : 'linear-gradient(135deg, #fffbeb, #fef3c7)',
+                                border: `1.5px solid ${promoApplied ? '#86efac' : '#fde68a'}`,
+                                borderRadius: '14px',
+                                padding: '14px 16px',
+                                marginBottom: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '10px'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                                    <span style={{ fontSize: '22px' }}>{promoApplied ? '✅' : '🎁'}</span>
+                                    <div>
+                                        <div style={{ fontWeight: 700, fontSize: '13px', color: promoApplied ? '#15803d' : '#92400e' }}>
+                                            {promoApplied ? 'FREE Delivery Applied!' : `Use code: ${promoCode}`}
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: promoApplied ? '#16a34a' : '#b45309', marginTop: '2px' }}>
+                                            {promoApplied
+                                                ? `You saved ₹${originalDeliveryFee.toFixed(0)} on delivery 🎉`
+                                                : promoMessage || 'Get FREE delivery on your first order!'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setPromoApplied(p => !p)}
+                                    style={{
+                                        background: promoApplied ? '#fee2e2' : '#f97316',
+                                        color: promoApplied ? '#dc2626' : 'white',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        padding: '7px 14px',
+                                        fontWeight: 700,
+                                        fontSize: '13px',
+                                        cursor: 'pointer',
+                                        whiteSpace: 'nowrap',
+                                        flexShrink: 0
+                                    }}
+                                >
+                                    {promoApplied ? 'Remove' : 'Apply'}
+                                </button>
+                            </div>
+                        )}
+
                         <div className="summary-row">
                             <span>Total MRP</span>
                             <span>₹{totalMrp.toFixed(2)}</span>
@@ -328,7 +403,16 @@ const Checkout = () => {
                         )}
                         <div className="summary-row">
                             <span>Delivery Fee</span>
-                            <span className={deliveryFee === 0 ? 'text-success' : ''}>{deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                {promoApplied && originalDeliveryFee > 0 && (
+                                    <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '13px' }}>
+                                        ₹{originalDeliveryFee.toFixed(0)}
+                                    </span>
+                                )}
+                                <span className={deliveryFee === 0 ? 'text-success' : ''}>
+                                    {deliveryFee === 0 ? 'FREE 🎁' : `₹${deliveryFee.toFixed(2)}`}
+                                </span>
+                            </div>
                         </div>
                         <div className="summary-row">
                             <span>Platform Fee</span>
@@ -339,9 +423,9 @@ const Checkout = () => {
                             <span>Total Amount</span>
                             <span>₹{total.toFixed(2)}</span>
                         </div>
-                        {totalDiscount > 0 && (
+                        {(totalDiscount > 0 || promoApplied) && (
                             <div className="savings-badge">
-                                You will save ₹{totalDiscount.toFixed(2)} on this order
+                                You will save ₹{(totalDiscount + (promoApplied ? originalDeliveryFee : 0)).toFixed(2)} on this order
                             </div>
                         )}
                     </div>

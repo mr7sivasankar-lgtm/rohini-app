@@ -1178,7 +1178,8 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                     const commission = order.commissionAmount || 0;
                     const platFee = order.platformFee || 0;
                     const gwFee = order.paymentGatewayFee || 0;
-                    const netProfit = commission + platFee - gwFee;
+                    const subsidy = order.deliverySubsidy || 0;
+                    const netProfit = commission + platFee - gwFee - subsidy;
                     const sellerEarning = order.sellerEarning || 0;
                     const deliveryEarning = order.deliveryEarning || order.deliveryFee || 0;
                     return (
@@ -1194,6 +1195,12 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                         }}>
                           {netProfit >= 0 ? '💰' : '⚠️'} ₹{netProfit.toFixed(2)}
                         </div>
+                        {/* Promo badge */}
+                        {order.promoCode && (
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fdf2f8', border: '1px solid #f9a8d4', borderRadius: '6px', padding: '2px 8px', fontSize: '10px', fontWeight: 700, color: '#be185d', width: 'fit-content' }}>
+                            🎁 {order.promoCode}
+                          </div>
+                        )}
                         {/* Breakdown */}
                         <div style={{ fontSize: '10px', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '2px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
@@ -1208,6 +1215,12 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                             <span style={{ color: '#dc2626' }}>− Gateway Fee</span>
                             <span style={{ fontWeight: 600, color: '#dc2626' }}>₹{gwFee.toFixed(2)}</span>
                           </div>
+                          {subsidy > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                              <span style={{ color: '#be185d' }}>− Promo Subsidy</span>
+                              <span style={{ fontWeight: 600, color: '#be185d' }}>₹{subsidy.toFixed(2)}</span>
+                            </div>
+                          )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '2px', marginTop: '1px' }}>
                             <span style={{ color: '#3b82f6' }}>→ Seller Gets</span>
                             <span style={{ fontWeight: 600, color: '#3b82f6' }}>₹{sellerEarning.toFixed(2)}</span>
