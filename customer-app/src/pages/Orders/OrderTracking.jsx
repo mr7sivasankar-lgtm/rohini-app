@@ -589,12 +589,20 @@ const OrderTracking = () => {
                             />
                             <div className="ot-partner-info">
                                 <strong>{order.deliveryPartner.name}</strong>
-                                <span>Delivery&nbsp;•&nbsp;{order.deliveryPartner.phone}</span>
+                                {/* Hide phone once delivered */}
+                                {order.status !== 'Delivered' && (
+                                    <span>Delivery&nbsp;•&nbsp;{order.deliveryPartner.phone}</span>
+                                )}
+                                {order.status === 'Delivered' && (
+                                    <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 600 }}>✔ Delivered your order</span>
+                                )}
                             </div>
-                            <div className="ot-partner-actions">
-                                <a href={`tel:${order.deliveryPartner.phone}`} className="ot-icon-btn green">📞</a>
-                                <a href={`sms:${order.deliveryPartner.phone}`} className="ot-icon-btn yellow">💬</a>
-                            </div>
+                            {/* Only show call button while actively delivering — no chat button ever */}
+                            {order.status !== 'Delivered' && (
+                                <div className="ot-partner-actions">
+                                    <a href={`tel:${order.deliveryPartner.phone}`} className="ot-icon-btn green">📞</a>
+                                </div>
+                            )}
                         </div>
                     )}
 
