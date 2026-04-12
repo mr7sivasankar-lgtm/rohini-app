@@ -25,7 +25,7 @@ const PrivateRoute = ({ children }) => {
 };
 
 export default function App() {
-    const [showSplash, setShowSplash] = useState(true);
+    const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('splashShown'));
 
     return (
         <>

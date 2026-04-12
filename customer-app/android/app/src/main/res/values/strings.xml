@@ -1,8 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Zunto</string>
-    <string name="title_activity_main">Zunto</string>
-    <string name="package_name">com.zunto.app</string>
-    <string name="custom_url_scheme">com.zunto.app</string>
+    <string name="app_name">Sifito</string>
+    <string name="title_activity_main">Sifito</string>
+    <string name="package_name">com.sifito.app</string>
+    <string name="custom_url_scheme">com.sifito.app</string>
 </resources>
-

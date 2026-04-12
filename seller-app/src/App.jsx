@@ -90,7 +90,7 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('splashShown'));
 
   return (
     <AuthProvider>
