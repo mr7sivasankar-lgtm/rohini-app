@@ -100,11 +100,12 @@ const ClusterCard = ({ cluster, onToggleService }) => {
     };
 
     const serviceStatus = cluster.serviceAreaStatus;
+    // 'not-configured' = auto-managed (system uses live seller+DP check, no manual setup needed)
     const serviceBadge = {
         'active':         { bg: '#d1fae5', color: '#065f46', dot: '#22c55e', label: '🟢 Service Active' },
-        'inactive':       { bg: '#fee2e2', color: '#991b1b', dot: '#ef4444', label: '🔴 Service Disabled' },
-        'not-configured': { bg: '#f1f5f9', color: '#475569', dot: '#94a3b8', label: '⚪ Not Configured' },
-    }[serviceStatus] || { bg: '#f1f5f9', color: '#475569', dot: '#94a3b8', label: '⚪ Not Configured' };
+        'inactive':       { bg: '#fee2e2', color: '#991b1b', dot: '#ef4444', label: '🔴 Manually Disabled' },
+        'not-configured': { bg: '#eff6ff', color: '#1e40af', dot: '#3b82f6', label: '⚡ Auto-Managed' },
+    }[serviceStatus] || { bg: '#eff6ff', color: '#1e40af', dot: '#3b82f6', label: '⚡ Auto-Managed' };
 
     const sellerRows = cluster.sellers.list.map(s => [
         <span style={{ fontWeight: 700 }}>{s.shopName || '—'}</span>,
@@ -243,46 +244,58 @@ const ClusterCard = ({ cluster, onToggleService }) => {
             </div>
 
             {/* ── Admin Service Controls ── */}
-            <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px dashed #e2e8f0', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>Admin Control:</span>
+            <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px dashed #e2e8f0' }}>
 
-                {serviceStatus !== 'active' && (
-                    <button
-                        onClick={() => handleToggle('activate')}
-                        disabled={toggling}
-                        style={{
-                            padding: '6px 16px', borderRadius: 8, border: 'none',
-                            background: toggling ? '#e2e8f0' : 'linear-gradient(135deg,#22c55e,#16a34a)',
-                            color: toggling ? '#94a3b8' : 'white',
-                            fontWeight: 700, fontSize: 12, cursor: toggling ? 'not-allowed' : 'pointer',
-                            boxShadow: '0 2px 8px rgba(34,197,94,0.3)'
-                        }}
-                    >
-                        {toggling ? '⏳ ...' : '✅ Activate Service'}
-                    </button>
-                )}
-
-                {serviceStatus === 'active' && (
-                    <button
-                        onClick={() => handleToggle('deactivate')}
-                        disabled={toggling}
-                        style={{
-                            padding: '6px 16px', borderRadius: 8, border: 'none',
-                            background: toggling ? '#e2e8f0' : '#fee2e2',
-                            color: toggling ? '#94a3b8' : '#dc2626',
-                            fontWeight: 700, fontSize: 12, cursor: toggling ? 'not-allowed' : 'pointer',
-                            border: '1px solid #fca5a5'
-                        }}
-                    >
-                        {toggling ? '⏳ ...' : '🚫 Deactivate Service'}
-                    </button>
-                )}
-
+                {/* Auto-managed info bar */}
                 {serviceStatus === 'not-configured' && (
-                    <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, background: '#fffbeb', padding: '4px 10px', borderRadius: 8, border: '1px solid #fde68a' }}>
-                        ⚠️ Not in Service Areas — customers can still order (default open)
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                        <span style={{ fontSize: 11, color: '#1e40af', fontWeight: 600, background: '#eff6ff', padding: '5px 12px', borderRadius: 8, border: '1px solid #bfdbfe' }}>
+                            ⚡ Auto-Managed — orders are automatically allowed/blocked based on live seller &amp; delivery partner availability in this pincode.
+                        </span>
+                    </div>
                 )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>Manual Override:</span>
+
+                    {serviceStatus !== 'inactive' && (
+                        <button
+                            onClick={() => handleToggle('deactivate')}
+                            disabled={toggling}
+                            style={{
+                                padding: '5px 14px', borderRadius: 8,
+                                background: toggling ? '#e2e8f0' : '#fff1f2',
+                                color: toggling ? '#94a3b8' : '#dc2626',
+                                fontWeight: 700, fontSize: 12, cursor: toggling ? 'not-allowed' : 'pointer',
+                                border: '1px solid #fecaca'
+                            }}
+                        >
+                            {toggling ? '⏳...' : '🚫 Force Disable'}
+                        </button>
+                    )}
+
+                    {serviceStatus === 'inactive' && (
+                        <button
+                            onClick={() => handleToggle('activate')}
+                            disabled={toggling}
+                            style={{
+                                padding: '5px 14px', borderRadius: 8, border: 'none',
+                                background: toggling ? '#e2e8f0' : 'linear-gradient(135deg,#22c55e,#16a34a)',
+                                color: toggling ? '#94a3b8' : 'white',
+                                fontWeight: 700, fontSize: 12, cursor: toggling ? 'not-allowed' : 'pointer',
+                                boxShadow: '0 2px 6px rgba(34,197,94,0.3)'
+                            }}
+                        >
+                            {toggling ? '⏳...' : '✅ Re-enable Auto'}
+                        </button>
+                    )}
+
+                    {serviceStatus === 'inactive' && (
+                        <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 600 }}>
+                            ⚠️ Manually disabled — customers cannot order from this pincode regardless of coverage.
+                        </span>
+                    )}
+                </div>
             </div>
         </div>
     );
