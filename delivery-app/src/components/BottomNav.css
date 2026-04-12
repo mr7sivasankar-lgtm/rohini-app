@@ -6,7 +6,7 @@
     /* Height adapts to Android gesture bar safe area */
     height: calc(65px + env(safe-area-inset-bottom, 0px));
     background: white;
-    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.08);
     display: flex;
     justify-content: space-around;
     align-items: flex-start;
@@ -14,6 +14,7 @@
     /* Bottom padding pushes icons up above the Android gesture navigation bar */
     padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 1000;
+    border-top: 1px solid #f1f5f9;
 }
 
 .nav-item {
@@ -61,5 +62,5 @@
 
 /* Ensure pages don't get hidden behind bottom nav */
 body {
-    padding-bottom: 75px; 
+    padding-bottom: calc(65px + env(safe-area-inset-bottom, 20px));
 }

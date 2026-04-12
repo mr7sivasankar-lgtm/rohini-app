@@ -6,8 +6,8 @@
     flex-direction: column;
     background: var(--bg);
     min-height: 100dvh;
-    /* Add bottom safe area for Android gesture bar */
-    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    /* Enough space for bottom nav + Android gesture bar */
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 20px));
 }
 
 /* ══════════════════════════════════════
@@ -18,7 +18,7 @@
     align-items: center;
     justify-content: space-between;
     /* Push content below Android status bar using safe-area-inset-top */
-    padding: calc(env(safe-area-inset-top, 12px) + 14px) 20px 14px;
+    padding: calc(env(safe-area-inset-top, 12px) + 14px) 16px 14px;
     background: white;
     border-bottom: 1px solid var(--border);
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
@@ -26,6 +26,9 @@
     position: sticky;
     top: 0;
     z-index: 100;
+    /* Ensure nothing clips the toggle */
+    overflow: visible;
+    gap: 10px;
 }
 
 .dash-greeting { display: flex; align-items: center; gap: 10px; }
@@ -43,8 +46,10 @@
 .status-toggle-wrap-dashboard {
     display: flex; align-items: center; gap: 6px;
     background: white; border: 1px solid var(--border);
-    border-radius: 20px; padding: 5px 12px;
+    border-radius: 20px; padding: 5px 10px;
     box-shadow: var(--shadow);
+    flex-shrink: 0;   /* never let it compress or clip */
+    white-space: nowrap;
 }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .status-dot.online  { background: var(--success); box-shadow: 0 0 6px rgba(22,163,74,0.4); }
