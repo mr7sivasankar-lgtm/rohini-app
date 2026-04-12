@@ -34,47 +34,62 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 }
 
 // ============================================================
-// PUBLIC: Check if a location is serviceable
+// PUBLIC: Smart auto-serviceability check
 // POST /api/serviceability/check
-// Body: { latitude, longitude, pincode, city }
+// Body: { pincode, city }
+// Returns: { serviceable, reason, hasSeller, hasDeliveryPartner }
 // ============================================================
 router.post('/check', async (req, res) => {
     try {
-        const { latitude, longitude, pincode, city } = req.body;
+        const { pincode, city } = req.body;
 
-        const areas = await ServiceableArea.find({ isActive: true });
-
-        if (areas.length === 0) {
-            // If no areas are configured, allow all (default open)
-            return res.json({ success: true, serviceable: true });
+        if (!pincode && !city) {
+            return res.json({
+                success: true,
+                serviceable: false,
+                reason: 'no_address',
+                hasSeller: false,
+                hasDeliveryPartner: false,
+                message: 'Please add a delivery address to continue.'
+            });
         }
 
-        let serviceable = false;
+        // ── Check by pincode first, fallback to city ──────────────────────
+        let sellerCount = 0;
+        let dpCount = 0;
 
-        for (const area of areas) {
-            if (area.type === 'pincode' && pincode) {
-                if (area.pincode === pincode) {
-                    serviceable = true;
-                    break;
-                }
-            } else if (area.type === 'city' && city) {
-                if (area.city.toLowerCase() === city.toLowerCase()) {
-                    serviceable = true;
-                    break;
-                }
-            } else if (area.type === 'radius' && latitude && longitude) {
-                const distance = haversineDistance(
-                    latitude, longitude,
-                    area.latitude, area.longitude
-                );
-                if (distance <= area.radiusKm) {
-                    serviceable = true;
-                    break;
-                }
-            }
+        if (pincode) {
+            sellerCount = await Seller.countDocuments({ pincode: pincode.trim(), status: 'Approved' });
+            dpCount     = await DeliveryPartner.countDocuments({ pincode: pincode.trim(), isActive: true });
         }
 
-        res.json({ success: true, serviceable });
+        // Fallback: if pincode returned nothing, try matching by city name
+        if (sellerCount === 0 && dpCount === 0 && city) {
+            const cityQ = { $regex: new RegExp(`^${city.trim()}$`, 'i') };
+            sellerCount = await Seller.countDocuments({ city: cityQ, status: 'Approved' });
+            dpCount     = await DeliveryPartner.countDocuments({ city: cityQ, isActive: true });
+        }
+
+        // ── Determine serviceability ──────────────────────────────────────
+        const hasSeller          = sellerCount > 0;
+        const hasDeliveryPartner = dpCount > 0;
+        const serviceable        = hasSeller && hasDeliveryPartner;
+
+        let reason  = 'available';
+        let message = 'Service is available in your area!';
+
+        if (!hasSeller && !hasDeliveryPartner) {
+            reason  = 'no_coverage';
+            message = 'No shops or delivery partners are available in your area yet. We\'re expanding soon!';
+        } else if (!hasSeller) {
+            reason  = 'no_seller';
+            message = 'No shops are available in your area yet. We\'re onboarding sellers near you!';
+        } else if (!hasDeliveryPartner) {
+            reason  = 'no_delivery_partner';
+            message = 'Shops are available but no delivery partner is active in your area right now. Please try again later.';
+        }
+
+        res.json({ success: true, serviceable, reason, hasSeller, hasDeliveryPartner, message });
     } catch (error) {
         console.error('Serviceability check error:', error);
         res.status(500).json({ success: false, message: 'Error checking serviceability' });

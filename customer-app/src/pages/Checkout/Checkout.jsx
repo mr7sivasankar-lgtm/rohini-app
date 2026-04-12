@@ -40,17 +40,46 @@ const Checkout = () => {
     const [promoApplied, setPromoApplied] = useState(false);
     const [promoMessage, setPromoMessage] = useState('');
 
+    // === Serviceability State ===
+    const [serviceCheck, setServiceCheck] = useState(null); // null | { serviceable, reason, message }
+    const [serviceChecking, setServiceChecking] = useState(false);
+
     useEffect(() => {
         fetchConfig();
         fetchAddresses();
         fetchPromoEligibility();
     }, []);
 
+    // Re-check serviceability whenever selected address changes
+    useEffect(() => {
+        if (!selectedAddress) return;
+        checkServiceability(selectedAddress);
+    }, [selectedAddress?.pincode, selectedAddress?.city]);
+
     const fetchConfig = async () => {
         try {
             const res = await api.get('/config');
             if (res.data.success) setAdminConfig(res.data.data);
         } catch (err) {}
+    };
+
+    const checkServiceability = async (address) => {
+        if (!address) return;
+        setServiceChecking(true);
+        try {
+            const res = await api.post('/serviceability/check', {
+                pincode: address.pincode || '',
+                city: address.city || ''
+            });
+            if (res.data.success) {
+                setServiceCheck(res.data);
+            }
+        } catch (err) {
+            // silently fail — don't block user on network error
+            setServiceCheck(null);
+        } finally {
+            setServiceChecking(false);
+        }
     };
 
     const fetchPromoEligibility = async () => {
@@ -472,9 +501,45 @@ const Checkout = () => {
                     </div>
                 </div>
 
-                <button type="submit" className="btn-submit-order" disabled={loading}>
+                {/* Serviceability Warning */}
+                {serviceCheck && !serviceCheck.serviceable && (
+                    <div style={{
+                        margin: '0 0 16px',
+                        padding: '14px 16px',
+                        borderRadius: '14px',
+                        background: serviceCheck.reason === 'no_delivery_partner' ? '#fff7ed' : '#fef2f2',
+                        border: `1px solid ${serviceCheck.reason === 'no_delivery_partner' ? '#fed7aa' : '#fecaca'}`,
+                        display: 'flex', gap: '10px', alignItems: 'flex-start'
+                    }}>
+                        <span style={{ fontSize: '20px' }}>
+                            {serviceCheck.reason === 'no_delivery_partner' ? '🛵' :
+                             serviceCheck.reason === 'no_seller' ? '🏪' : '📍'}
+                        </span>
+                        <div>
+                            <div style={{ fontWeight: 700, fontSize: '14px', color: serviceCheck.reason === 'no_delivery_partner' ? '#92400e' : '#991b1b', marginBottom: '2px' }}>
+                                {serviceCheck.reason === 'no_delivery_partner' ? 'No Delivery Partner Available' :
+                                 serviceCheck.reason === 'no_seller' ? 'No Shops in Your Area' :
+                                 'Service Not Available'}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>
+                                {serviceCheck.message}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <button
+                    type="submit"
+                    className="btn-submit-order"
+                    disabled={loading || serviceChecking || (serviceCheck && !serviceCheck.serviceable)}
+                    style={(serviceCheck && !serviceCheck.serviceable) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                >
                     {loading
                         ? (paymentMethod === 'Online' ? 'Preparing Payment…' : 'Placing Order…')
+                        : serviceChecking
+                        ? 'Checking availability…'
+                        : (serviceCheck && !serviceCheck.serviceable)
+                        ? '🚫 Service not available here'
                         : (paymentMethod === 'Online' ? `Pay ₹${total.toFixed(2)} Online` : 'Place Order (COD)')
                     }
                 </button>
