@@ -345,6 +345,11 @@ router.get('/areas/location-intelligence', protect, adminOnly, async (req, res) 
             }
         });
 
+        // ── Also fetch ServiceableArea entries to know admin service status per pincode ──
+        const serviceableAreas = await ServiceableArea.find({ type: 'pincode' }, { pincode: 1, isActive: 1, name: 1 }).lean();
+        const serviceAreaByPincode = {};
+        serviceableAreas.forEach(a => { serviceAreaByPincode[a.pincode] = a; });
+
         // ── Enrich clusters with accurate city/town from India Post pincode API ──
         const uniquePincodes = Object.keys(clusterMap);
 
@@ -458,6 +463,13 @@ router.get('/areas/location-intelligence', protect, adminOnly, async (req, res) 
             };
         }).sort((a, b) => b.coverageScore - a.coverageScore || b.sellers.total - a.sellers.total);
 
+        // ── Attach serviceArea status to each cluster ──
+        clusters.forEach(c => {
+            const sa = serviceAreaByPincode[c.pincode];
+            c.serviceAreaStatus = sa ? (sa.isActive ? 'active' : 'inactive') : 'not-configured';
+            c.serviceAreaId = sa?._id || null;
+        });
+
         const summary = {
             totalClusters:   clusters.length,
             fullyActive:     clusters.filter(c => c.status === 'Active').length,
@@ -470,6 +482,50 @@ router.get('/areas/location-intelligence', protect, adminOnly, async (req, res) 
     } catch (error) {
         console.error('Location intelligence error:', error);
         res.status(500).json({ success: false, message: 'Error building location intelligence' });
+    }
+});
+
+// ============================================================
+// ADMIN: Activate / Deactivate service for a detected pincode cluster
+// PATCH /api/serviceability/areas/cluster/:pincode
+// Body: { action: 'activate' | 'deactivate', cityName: 'Tirupati' }
+// ============================================================
+router.patch('/areas/cluster/:pincode', protect, adminOnly, async (req, res) => {
+    try {
+        const { pincode } = req.params;
+        const { action, cityName } = req.body;
+
+        if (!['activate', 'deactivate'].includes(action)) {
+            return res.status(400).json({ success: false, message: 'action must be activate or deactivate' });
+        }
+
+        const isActive = action === 'activate';
+        const label = cityName ? `${cityName} (${pincode})` : `Pincode ${pincode}`;
+
+        // Upsert: create if not exists, update if exists
+        const area = await ServiceableArea.findOneAndUpdate(
+            { pincode: pincode.trim(), type: 'pincode' },
+            {
+                $set: {
+                    isActive,
+                    type: 'pincode',
+                    pincode: pincode.trim(),
+                },
+                $setOnInsert: {
+                    name: label,
+                }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        res.json({
+            success: true,
+            data: area,
+            message: `Service ${isActive ? 'activated' : 'deactivated'} for pincode ${pincode}`
+        });
+    } catch (error) {
+        console.error('Cluster toggle error:', error);
+        res.status(500).json({ success: false, message: 'Error updating cluster service status' });
     }
 });
 
