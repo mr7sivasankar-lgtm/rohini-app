@@ -395,9 +395,34 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
                 // so the seller can still call /item-received to confirm receipt,
                 // deduct wallet, restore stock, and mark Return Completed.
                 order.statusHistory.push({ status: 'Collected', timestamp: now, note: 'Return collected by delivery partner — awaiting seller confirmation' });
-                await DeliveryPartner.findByIdAndUpdate(req.partner._id, {
-                    $inc: { activeOrdersCount: -1, totalDeliveries: 1 }
-                });
+
+                // === CREDIT DELIVERY PARTNER WALLET FOR RETURN PICKUP ===
+                if (order.walletSettlementStatus !== 'Settled') {
+                    const partnerToCredit = await DeliveryPartner.findById(req.partner._id);
+                    if (partnerToCredit) {
+                        partnerToCredit.walletBalance += (order.deliveryEarning || 0);
+                        partnerToCredit.activeOrdersCount = Math.max(0, partnerToCredit.activeOrdersCount - 1);
+                        partnerToCredit.totalDeliveries += 1;
+                        await partnerToCredit.save();
+
+                        await WalletTransaction.create({
+                            userType: 'DeliveryPartner',
+                            userId: partnerToCredit._id,
+                            amount: (order.deliveryEarning || 0),
+                            type: 'Delivery Earning',
+                            status: 'Success',
+                            orderId: order._id,
+                            description: `Return pickup fee credited for Order ${order.orderId}`,
+                            balanceAfter: partnerToCredit.walletBalance
+                        });
+                    }
+                    order.walletSettlementStatus = 'Settled';
+                } else {
+                    // Already settled — just update counters
+                    await DeliveryPartner.findByIdAndUpdate(req.partner._id, {
+                        $inc: { activeOrdersCount: -1, totalDeliveries: 1 }
+                    });
+                }
             } else {
                 // Picked Up (heading to customer to collect)
                 order.statusHistory.push({ status: 'Picked Up', timestamp: new Date(), note: 'Delivery partner en-route to collect return' });
@@ -504,15 +529,15 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
     }
 });
 
-// GET /api/delivery/history — completed deliveries
+// GET /api/delivery/history — completed deliveries (normal + return pickups)
 router.get('/history', protectDelivery, async (req, res) => {
     try {
         const orders = await Order.find({
             deliveryPartner: req.partner._id,
-            deliveryStatus: 'Delivered'
+            deliveryStatus: { $in: ['Delivered', 'Collected'] }
         })
         .populate('user', 'name phone')
-        .sort({ deliveredAt: -1 })
+        .sort({ deliveredAt: -1, updatedAt: -1 })
         .limit(50);
 
         res.json({ success: true, data: orders });

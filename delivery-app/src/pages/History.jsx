@@ -47,9 +47,11 @@ export default function History() {
                             <div className="history-card-right">
                                 <div className="history-amount" style={{ color: '#10b981' }}>+₹{(order.deliveryEarning || 0).toFixed(0)}</div>
                                 <div className="history-date">
-                                    {order.deliveredAt ? new Date(order.deliveredAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
+                                    {new Date(order.deliveredAt || order.updatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                                 </div>
-                                <div className="delivered-badge">✅ Delivered</div>
+                                <div className="delivered-badge" style={order.deliveryStatus === 'Collected' ? { background: '#dbeafe', color: '#1d4ed8' } : {}}>
+                                    {order.deliveryStatus === 'Collected' ? '📦 Collected' : '✅ Delivered'}
+                                </div>
                             </div>
                         </div>
                     ))}
