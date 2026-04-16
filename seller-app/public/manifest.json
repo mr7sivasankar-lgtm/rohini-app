@@ -1,0 +1,24 @@
+{
+  "name": "Sifito Seller - Grow Your Shop",
+  "short_name": "Sifito Seller",
+  "description": "Manage your shop and orders on Sifito.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f4a28",
+  "theme_color": "#0f4a28",
+  "icons": [
+    {
+      "src": "/sifito-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/sifito-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
