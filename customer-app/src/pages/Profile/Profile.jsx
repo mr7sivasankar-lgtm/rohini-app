@@ -79,8 +79,11 @@ const Profile = () => {
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
             ),
-            label: 'Help Center',
-            path: '/support' // Dummy path
+            label: 'Help & Support',
+            action: () => window.open(
+                'https://wa.me/919700079239?text=Hi%2C%20I%20need%20help%20with%20the%20Rohini%20app.',
+                '_blank'
+            )
         },
         {
             icon: (

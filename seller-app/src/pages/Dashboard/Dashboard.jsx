@@ -24,6 +24,7 @@ const MORE_ITEMS = [
     { key: 'sales',   icon: '📈', label: 'Sales & Revenue' },
     { key: 'reviews', icon: '⭐', label: 'Reviews'         },
     { key: 'profile', icon: '⚙️', label: 'Shop Profile'    },
+    { key: '__support', icon: '💬', label: 'Help & Support' },
 ];
 
 const TAB_LABELS = {
@@ -43,6 +44,14 @@ const Dashboard = () => {
 
     const handleNav = (key) => {
         if (key === '__more') { setMoreOpen(true); return; }
+        if (key === '__support') {
+            window.open(
+                'https://wa.me/919700079239?text=Hi%2C%20I%20need%20help%20as%20a%20Rohini%20seller.',
+                '_blank'
+            );
+            setMoreOpen(false);
+            return;
+        }
         setActiveTab(key);
         setMoreOpen(false);
     };
@@ -114,6 +123,15 @@ const Dashboard = () => {
                 </nav>
 
                 <div className="sidebar-footer">
+                    <button
+                        className="support-btn"
+                        onClick={() => window.open(
+                            'https://wa.me/919700079239?text=Hi%2C%20I%20need%20help%20as%20a%20Rohini%20seller.',
+                            '_blank'
+                        )}
+                    >
+                        💬 Help & Support
+                    </button>
                     <button className="logout-btn" onClick={logout}>🚪 Logout</button>
                 </div>
             </aside>

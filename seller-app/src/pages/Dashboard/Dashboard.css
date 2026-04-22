@@ -77,6 +77,13 @@
     font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
 }
 .logout-btn:hover { background: #fee2e2; }
+.support-btn {
+    width: 100%; padding: 10px; border-radius: 8px;
+    border: 1px solid #86efac; background: #f0fdf4; color: #16a34a;
+    font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+    margin-bottom: 8px;
+}
+.support-btn:hover { background: #dcfce7; }
 
 /* ————————————————————————————————
    MAIN CONTENT — desktop
