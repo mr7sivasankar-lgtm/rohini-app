@@ -78,11 +78,14 @@ export const AuthProvider = ({ children }) => {
             const response = await api.post('/auth/phone-login', { phone });
 
             if (response.data.success) {
-                const { token, user } = response.data.data;
+                const { token, user, isNewUser } = response.data.data;
                 localStorage.setItem('token', token);
-                localStorage.setItem('user', JSON.stringify(user));
-                setUser(user);
-                setTimeout(registerPush, 500); // Register push after login
+                
+                if (!isNewUser) {
+                    localStorage.setItem('user', JSON.stringify(user));
+                    setUser(user);
+                    setTimeout(registerPush, 500); // Register push after login
+                }
             }
 
             return response.data;
