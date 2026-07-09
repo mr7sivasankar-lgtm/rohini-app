@@ -1,43 +1,48 @@
-import twilio from 'twilio';
+import axios from 'axios';
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
+const apiKey = process.env.FAST2SMS_API_KEY;
 
-let client = null;
-
-// Initialize Twilio client only if credentials are provided
-if (accountSid && authToken) {
-    client = twilio(accountSid, authToken);
-    console.log('✅ Twilio SMS service initialized');
+if (apiKey) {
+    console.log('✅ Fast2SMS service initialized');
 } else {
-    console.warn('⚠️ Twilio credentials not set — OTP will be logged to console only');
+    console.warn('⚠️ Fast2SMS API key not set — OTP will be logged to console only');
 }
 
 /**
- * Send OTP via Twilio SMS
- * @param {string} phone - Phone number with country code (e.g., +919700079239)
- * @param {string} otp - The OTP code to send
+ * Send OTP via Fast2SMS SMS API
+ * @param {string} phone - Phone number (e.g., +919700079239 or 9700079239)
+ * @param {string} otp - The 6-digit OTP code to send
  * @returns {Promise<boolean>} - true if sent successfully
  */
 export const sendOTP = async (phone, otp) => {
-    // If Twilio is not configured, just log it
-    if (!client) {
+    // If API Key is not set, fallback to console log (Dev mode)
+    if (!apiKey) {
         console.log(`📱 [DEV MODE] OTP for ${phone}: ${otp}`);
         return true;
     }
 
+    // Clean phone number (strip +91 prefix and non-digits)
+    const cleanPhone = phone.replace('+91', '').replace(/\D/g, '');
+
     try {
-        const message = await client.messages.create({
-            body: `Your Rohini verification code is: ${otp}. This code expires in ${process.env.OTP_EXPIRY_MINUTES || 10} minutes. Do not share this code.`,
-            from: twilioPhone,
-            to: phone
+        const response = await axios.get('https://www.fast2sms.com/dev/bulkV2', {
+            params: {
+                authorization: apiKey,
+                variables_values: otp,
+                route: 'otp',
+                numbers: cleanPhone
+            }
         });
 
-        console.log(`📱 SMS sent to ${phone} — SID: ${message.sid}`);
-        return true;
+        if (response.data && response.data.return === true) {
+            console.log(`📱 SMS sent to ${cleanPhone} via Fast2SMS:`, response.data.message);
+            return true;
+        } else {
+            console.error('❌ Fast2SMS Response Error:', response.data);
+            return false;
+        }
     } catch (error) {
-        console.error('❌ Twilio SMS Error:', error.message);
+        console.error('❌ Fast2SMS API Error:', error.response ? error.response.data : error.message);
         return false;
     }
 };
