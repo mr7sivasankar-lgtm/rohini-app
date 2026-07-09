@@ -147,19 +147,19 @@ const connectDB = async () => {
         console.log('✅ MongoDB Connected Successfully');
     } catch (error) {
         console.error('❌ MongoDB Connection Error:', error.message);
-        process.exit(1);
+        console.log('⚠️ Server will remain active to pass port checks, but database queries will fail. Check your MONGODB_URI or MongoDB Atlas network access list.');
     }
 };
 
 // Start server
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`🚀 Server running on port ${PORT}`);
-        console.log(`📡 API available at http://localhost:${PORT}/api`);
-        console.log(`📦 Uploads directory: ${uploadsDir}`);
-    });
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📡 API available at http://localhost:${PORT}/api`);
+    console.log(`📦 Uploads directory: ${uploadsDir}`);
+    // Connect to DB asynchronously so it doesn't block port binding
+    connectDB();
 });
 
 // Handle unhandled promise rejections
