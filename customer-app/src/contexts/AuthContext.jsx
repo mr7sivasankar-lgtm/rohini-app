@@ -73,18 +73,9 @@ export const AuthProvider = ({ children }) => {
         return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
     };
 
-    const sendOTP = async (phone) => {
+    const phoneLogin = async (phone) => {
         try {
-            const response = await api.post('/auth/send-otp', { phone });
-            return response.data;
-        } catch (error) {
-            throw error.response?.data || error;
-        }
-    };
-
-    const verifyOTP = async (phone, otp) => {
-        try {
-            const response = await api.post('/auth/verify-otp', { phone, otp });
+            const response = await api.post('/auth/phone-login', { phone });
 
             if (response.data.success) {
                 const { token, user } = response.data.data;
@@ -99,6 +90,7 @@ export const AuthProvider = ({ children }) => {
             throw error.response?.data || error;
         }
     };
+
 
     const updateProfile = async (data) => {
         try {
@@ -122,8 +114,7 @@ export const AuthProvider = ({ children }) => {
     const value = {
         user,
         loading,
-        sendOTP,
-        verifyOTP,
+        phoneLogin,
         updateProfile,
         logout,
         isAuthenticated: !!user,

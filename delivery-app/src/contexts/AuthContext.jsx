@@ -42,7 +42,25 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // ── OTP-based auth ────────────────────────────────────────────────────────
+    // ── Phone-only auth (no OTP) ──────────────────────────────────────────────
+
+    const phoneLogin = async (phone) => {
+        try {
+            const res = await api.post('/delivery/phone-login', { phone });
+            if (res.data.success) {
+                const { token, partner: p } = res.data.data;
+                localStorage.setItem('deliveryToken', token);
+                localStorage.setItem('deliveryPartner', JSON.stringify(p));
+                setPartner(p);
+                setTimeout(registerPush, 500);
+            }
+            return res.data;
+        } catch (err) {
+            throw err.response?.data || err;
+        }
+    };
+
+
 
     const sendOTP = async (phone) => {
         try {
@@ -104,7 +122,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ partner, loading, sendOTP, verifyOTP, login, register, logout, updatePartner }}>
+        <AuthContext.Provider value={{ partner, loading, phoneLogin, sendOTP, verifyOTP, login, register, logout, updatePartner }}>
             {children}
         </AuthContext.Provider>
     );

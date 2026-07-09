@@ -35,6 +35,63 @@ export const protectDelivery = async (req, res, next) => {
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 
+// POST /api/delivery/phone-login (no OTP — direct phone authentication)
+router.post('/phone-login', async (req, res) => {
+    try {
+        const { phone } = req.body;
+        if (!phone) return res.status(400).json({ success: false, message: 'Phone number required' });
+
+        // Check if partner already exists
+        let partner = await DeliveryPartner.findOne({ phone });
+
+        const hasRealProfile = partner && partner.name && partner.name !== 'Delivery Partner' && partner.vehicleNumber;
+        const isNewPartner = !partner || (!partner.isProfileComplete && !hasRealProfile);
+
+        if (!partner) {
+            // Pre-create placeholder so registration can update it
+            partner = await DeliveryPartner.create({
+                phone,
+                name: 'Delivery Partner',
+                isVerified: true,
+                isProfileComplete: false,
+            });
+        } else {
+            // Auto-update isProfileComplete for legacy partners
+            if (hasRealProfile && !partner.isProfileComplete) {
+                partner.isProfileComplete = true;
+            }
+            partner.isVerified = true;
+            await partner.save();
+        }
+
+        const token = jwt.sign({ id: partner._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+
+        res.json({
+            success: true,
+            message: isNewPartner ? 'Phone accepted. Please complete your profile.' : 'Login successful',
+            data: {
+                token,
+                isNewPartner,
+                partner: {
+                    _id: partner._id,
+                    name: partner.name,
+                    phone: partner.phone,
+                    vehicleType: partner.vehicleType,
+                    vehicleNumber: partner.vehicleNumber,
+                    isOnline: partner.isOnline,
+                    city: partner.city,
+                    pincode: partner.pincode,
+                    isProfileComplete: partner.isProfileComplete,
+                    status: partner.status,
+                    isActive: partner.isActive,
+                }
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // POST /api/delivery/send-otp
 router.post('/send-otp', async (req, res) => {
     try {

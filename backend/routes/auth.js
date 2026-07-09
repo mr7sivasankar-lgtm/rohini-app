@@ -14,6 +14,56 @@ const generateToken = (id) => {
     });
 };
 
+// @route   POST /api/auth/phone-login
+// @desc    Direct phone login without OTP (no verification required)
+// @access  Public
+router.post('/phone-login', async (req, res) => {
+    try {
+        const { phone } = req.body;
+
+        if (!phone) {
+            return res.status(400).json({ success: false, message: 'Please provide phone number' });
+        }
+
+        // Find or create user
+        let user = await User.findOne({ phone });
+        const isNewUser = !user;
+
+        if (!user) {
+            user = await User.create({
+                phone,
+                name: 'User',
+                isVerified: true,
+            });
+        } else {
+            user.isVerified = true;
+            user.lastLogin = new Date();
+            await user.save();
+        }
+
+        const token = generateToken(user._id);
+
+        res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            data: {
+                token,
+                isNewUser: isNewUser || (user.name === 'User' && !user.email),
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    phone: user.phone,
+                    email: user.email,
+                    role: user.role
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Phone login error:', error);
+        res.status(500).json({ success: false, message: 'Error during login' });
+    }
+});
+
 // @route   POST /api/auth/send-otp
 // @desc    Send OTP to phone number
 // @access  Public

@@ -225,6 +225,38 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// @desc    Direct phone login for seller (no OTP)
+// @route   POST /api/sellers/login-phone
+// @access  Public
+router.post('/login-phone', async (req, res) => {
+    try {
+        const { phone } = req.body;
+        if (!phone) return res.status(400).json({ success: false, message: 'Phone number required' });
+
+        const seller = await Seller.findOne({ phone });
+        if (!seller) {
+            return res.status(404).json({ success: false, message: 'No seller account found with this phone number. Please register first.' });
+        }
+        if (seller.status === 'Suspended' || seller.status === 'Deactivated') {
+            return res.status(403).json({ success: false, message: 'Your account has been deactivated or suspended by admin. Please contact support.' });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                _id: seller._id,
+                shopName: seller.shopName,
+                ownerName: seller.ownerName,
+                phone: seller.phone,
+                status: seller.status,
+                token: generateToken(seller._id)
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // @desc    Send OTP for seller login (passwordless)
 // @route   POST /api/sellers/login-otp
 // @access  Public

@@ -262,20 +262,17 @@ const LegalModal = ({ data, onClose }) => {
 
 const Login = () => {
     const navigate = useNavigate();
-    const { sendOTP, verifyOTP, updateProfile } = useAuth();
+    const { phoneLogin, updateProfile } = useAuth();
 
     // Legal modal state
     const [legalModal, setLegalModal] = useState(null); // null | PRIVACY_POLICY | TERMS_CONDITIONS
 
-    // Steps: 'phone' | 'otp' | 'name' | 'location'
+    // Steps: 'phone' | 'name' | 'location'
     const [step, setStep] = useState('phone');
     const [phone, setPhone] = useState('');
-    const [otp, setOtp] = useState('');
-    const otpInputRef = useRef(null);
     const [name, setName] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [resendTimer, setResendTimer] = useState(0);
 
     // Location state
     const mapContainerRef = useRef(null);
@@ -290,60 +287,18 @@ const Login = () => {
 
 
 
-    // Resend countdown
-    useEffect(() => {
-        if (resendTimer <= 0) return;
-        const t = setTimeout(() => setResendTimer(r => r - 1), 1000);
-        return () => clearTimeout(t);
-    }, [resendTimer]);
-
     const handlePhoneChange = (e) => {
         const v = e.target.value.replace(/\D/g, '');
         if (v.length <= 10) setPhone(v);
     };
 
-    const handleSendOTP = async (e) => {
+    const handlePhoneSubmit = async (e) => {
         e.preventDefault();
         setError('');
         if (phone.length !== 10) { setError('Enter a valid 10-digit number'); return; }
         setLoading(true);
         try {
-            const res = await sendOTP(`+91${phone}`);
-            if (res.success) {
-                setStep('otp');
-                setResendTimer(30);
-                if (res.data?.otp) alert(`Your OTP: ${res.data.otp}`);
-            }
-        } catch (err) { setError(err.message || 'Failed to send OTP'); }
-        finally { setLoading(false); }
-    };
-
-    const handleOTPInput = (e) => {
-        // Normalize any regional numerals to ASCII digits
-        const raw = e.target.value
-            .replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660))
-            .replace(/[\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) - 0x06F0))
-            .replace(/[\u0966-\u096F]/g, d => String(d.charCodeAt(0) - 0x0966))
-            .replace(/\D/g, '')
-            .slice(0, 6);
-        setOtp(raw);
-    };
-
-    const handleOTPPaste = (e) => {
-        e.preventDefault();
-        const paste = e.clipboardData.getData('text')
-            .replace(/\D/g, '').slice(0, 6);
-        setOtp(paste);
-    };
-
-
-    const handleVerifyOTP = async (e) => {
-        e.preventDefault();
-        if (otp.length !== 6) { setError('Enter all 6 digits'); return; }
-        setError('');
-        setLoading(true);
-        try {
-            const res = await verifyOTP(`+91${phone}`, otp);
+            const res = await phoneLogin(`+91${phone}`);
             if (res.success) {
                 if (res.data.isNewUser) {
                     setStep('name');
@@ -351,7 +306,7 @@ const Login = () => {
                     navigate('/home');
                 }
             }
-        } catch (err) { setError(err.message || 'Invalid OTP'); }
+        } catch (err) { setError(err.message || 'Login failed. Please try again.'); }
         finally { setLoading(false); }
     };
 
@@ -496,8 +451,7 @@ const Login = () => {
     };
 
     // ── Step Progress ──
-    const stepCount = { phone: 1, otp: 2, name: 3, location: 4 };
-    const stepLabel = { phone: 'Phone', otp: 'Verify', name: 'Profile', location: 'Location' };
+    const stepCount = { phone: 1, name: 2, location: 3 };
     const current = stepCount[step];
 
     // ═══════════ LOCATION SCREEN ═══════════
@@ -591,22 +545,22 @@ const Login = () => {
 
                 {/* Step dots */}
                 <div className="step-indicator">
-                    {[1, 2, 3, 4].map(n => (
+                    {[1, 2, 3].map(n => (
                         <span key={n} className={`step-dot ${n === current ? 'active' : n < current ? 'done' : ''}`} />
                     ))}
                 </div>
 
                 {/* Title */}
                 <div className="login-header">
-                    <h1>{step === 'phone' ? 'Welcome! 👋' : step === 'otp' ? 'Enter OTP' : "What's your name?"}</h1>
-                    <p>{step === 'phone' ? 'Sign in with your phone number' : step === 'otp' ? `Code sent to +91 ${phone}` : 'Tell us what to call you'}</p>
+                    <h1>{step === 'phone' ? 'Welcome! 👋' : "What's your name?"}</h1>
+                    <p>{step === 'phone' ? 'Sign in with your phone number' : 'Tell us what to call you'}</p>
                 </div>
 
                 {error && <div className="error-message">⚠️ {error}</div>}
 
                 {/* ── Phone Step ── */}
                 {step === 'phone' && (
-                    <form onSubmit={handleSendOTP} className="login-form">
+                    <form onSubmit={handlePhoneSubmit} className="login-form">
                         <div className="form-group">
                             <label>Phone Number</label>
                             <div className="phone-input-wrapper">
@@ -618,99 +572,12 @@ const Login = () => {
                                     maxLength="10" autoFocus
                                 />
                             </div>
-                            <span className="input-hint">We'll send a one-time verification code</span>
+                            <span className="input-hint">Enter your 10-digit mobile number to continue</span>
                         </div>
                         <button type="submit" className="login-btn login-btn-primary" disabled={loading || phone.length !== 10}>
                             {loading && <span className="btn-spinner" />}
-                            {loading ? 'Sending OTP...' : 'Continue →'}
+                            {loading ? 'Please wait...' : 'Continue →'}
                         </button>
-                    </form>
-                )}
-
-                {/* ── OTP Step ── */}
-                {step === 'otp' && (
-                    <form onSubmit={handleVerifyOTP} className="login-form">
-                        <div className="otp-sent-info">
-                            <small>OTP sent to</small>
-                            <div className="otp-phone">+91 {phone}</div>
-                        </div>
-
-                        {/* OTP visual underline display + hidden input */}
-                        <div
-                            style={{ position: 'relative', display: 'flex', gap: 10, justifyContent: 'center', cursor: 'text' }}
-                            onClick={() => otpInputRef.current?.focus()}
-                        >
-                            {/* Hidden real input */}
-                            <input
-                                ref={otpInputRef}
-                                type="tel"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                autoComplete="one-time-code"
-                                maxLength={6}
-                                value={otp}
-                                onChange={handleOTPInput}
-                                onPaste={handleOTPPaste}
-                                autoFocus
-                                style={{
-                                    position: 'absolute', opacity: 0, width: '100%', height: '100%',
-                                    top: 0, left: 0, zIndex: 1, cursor: 'text',
-                                    fontSize: 16, // keeps mobile from zooming
-                                }}
-                            />
-
-                            {/* Visual digit slots */}
-                            {[0,1,2,3,4,5].map(i => {
-                                const filled = i < otp.length;
-                                const isCursor = i === otp.length;
-                                return (
-                                    <div key={i} style={{
-                                        width: 44, height: 56,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        borderBottom: `3px solid ${filled ? '#16a34a' : isCursor ? '#22c55e' : '#d1d5db'}`,
-                                        fontSize: 28,
-                                        fontWeight: 800,
-                                        fontFamily: "Arial, 'Helvetica Neue', sans-serif",
-                                        color: '#111827',
-                                        position: 'relative',
-                                        transition: 'border-color 0.15s',
-                                    }}>
-                                        {filled ? otp[i] : (
-                                            isCursor ? (
-                                                <span style={{
-                                                    width: 2, height: 28, background: '#22c55e',
-                                                    borderRadius: 2, display: 'block',
-                                                    animation: 'otpBlink 1s step-end infinite',
-                                                }} />
-                                            ) : null
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        <style>{`
-                            @keyframes otpBlink {
-                                0%, 100% { opacity: 1; } 50% { opacity: 0; }
-                            }
-                        `}</style>
-
-
-                        <button type="submit" className="login-btn login-btn-primary" disabled={loading || otp.length !== 6}>
-                            {loading && <span className="btn-spinner" />}
-                            {loading ? 'Verifying...' : 'Verify & Continue →'}
-                        </button>
-
-                        <div style={{ textAlign: 'center' }}>
-                            {resendTimer > 0 ? (
-                                <span style={{ fontSize: 13, color: '#9ca3af' }}>Resend OTP in <strong style={{ color: '#22c55e' }}>{resendTimer}s</strong></span>
-                            ) : (
-                                <button type="button" style={{ background: 'none', border: 'none', color: '#22c55e', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                                    onClick={() => { setStep('phone'); setOtp(''); setError(''); }}>
-                                    ← Change number or Resend OTP
-                                </button>
-                            )}
-                        </div>
                     </form>
                 )}
 

@@ -46,9 +46,6 @@ const StepIndicator = ({ step, maxSteps = 6 }) => (
 const Register = () => {
     const [step, setStep] = useState(1);
     const [phone, setPhone] = useState('');
-    const [otp, setOtp] = useState('');
-    const [devOtp, setDevOtp] = useState('');
-    const [phoneVerified, setPhoneVerified] = useState(false);
     const [commissionRate, setCommissionRate] = useState(null); // dynamic from backend
     const [bankSearch, setBankSearch] = useState('');
     const [showBankDropdown, setShowBankDropdown] = useState(false);
@@ -103,31 +100,14 @@ const Register = () => {
         setStep(prev => prev + 1);
     };
 
-    const prevStep = () => setStep(prev => prev - 1);
+    const prevStep = () => setStep(prev => prev === 3 ? 1 : prev - 1);
 
-    const handleSendOtp = async (e) => {
+    const handlePhoneSubmit = (e) => {
         e.preventDefault();
         setError('');
         if (!/^\d{10}$/.test(phone)) return setError('Please enter a valid 10-digit phone number.');
-        setIsLoading(true);
-        try {
-            const res = await api.post('/sellers/send-otp', { phone: `+91${phone}` });
-            if (res.data.success) { setStep(2); if (res.data.otp) setDevOtp(res.data.otp); }
-            else setError(res.data.message);
-        } catch (err) { setError(err.response?.data?.message || 'Failed to send OTP'); }
-        finally { setIsLoading(false); }
-    };
-
-    const handleVerifyOtp = async (e) => {
-        e.preventDefault();
-        setError('');
-        setIsLoading(true);
-        try {
-            const res = await api.post('/sellers/verify-otp', { phone: `+91${phone}`, otp });
-            if (res.data.success) { setPhoneVerified(true); setStep(3); }
-            else setError(res.data.message);
-        } catch (err) { setError(err.response?.data?.message || 'OTP verification failed'); }
-        finally { setIsLoading(false); }
+        // Skip OTP — go directly to shop info
+        setStep(3);
     };
 
     const handleSubmit = async (e) => {
@@ -177,14 +157,14 @@ const Register = () => {
                         <p style={{ marginTop: '5px' }}>Join our multi-vendor platform</p>
                     </div>
 
-                    <StepIndicator step={step} maxSteps={6} />
+                    <StepIndicator step={step <= 1 ? 1 : step - 1} maxSteps={5} />
                     {error && <div className="alert alert-error" style={{ marginBottom: '15px' }}>{error}</div>}
 
                     {/* STEP 1: Phone */}
                     {step === 1 && (
-                        <form onSubmit={handleSendOtp} className="auth-form">
-                            <h3>📱 Phone Verification</h3>
-                            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '15px' }}>We'll send a 6-digit OTP to confirm your identity.</p>
+                        <form onSubmit={handlePhoneSubmit} className="auth-form">
+                            <h3>📱 Phone Number</h3>
+                            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '15px' }}>Enter your phone number to get started.</p>
                             <div className="form-group phone-input-wrapper">
                                 <label>Mobile Number</label>
                                 <div className="phone-row">
@@ -192,25 +172,11 @@ const Register = () => {
                                     <input type="tel" placeholder="9700079239" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} required />
                                 </div>
                             </div>
-                            <button type="submit" className="btn-primary full-width" disabled={isLoading}>{isLoading ? 'Sending...' : 'Send OTP'}</button>
+                            <button type="submit" className="btn-primary full-width" disabled={isLoading}>{isLoading ? 'Please wait...' : 'Continue →'}</button>
                             <div className="auth-footer"><p>Already a seller? <Link to="/login">Sign in</Link></p></div>
                         </form>
                     )}
 
-                    {/* STEP 2: OTP */}
-                    {step === 2 && (
-                        <form onSubmit={handleVerifyOtp} className="auth-form">
-                            <h3>🔐 Enter OTP</h3>
-                            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '15px' }}>Sent to +91 {phone}</p>
-                            {devOtp && <p style={{ background: '#f1f5f9', padding: '8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>Dev OTP: {devOtp}</p>}
-                            <div className="form-group">
-                                <label>6-Digit Code</label>
-                                <input type="text" placeholder="• • • • • •" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} className="otp-input" required />
-                            </div>
-                            <button type="submit" className="btn-primary full-width" disabled={isLoading}>{isLoading ? 'Verifying...' : 'Verify OTP'}</button>
-                            <button type="button" className="btn-link" onClick={() => setStep(1)} disabled={isLoading}>← Change phone number</button>
-                        </form>
-                    )}
 
                     {/* STEP 3: Shop & Owner Info */}
                     {step === 3 && (

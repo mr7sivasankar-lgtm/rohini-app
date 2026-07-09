@@ -6,17 +6,14 @@ import './Login.css';
 
 export default function Login() {
     const navigate = useNavigate();
-    const { sendOTP, verifyOTP, register } = useAuth();
+    const { phoneLogin, register } = useAuth();
 
-    // ── Steps: 'phone' | 'otp' | 'name' | 'kyc' | 'address' | 'vehicle' | 'bank'
+    // ── Steps: 'phone' | 'name' | 'kyc' | 'address' | 'vehicle' | 'bank'
     const [step, setStep] = useState('phone');
     const [phone, setPhone] = useState('');
-    const [otp, setOtp] = useState('');
-    const otpInputRef = useRef(null);
-    const [resendTimer, setResendTimer] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [tempToken, setTempToken] = useState(null); // token from verify-otp
+    const [tempToken, setTempToken] = useState(null);
 
     // Registration form
     const [form, setForm] = useState({
@@ -32,13 +29,6 @@ export default function Login() {
 
     const [showMapPicker, setShowMapPicker] = useState(false);
     const [locationLoading, setLocationLoading] = useState(false);
-
-    // Resend countdown
-    useEffect(() => {
-        if (resendTimer <= 0) return;
-        const t = setTimeout(() => setResendTimer(r => r - 1), 1000);
-        return () => clearTimeout(t);
-    }, [resendTimer]);
 
     const handle = (e) => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
@@ -68,56 +58,22 @@ export default function Login() {
         if (v.length <= 10) setPhone(v);
     };
 
-    const handleSendOTP = async (e) => {
+    const handlePhoneSubmit = async (e) => {
         e.preventDefault();
         setError('');
         if (phone.length !== 10) { setError('Enter a valid 10-digit number'); return; }
         setLoading(true);
         try {
-            const res = await sendOTP(`+91${phone}`);
-            if (res.success) {
-                setStep('otp');
-                setResendTimer(30);
-                if (res.data?.otp) alert(`[Dev] Your OTP: ${res.data.otp}`);
-            }
-        } catch (err) { setError(err.message || 'Failed to send OTP'); }
-        finally { setLoading(false); }
-    };
-
-    // ── OTP step ─────────────────────────────────────────────────────────────
-    const handleOTPInput = (e) => {
-        const raw = e.target.value
-            .replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660))
-            .replace(/[\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) - 0x06F0))
-            .replace(/[\u0966-\u096F]/g, d => String(d.charCodeAt(0) - 0x0966))
-            .replace(/\D/g, '')
-            .slice(0, 6);
-        setOtp(raw);
-    };
-
-    const handleOTPPaste = (e) => {
-        e.preventDefault();
-        const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-        setOtp(paste);
-    };
-
-    const handleVerifyOTP = async (e) => {
-        e.preventDefault();
-        if (otp.length !== 6) { setError('Enter all 6 digits'); return; }
-        setError('');
-        setLoading(true);
-        try {
-            const res = await verifyOTP(`+91${phone}`, otp);
+            const res = await phoneLogin(`+91${phone}`);
             if (res.success) {
                 if (res.data.isNewPartner) {
-                    // Save token temporarily so they can register
                     setTempToken(res.data.token);
                     setStep('name');
                 } else {
                     navigate('/');
                 }
             }
-        } catch (err) { setError(err.message || 'Invalid OTP'); }
+        } catch (err) { setError(err.message || 'Login failed. Please try again.'); }
         finally { setLoading(false); }
     };
 
@@ -198,7 +154,7 @@ export default function Login() {
 
     // Step order for the progress bar (new user registration steps)
     const regSteps = ['name', 'kyc', 'address', 'vehicle', 'bank'];
-    const regStepIndex = regSteps.indexOf(step); // -1 for phone/otp
+    const regStepIndex = regSteps.indexOf(step); // -1 for phone
 
     // ── RENDER ────────────────────────────────────────────────────────────────
     return (
@@ -212,7 +168,6 @@ export default function Login() {
                     <h1>Delivery Partner</h1>
                     <p>
                         {step === 'phone' && 'Sign in with your phone number'}
-                        {step === 'otp' && `OTP sent to +91 ${phone}`}
                         {step === 'name' && 'Complete your profile'}
                         {step === 'kyc' && 'Identity Verification'}
                         {step === 'address' && 'Your Address & Location'}
@@ -238,7 +193,7 @@ export default function Login() {
 
                 {/* ── Phone Step ── */}
                 {step === 'phone' && (
-                    <form onSubmit={handleSendOTP} className="login-form">
+                    <form onSubmit={handlePhoneSubmit} className="login-form">
                         <div className="input-group">
                             <label>Phone Number</label>
                             <div style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
@@ -254,78 +209,11 @@ export default function Login() {
                                     style={{ flex: 1, border: 'none', background: 'none', padding: '12px 14px', fontSize: 15, outline: 'none' }}
                                 />
                             </div>
-                            <span style={{ fontSize: 12, color: '#9ca3af', marginTop: 4, display: 'block' }}>We'll send a one-time verification code</span>
+                            <span style={{ fontSize: 12, color: '#9ca3af', marginTop: 4, display: 'block' }}>Enter your 10-digit mobile number to continue</span>
                         </div>
                         <button type="submit" className="btn-submit" disabled={loading || phone.length !== 10}>
-                            {loading ? 'Sending OTP…' : 'Continue →'}
+                            {loading ? 'Please wait…' : 'Continue →'}
                         </button>
-                    </form>
-                )}
-
-                {/* ── OTP Step ── */}
-                {step === 'otp' && (
-                    <form onSubmit={handleVerifyOTP} className="login-form">
-                        <div style={{ textAlign: 'center', marginBottom: 8 }}>
-                            <div style={{ fontSize: 12, color: '#6b7280' }}>OTP sent to</div>
-                            <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>+91 {phone}</div>
-                        </div>
-
-                        {/* OTP underline boxes */}
-                        <div
-                            style={{ position: 'relative', display: 'flex', gap: 10, justifyContent: 'center', cursor: 'text' }}
-                            onClick={() => otpInputRef.current?.focus()}
-                        >
-                            <input
-                                ref={otpInputRef}
-                                type="tel"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                autoComplete="one-time-code"
-                                maxLength={6}
-                                value={otp}
-                                onChange={handleOTPInput}
-                                onPaste={handleOTPPaste}
-                                autoFocus
-                                style={{
-                                    position: 'absolute', opacity: 0, width: '100%', height: '100%',
-                                    top: 0, left: 0, zIndex: 1, cursor: 'text', fontSize: 16,
-                                }}
-                            />
-                            {[0,1,2,3,4,5].map(i => {
-                                const filled = i < otp.length;
-                                const isCursor = i === otp.length;
-                                return (
-                                    <div key={i} style={{
-                                        width: 44, height: 56,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        borderBottom: `3px solid ${filled ? '#16a34a' : isCursor ? '#22c55e' : '#d1d5db'}`,
-                                        fontSize: 28, fontWeight: 800,
-                                        fontFamily: "Arial, 'Helvetica Neue', sans-serif",
-                                        color: '#111827', position: 'relative', transition: 'border-color 0.15s',
-                                    }}>
-                                        {filled ? otp[i] : (isCursor ? (
-                                            <span style={{ width: 2, height: 28, background: '#22c55e', borderRadius: 2, display: 'block', animation: 'otpBlink 1s step-end infinite' }} />
-                                        ) : null)}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        <style>{`@keyframes otpBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }`}</style>
-
-                        <button type="submit" className="btn-submit" disabled={loading || otp.length !== 6}>
-                            {loading ? 'Verifying…' : 'Verify & Continue →'}
-                        </button>
-
-                        <div style={{ textAlign: 'center' }}>
-                            {resendTimer > 0 ? (
-                                <span style={{ fontSize: 13, color: '#9ca3af' }}>Resend OTP in <strong style={{ color: '#22c55e' }}>{resendTimer}s</strong></span>
-                            ) : (
-                                <button type="button" style={{ background: 'none', border: 'none', color: '#22c55e', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                                    onClick={() => { setStep('phone'); setOtp(''); setError(''); }}>
-                                    ← Change number / Resend OTP
-                                </button>
-                            )}
-                        </div>
                     </form>
                 )}
 
@@ -360,7 +248,7 @@ export default function Login() {
                         </div>
                         <div style={{ display: 'flex', gap: 10 }}>
                             <button type="button"
-                                onClick={() => { setStep('otp'); setOtp(''); setError(''); }}
+                                onClick={() => { setStep('phone'); setError(''); }}
                                 style={{ flex: 1, padding: 12, background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>
                                 ← Back
                             </button>
