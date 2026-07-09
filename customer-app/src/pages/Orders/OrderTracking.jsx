@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api, { getImageUrl } from '../../utils/api';
 import './OrderTracking.css';
 
-const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyCXNIpwQ6rNmeH6oLU0j7y1bMECzZ65BpA';
+const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyBRtsC56l2EXDORo2GGnr__iLpj-N0JLB8';
 let _gmapsLoaded = false, _gmapsLoading = false, _gmapsCbs = [];
 function loadGM(cb) {
     if (_gmapsLoaded) return cb();

@@ -137,7 +137,7 @@ function PendingApprovalScreen({ partner, onApproved }) {
     );
 }
 
-const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyCXNIpwQ6rNmeH6oLU0j7y1bMECzZ65BpA';
+const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyBRtsC56l2EXDORo2GGnr__iLpj-N0JLB8';
 const DELIVERY_TYPE_LABELS = { Normal: '🚚 Normal', 'Return Pickup': '↩️ Return', 'Exchange Pickup': '🔄 Exchange' };
 const STATUS_COLORS = { Assigned: '#f59e0b', 'Picked Up': '#22c55e', 'Out for Delivery': '#16a34a' };
 

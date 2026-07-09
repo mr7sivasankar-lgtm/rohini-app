@@ -5,7 +5,7 @@ import api from '../utils/api';
 import MapPicker from '../components/MapPicker/MapPicker';
 import './Profile.css';
 
-const GMAP_KEY = 'AIzaSyCXNIpwQ6rNmeH6oLU0j7y1bMECzZ65BpA';
+const GMAP_KEY = 'AIzaSyBRtsC56l2EXDORo2GGnr__iLpj-N0JLB8';
 
 export default function Profile() {
     const { partner, logout, updatePartner } = useAuth();

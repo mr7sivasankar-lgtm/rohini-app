@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './Login.css';
 
-const GMAP_KEY = 'AIzaSyCXNIpwQ6rNmeH6oLU0j7y1bMECzZ65BpA';
+const GMAP_KEY = 'AIzaSyBRtsC56l2EXDORo2GGnr__iLpj-N0JLB8';
 
 /* ── Google Maps loader ── */
 let _loaded = false, _loading = false, _cbs = [];

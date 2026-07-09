@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import './MapPicker.css';
 
-const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyCXNIpwQ6rNmeH6oLU0j7y1bMECzZ65BpA';
+const GMAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyBRtsC56l2EXDORo2GGnr__iLpj-N0JLB8';
 const DEFAULT_LAT = 13.6288;
 const DEFAULT_LNG = 79.4192;
 

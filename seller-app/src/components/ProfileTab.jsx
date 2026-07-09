@@ -411,7 +411,7 @@ const ProfileTab = ({ seller }) => {
                         {formData.location?.coordinates?.[0] !== 0 && formData.location?.coordinates?.[1] !== 0 && (() => {
                             const lat = formData.location.coordinates[1];
                             const lng = formData.location.coordinates[0];
-                            const gmKey = 'AIzaSyCXNIpwQ6rNmeH6oLU0j7y1bMECzZ65BpA';
+                            const gmKey = 'AIzaSyBRtsC56l2EXDORo2GGnr__iLpj-N0JLB8';
                             return (
                                 <div style={{ marginTop: '20px', background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
                                     <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>📍 Shop Location</h3>
