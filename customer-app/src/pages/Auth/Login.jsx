@@ -38,9 +38,234 @@ async function reverseGeocode(lat, lng) {
     return null;
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   LEGAL CONTENT — Sifito Privacy Policy & Terms and Conditions
+   Effective Date: July 9, 2026
+───────────────────────────────────────────────────────────────────── */
+const PRIVACY_POLICY = {
+    title: 'Privacy Policy',
+    lastUpdated: 'July 9, 2026',
+    sections: [
+        {
+            heading: '1. Information We Collect',
+            body: 'To provide our services, we may collect the following information: Full Name, Mobile Number, Email Address (optional), Delivery Address, Device Location (only with your permission), Device Information (such as device model, operating system, and app version), Order History, and App usage information for improving our services.'
+        },
+        {
+            heading: '2. How We Use Your Information',
+            body: 'Your information is used to: create and manage your account, deliver your clothing orders, contact you regarding your orders, improve our application and customer experience, provide customer support, prevent fraud and misuse of our services, and comply with legal obligations.'
+        },
+        {
+            heading: '3. Location Permission',
+            body: 'Sifito requests access to your device location only to detect your delivery location, show nearby delivery availability, and improve delivery accuracy. You can disable location access at any time through your device settings. Some features may not function correctly without location access.'
+        },
+        {
+            heading: '4. Payments',
+            body: 'Currently, Sifito does not support online payments. Payment, if applicable, is collected through the available payment method offered during delivery or as communicated by the seller. Since we do not process online payments, we do not collect or store your bank account, debit card, credit card, or UPI information.'
+        },
+        {
+            heading: '5. Sharing Your Information',
+            body: 'We may share limited information with delivery partners for completing deliveries, store partners to process your orders, and government authorities if required by law. We never sell, rent, or trade your personal information to third parties.'
+        },
+        {
+            heading: '6. Data Security',
+            body: 'We use reasonable administrative and technical measures to protect your personal information. However, no method of electronic storage or internet transmission is completely secure.'
+        },
+        {
+            heading: '7. Data Retention',
+            body: 'Your information is retained only as long as necessary to provide our services, comply with legal requirements, resolve disputes, and enforce our policies.'
+        },
+        {
+            heading: '8. Your Rights',
+            body: 'You may update your profile information, request correction of inaccurate information, request deletion of your account (subject to legal obligations), and withdraw location permission through your device settings.'
+        },
+        {
+            heading: '9. Children\'s Privacy',
+            body: 'Sifito is not intended for children under the age of 13. We do not knowingly collect personal information from children.'
+        },
+        {
+            heading: '10. Changes to This Policy',
+            body: 'We may update this Privacy Policy from time to time. Updated versions will be available within the application.'
+        },
+        {
+            heading: '11. Contact Us',
+            body: 'If you have any questions regarding this Privacy Policy or need assistance, please contact us through WhatsApp.\n\nSifito Customer Support\nWhatsApp: +91 9700079239'
+        },
+    ]
+};
+
+const TERMS_CONDITIONS = {
+    title: 'Terms & Conditions',
+    lastUpdated: 'July 9, 2026',
+    sections: [
+        {
+            heading: '1. Acceptance',
+            body: 'By creating an account or using Sifito, you agree to comply with these Terms and all applicable laws.'
+        },
+        {
+            heading: '2. User Account',
+            body: 'You agree to provide accurate and complete information, keep your login credentials secure, and be responsible for all activities performed through your account. Sifito reserves the right to suspend or terminate accounts that violate these Terms.'
+        },
+        {
+            heading: '3. Orders',
+            body: 'Orders are subject to product availability. Product availability may change without prior notice. Prices and offers may change at any time. Stores reserve the right to reject or cancel orders due to stock unavailability or other operational reasons.'
+        },
+        {
+            heading: '4. Delivery',
+            body: 'Estimated delivery times are provided for convenience only and may vary due to traffic conditions, weather conditions, high order volume, or operational delays. Sifito is not liable for delays caused by circumstances beyond our reasonable control.'
+        },
+        {
+            heading: '5. Payments',
+            body: 'Currently, Sifito does not provide online payment facilities. Any payment, if applicable, will be completed using the payment method made available during delivery or as communicated by the seller.'
+        },
+        {
+            heading: '6. Order Cancellation',
+            body: 'Orders may be cancelled before the seller starts processing the order. Once an order has been confirmed or prepared for delivery, cancellation may not be possible.'
+        },
+        {
+            heading: '7. User Responsibilities',
+            body: 'Users must not: provide false or misleading information, misuse promotional offers, attempt unauthorized access to the application, use the application for illegal activities, or abuse or harass delivery personnel, store partners, or customer support.'
+        },
+        {
+            heading: '8. Intellectual Property',
+            body: 'All trademarks, logos, application designs, graphics, and content available in Sifito are the exclusive property of Sifito and may not be copied, reproduced, or distributed without written permission.'
+        },
+        {
+            heading: '9. Limitation of Liability',
+            body: 'Sifito is not responsible for temporary service interruptions, delayed deliveries beyond our control, product quality issues caused by sellers or stores, or user losses resulting from incorrect information provided by the user.'
+        },
+        {
+            heading: '10. Account Suspension',
+            body: 'We reserve the right to suspend or permanently terminate any account found violating these Terms or engaging in fraudulent or illegal activities.'
+        },
+        {
+            heading: '11. Changes to Terms',
+            body: 'Sifito may update these Terms and Conditions at any time. Continued use of the application after changes are published constitutes acceptance of the updated Terms.'
+        },
+        {
+            heading: '12. Governing Law',
+            body: 'These Terms and Conditions are governed by the laws of India. Any disputes arising from the use of the application shall be subject to the jurisdiction of the competent courts in Andhra Pradesh, India.'
+        },
+        {
+            heading: '13. Contact Support',
+            body: 'For any questions, complaints, or assistance regarding these Terms or the Sifito application, please contact us through WhatsApp.\n\nSifito Customer Support\nWhatsApp: +91 9700079239'
+        },
+    ]
+};
+
+/* ── Legal Modal Component ── */
+const LegalModal = ({ data, onClose }) => {
+    if (!data) return null;
+    return (
+        <>
+            {/* Backdrop */}
+            <div
+                onClick={onClose}
+                style={{
+                    position: 'fixed', inset: 0,
+                    background: 'rgba(0,0,0,0.45)',
+                    backdropFilter: 'blur(3px)',
+                    zIndex: 9998,
+                    animation: 'legalFadeIn 0.25s ease',
+                }}
+            />
+            {/* Sheet */}
+            <div style={{
+                position: 'fixed',
+                left: 0, right: 0, bottom: 0,
+                background: '#fff',
+                borderRadius: '24px 24px 0 0',
+                zIndex: 9999,
+                display: 'flex',
+                flexDirection: 'column',
+                maxHeight: '88vh',
+                boxShadow: '0 -8px 32px rgba(0,0,0,0.18)',
+                animation: 'legalSlideUp 0.32s cubic-bezier(0.16,1,0.3,1)',
+            }}>
+                {/* Drag handle */}
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+                    <div style={{ width: 40, height: 4, borderRadius: 2, background: '#e2e8f0' }} />
+                </div>
+
+                {/* Modal Header */}
+                <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '8px 20px 12px',
+                    borderBottom: '1px solid #f1f5f9',
+                }}>
+                    <div>
+                        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0 }}>{data.title}</h2>
+                        <p style={{ fontSize: 12, color: '#94a3b8', margin: '2px 0 0', fontWeight: 400 }}>Last updated: {data.lastUpdated}</p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        style={{
+                            background: '#f1f5f9', border: 'none', borderRadius: '50%',
+                            width: 36, height: 36, display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
+                        }}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Scrollable Content */}
+                <div style={{ overflowY: 'auto', padding: '16px 20px 32px', flex: 1 }}>
+                    {data.sections.map((sec, idx) => (
+                        <div key={idx} style={{ marginBottom: 20 }}>
+                            <h3 style={{
+                                fontSize: 14, fontWeight: 700, color: '#0f172a',
+                                margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 8,
+                            }}>
+                                <span style={{
+                                    display: 'inline-block', width: 6, height: 6,
+                                    borderRadius: '50%', background: '#22c55e', flexShrink: 0,
+                                }} />
+                                {sec.heading}
+                            </h3>
+                            <p style={{
+                                fontSize: 13.5, color: '#475569', lineHeight: 1.7,
+                                margin: 0, paddingLeft: 14, whiteSpace: 'pre-line'
+                            }}>
+                                {sec.body}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Close Button */}
+                <div style={{ padding: '0 20px 28px' }}>
+                    <button
+                        onClick={onClose}
+                        style={{
+                            width: '100%', padding: '14px',
+                            background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
+                            color: '#fff', border: 'none', borderRadius: 14,
+                            fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                            boxShadow: '0 4px 16px rgba(22,163,74,0.3)',
+                        }}
+                    >
+                        Got it!
+                    </button>
+                </div>
+            </div>
+
+            <style>{`
+                @keyframes legalFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes legalSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+            `}</style>
+        </>
+    );
+};
+
 const Login = () => {
     const navigate = useNavigate();
     const { sendOTP, verifyOTP, updateProfile } = useAuth();
+
+    // Legal modal state
+    const [legalModal, setLegalModal] = useState(null); // null | PRIVACY_POLICY | TERMS_CONDITIONS
 
     // Steps: 'phone' | 'otp' | 'name' | 'location'
     const [step, setStep] = useState('phone');
@@ -511,8 +736,38 @@ const Login = () => {
                 )}
 
                 <div className="login-footer">
-                    <p>By continuing, you agree to our Terms &amp; Privacy Policy</p>
+                    <p>
+                        By continuing, you agree to our{' '}
+                        <button
+                            type="button"
+                            onClick={() => setLegalModal(TERMS_CONDITIONS)}
+                            style={{
+                                background: 'none', border: 'none', padding: 0,
+                                color: '#16a34a', fontWeight: 700, fontSize: 12,
+                                cursor: 'pointer', textDecoration: 'underline',
+                                textUnderlineOffset: 2,
+                            }}
+                        >
+                            Terms &amp; Conditions
+                        </button>
+                        {' '}and{' '}
+                        <button
+                            type="button"
+                            onClick={() => setLegalModal(PRIVACY_POLICY)}
+                            style={{
+                                background: 'none', border: 'none', padding: 0,
+                                color: '#16a34a', fontWeight: 700, fontSize: 12,
+                                cursor: 'pointer', textDecoration: 'underline',
+                                textUnderlineOffset: 2,
+                            }}
+                        >
+                            Privacy Policy
+                        </button>
+                    </p>
                 </div>
+
+                {/* Legal Modals */}
+                <LegalModal data={legalModal} onClose={() => setLegalModal(null)} />
             </div>
         </div>
     );

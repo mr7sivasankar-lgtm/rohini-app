@@ -31,6 +31,8 @@ import EditProfile from './pages/EditProfile/EditProfile';
 import Wishlist from './pages/Wishlist/Wishlist';
 import Favorites from './pages/Favorites/Favorites';
 import ShopProfile from './pages/ShopProfile/ShopProfile';
+import PrivacyPolicy from './pages/Legal/PrivacyPolicy';
+import TermsAndConditions from './pages/Legal/TermsAndConditions';
 
 // Protected Route Component
 import { useAuth } from './contexts/AuthContext';
@@ -183,6 +185,9 @@ const AppRoutes = () => {
             <Favorites />
           </ProtectedRoute>
         } />
+
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
 
         <Route path="/" element={<Navigate to="/home" />} />
         <Route path="*" element={<Navigate to="/home" />} />
