@@ -7,6 +7,7 @@ import { upload, uploadSingle } from '../middleware/upload.js';
 import Product from '../models/Product.js';
 import Order from '../models/Order.js';
 import DeliveryPartner from '../models/DeliveryPartner.js';
+import { sendPush } from '../utils/notify.js';
 
 const router = express.Router();
 
@@ -189,6 +190,8 @@ router.post('/register', upload.fields([
                 status: seller.status
             }
         });
+        // ── Log for admin awareness (admin sees this via dashboard polling) ──
+        console.log(`🏪 [Admin Alert] New Seller Registration: "${seller.shopName}" (${seller.phone}) is pending approval.`);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -731,6 +734,28 @@ router.put('/admin/:id/status', protect, adminOnly, async (req, res) => {
             seller.status = status;
             if (reason) seller.statusReason = reason.trim();
             await seller.save();
+
+            // ── Notify Seller of status change via FCM ──
+            try {
+                const msgMap = {
+                    'Approved':    { title: '🎉 Account Approved!', body: 'Congratulations! Your shop has been approved. You can now start selling.' },
+                    'Rejected':    { title: '❌ Application Rejected', body: `Your seller application was rejected. Reason: ${reason || 'Not specified'}` },
+                    'Suspended':   { title: '⚠️ Account Suspended', body: `Your account has been suspended. Reason: ${reason || 'Please contact support.'}` },
+                    'Deactivated': { title: '🚫 Account Deactivated', body: 'Your account has been deactivated. Contact support for more info.' },
+                };
+                const msg = msgMap[status];
+                if (msg && (seller.fcmToken || seller.pushSubscription)) {
+                    await sendPush(seller.fcmToken || seller.pushSubscription, {
+                        ...msg,
+                        icon: '/icons/icon-192.png',
+                        tag: `seller-status-${seller._id}`,
+                        url: '/'
+                    });
+                }
+            } catch (pushErr) {
+                console.error('[Push] Seller status notify error:', pushErr.message);
+            }
+
             res.json({ success: true, data: seller });
         } else {
             res.status(404).json({ success: false, message: 'Seller not found' });

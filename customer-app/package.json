@@ -13,6 +13,7 @@
     "@capacitor/app": "^8.0.1",
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
+    "@capacitor/push-notifications": "^8.1.1",
     "axios": "^1.6.2",
     "leaflet": "^1.9.4",
     "pigeon-maps": "^0.22.1",

@@ -11,6 +11,7 @@ import SettingsTab from './components/SettingsTab';
 import PayoutsTab from './components/PayoutsTab';
 import RevenueDashboard from './components/RevenueDashboard';
 import SplashScreen from './components/SplashScreen/SplashScreen';
+import Support from './components/Support';
 import './index.css';
 
 function App() {
@@ -41,13 +42,24 @@ function App() {
   // Notification state
   const [newOrderCount, setNewOrderCount] = useState(0);
   const [newCancelledCount, setNewCancelledCount] = useState(0); // Added for cancelled alerts
+  const [newPendingSellersCount, setNewPendingSellersCount] = useState(0);
+  const [newPendingDPCount, setNewPendingDPCount] = useState(0);
+  const [newSupportTicketsCount, setNewSupportTicketsCount] = useState(0);
+  
   const lastOrderCountRef = useRef(0);
   const lastReturnCountRef = useRef(0);
   const lastExchangeCountRef = useRef(0);
   const lastCancelledCountRef = useRef(0);
+  const lastPendingSellersRef = useRef(0);
+  const lastPendingDeliveryPartnersRef = useRef(0);
+  const lastOpenSupportTicketsRef = useRef(0);
+  
   const notificationAudioRef = useRef(null);
   const [notifDismissed, setNotifDismissed] = useState(false);
   const [cancelNotifDismissed, setCancelNotifDismissed] = useState(false);
+  const [sellerNotifDismissed, setSellerNotifDismissed] = useState(false);
+  const [dpNotifDismissed, setDpNotifDismissed] = useState(false);
+  const [supportNotifDismissed, setSupportNotifDismissed] = useState(false);
 
   // Mobile Menu State
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -79,7 +91,7 @@ function App() {
     }
   }, [activeTab, isAuthenticated]);
 
-  // Poll for new orders every 15 seconds
+  // Poll for new orders / registrations / support tickets every 15 seconds
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -87,9 +99,14 @@ function App() {
       try {
         const response = await api.get('/orders/admin/all');
         if (response.data.success) {
-          const placedCount = response.data.stats?.placed || 0;
-          const returnCount = response.data.stats?.returnRequests || 0;
-          const exchangeCount = response.data.stats?.exchangeRequests || 0;
+          const stats = response.data.stats || {};
+          const placedCount = stats.placed || 0;
+          const returnCount = stats.returnRequests || 0;
+          const exchangeCount = stats.exchangeRequests || 0;
+          const cancelledCount = stats.cancelled || 0;
+          const pendingSellers = stats.pendingSellers || 0;
+          const pendingDP = stats.pendingDeliveryPartners || 0;
+          const openSupport = stats.openSupportTickets || 0;
 
           let shouldAlert = false;
           let notifBody = [];
@@ -106,29 +123,36 @@ function App() {
             shouldAlert = true;
             notifBody.push(`${exchangeCount - lastExchangeCountRef.current} new exchange request(s)`);
           }
-
-          const cancelledCount = response.data.stats?.cancelled || 0;
           if (cancelledCount > lastCancelledCountRef.current && lastCancelledCountRef.current > 0) {
             shouldAlert = true;
             notifBody.push(`${cancelledCount - lastCancelledCountRef.current} order(s) cancelled`);
-            setCancelNotifDismissed(false); // reset banner dismiss
+            setCancelNotifDismissed(false);
+          }
+          if (pendingSellers > lastPendingSellersRef.current && lastPendingSellersRef.current > 0) {
+            shouldAlert = true;
+            notifBody.push(`${pendingSellers - lastPendingSellersRef.current} new seller registration(s)`);
+            setSellerNotifDismissed(false);
+          }
+          if (pendingDP > lastPendingDeliveryPartnersRef.current && lastPendingDeliveryPartnersRef.current > 0) {
+            shouldAlert = true;
+            notifBody.push(`${pendingDP - lastPendingDeliveryPartnersRef.current} new delivery partner registration(s)`);
+            setDpNotifDismissed(false);
+          }
+          if (openSupport > lastOpenSupportTicketsRef.current && lastOpenSupportTicketsRef.current > 0) {
+            shouldAlert = true;
+            notifBody.push(`${openSupport - lastOpenSupportTicketsRef.current} new support ticket(s)`);
+            setSupportNotifDismissed(false);
           }
 
           if (shouldAlert) {
             playNotificationSound();
-
             if ('Notification' in window && Notification.permission === 'granted') {
-              const notif = new Notification('🔔 New Activity Detected!', {
+              const notif = new Notification('🔔 New Activity!', {
                 body: `You have ${notifBody.join(', ')} waiting for review.`,
                 icon: '/favicon.ico',
                 vibrate: [200, 100, 200]
               });
-
-              notif.onclick = () => {
-                window.focus();
-                setActiveTab('orders');
-                notif.close();
-              };
+              notif.onclick = () => { window.focus(); setActiveTab('orders'); notif.close(); };
             }
           }
 
@@ -136,8 +160,14 @@ function App() {
           lastReturnCountRef.current = returnCount;
           lastExchangeCountRef.current = exchangeCount;
           lastCancelledCountRef.current = cancelledCount;
+          lastPendingSellersRef.current = pendingSellers;
+          lastPendingDeliveryPartnersRef.current = pendingDP;
+          lastOpenSupportTicketsRef.current = openSupport;
           setNewOrderCount(placedCount);
           setNewCancelledCount(cancelledCount);
+          setNewPendingSellersCount(pendingSellers);
+          setNewPendingDPCount(pendingDP);
+          setNewSupportTicketsCount(openSupport);
         }
       } catch (error) {
         // Silently fail for polling
@@ -403,6 +433,19 @@ function App() {
         <div className={`menu-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => handleTabChange('settings')}>
           ⚙️ Global Settings
         </div>
+        <div className={`menu-item ${activeTab === 'support' ? 'active' : ''}`} onClick={() => handleTabChange('support')}>
+          💬 Support
+          {newSupportTicketsCount > 0 && <span style={{
+            background: '#06b6d4',
+            color: 'white',
+            borderRadius: '50%',
+            padding: '2px 7px',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            marginLeft: '8px',
+            animation: 'pulse 2s infinite'
+          }}>{newSupportTicketsCount}</span>}
+        </div>
         <div className="menu-item" onClick={handleLogout}>
           Logout
         </div>
@@ -511,6 +554,81 @@ function App() {
             >
               ✕
             </button>
+          </div>
+        )}
+
+        {/* Pending Seller Registration Notification Bar */}
+        {newPendingSellersCount > 0 && !sellerNotifDismissed && (
+          <div style={{
+            background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+            color: 'white',
+            padding: '12px 20px',
+            borderRadius: '10px',
+            margin: '0 0 16px 0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxShadow: '0 2px 10px rgba(99,102,241,0.3)',
+            animation: 'slideDown 0.3s ease'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '20px' }}>🏪</span>
+              <span style={{ fontWeight: '600' }}>
+                {newPendingSellersCount} seller{newPendingSellersCount > 1 ? 's' : ''} pending approval!
+              </span>
+            </div>
+            <button onClick={() => setActiveTab('sellers')} style={{ background: 'white', color: '#4f46e5', border: 'none', padding: '6px 16px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Review Sellers →</button>
+            <button onClick={() => setSellerNotifDismissed(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: '18px', cursor: 'pointer', padding: '0 4px', marginLeft: '8px' }}>✕</button>
+          </div>
+        )}
+
+        {/* Pending Delivery Partner Notification Bar */}
+        {newPendingDPCount > 0 && !dpNotifDismissed && (
+          <div style={{
+            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            color: 'white',
+            padding: '12px 20px',
+            borderRadius: '10px',
+            margin: '0 0 16px 0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxShadow: '0 2px 10px rgba(245,158,11,0.3)',
+            animation: 'slideDown 0.3s ease'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '20px' }}>🚴</span>
+              <span style={{ fontWeight: '600' }}>
+                {newPendingDPCount} delivery partner{newPendingDPCount > 1 ? 's' : ''} pending approval!
+              </span>
+            </div>
+            <button onClick={() => setActiveTab('delivery-partners')} style={{ background: 'white', color: '#d97706', border: 'none', padding: '6px 16px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Review Partners →</button>
+            <button onClick={() => setDpNotifDismissed(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: '18px', cursor: 'pointer', padding: '0 4px', marginLeft: '8px' }}>✕</button>
+          </div>
+        )}
+
+        {/* New Support Ticket Notification Bar */}
+        {newSupportTicketsCount > 0 && !supportNotifDismissed && (
+          <div style={{
+            background: 'linear-gradient(135deg, #06b6d4, #0891b2)',
+            color: 'white',
+            padding: '12px 20px',
+            borderRadius: '10px',
+            margin: '0 0 16px 0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxShadow: '0 2px 10px rgba(6,182,212,0.3)',
+            animation: 'slideDown 0.3s ease'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '20px' }}>💬</span>
+              <span style={{ fontWeight: '600' }}>
+                {newSupportTicketsCount} open support ticket{newSupportTicketsCount > 1 ? 's' : ''} waiting!
+              </span>
+            </div>
+            <button onClick={() => setActiveTab('support')} style={{ background: 'white', color: '#0891b2', border: 'none', padding: '6px 16px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>View Tickets →</button>
+            <button onClick={() => setSupportNotifDismissed(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: '18px', cursor: 'pointer', padding: '0 4px', marginLeft: '8px' }}>✕</button>
           </div>
         )}
 
@@ -896,6 +1014,10 @@ function App() {
 
         {activeTab === 'settings' && (
           <SettingsTab />
+        )}
+
+        {activeTab === 'support' && (
+          <Support />
         )}
       </div>
     </div>

@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "976834322933",
+    "project_id": "sifito",
+    "storage_bucket": "sifito.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:976834322933:android:66310f7e44688537e200bc",
+        "android_client_info": {
+          "package_name": "com.rohini.customerapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_KFnbevLSKSNNsuhjFsZ1UIRrXVIdQtE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:976834322933:android:5278571ec96d5da3e200bc",
+        "android_client_info": {
+          "package_name": "com.rohini.delivery"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_KFnbevLSKSNNsuhjFsZ1UIRrXVIdQtE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:976834322933:android:445d0adc059520b9e200bc",
+        "android_client_info": {
+          "package_name": "com.rohini.seller"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_KFnbevLSKSNNsuhjFsZ1UIRrXVIdQtE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -73,6 +73,10 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: null
   },
+  fcmToken: {
+    type: String,
+    default: null
+  },
   hasUsedWelcomePromo: {
     type: Boolean,
     default: false

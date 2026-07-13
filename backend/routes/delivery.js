@@ -559,7 +559,7 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
         // ── Notify Customer: delivery status update ──
         try {
             const customer = await User.findById(order.user);
-            if (customer?.pushSubscription) {
+            if (customer?.fcmToken || customer?.pushSubscription) {
                 const msgMap = {
                     'Picked Up':      { title: '🛕 Order Picked Up!',    body: 'Your order has been collected from the seller.' },
                     'Out for Delivery':{ title: '📦 Out for Delivery!', body: 'Your order is on the way to you.' },
@@ -567,7 +567,7 @@ router.put('/orders/:id/status', protectDelivery, async (req, res) => {
                 };
                 const msg = msgMap[deliveryStatus];
                 if (msg) {
-                    await sendPush(customer.pushSubscription, {
+                    await sendPush(customer.fcmToken || customer.pushSubscription, {
                         ...msg,
                         icon: '/icons/icon-192.png',
                         vibrate: deliveryStatus === 'Delivered' ? [200, 100, 200] : undefined,
@@ -687,6 +687,32 @@ router.put('/admin/partners/:id/approve', async (req, res) => {
             updateData, 
             { new: true }
         );
+
+        // ── Notify Delivery Partner via FCM ──
+        try {
+            const msgMap = {
+                'Approved': {
+                    title: '🎉 Application Approved!',
+                    body: 'Congratulations! Your delivery partner account has been approved. You can now start accepting deliveries.'
+                },
+                'Rejected': {
+                    title: '❌ Application Rejected',
+                    body: 'Your delivery partner application was not approved. Please contact support for more information.'
+                }
+            };
+            const msg = msgMap[status];
+            if (msg && (partner.fcmToken || partner.pushSubscription)) {
+                await sendPush(partner.fcmToken || partner.pushSubscription, {
+                    ...msg,
+                    icon: '/icons/icon-192.png',
+                    tag: `partner-status-${partner._id}`,
+                    url: '/'
+                });
+            }
+        } catch (pushErr) {
+            console.error('[Push] Partner status notify error:', pushErr.message);
+        }
+
         res.json({ success: true, data: partner });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -842,10 +868,10 @@ export const broadcastOrder = async (orderId, deliveryType = 'Normal') => {
         const assignedOrder = await Order.findById(orderId).populate('seller');
         
         for (const p of partners) {
-            if (p.pushSubscription) {
+            if (p.fcmToken || p.pushSubscription) {
                 // Simple push
                 try {
-                    await sendPush(p.pushSubscription, {
+                    await sendPush(p.fcmToken || p.pushSubscription, {
                         title: '🔔 New Delivery Request!',
                         body: `Earn ₹${(assignedOrder.deliveryEarning ?? assignedOrder.deliveryFee ?? 0).toFixed(0)} - Pick up from ${assignedOrder?.sellerShopName || 'nearest shop'}`,
                         icon: '/icons/icon-192.png',

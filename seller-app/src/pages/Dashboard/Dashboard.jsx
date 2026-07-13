@@ -8,6 +8,7 @@ import SalesTab from '../../components/SalesTab';
 import ReviewsTab from '../../components/ReviewsTab';
 import WalletTab from '../../components/WalletTab';
 import SellerNotificationBanner from '../../components/SellerNotificationBanner';
+import SellerAlertModal from '../../components/SellerAlertModal';
 import './Dashboard.css';
 
 // Bottom nav config for mobile (max 5 items — "More" opens the drawer)
@@ -65,8 +66,9 @@ const Dashboard = () => {
     return (
         <div className="seller-dashboard">
 
-            {/* ── Global notification banners ── */}
+            {/* ── Global notification banners & big popups ── */}
             <SellerNotificationBanner onView={handleNotifView} />
+            <SellerAlertModal onView={handleNotifView} />
 
             {/* ── More Drawer Overlay ── */}
             {moreOpen && (

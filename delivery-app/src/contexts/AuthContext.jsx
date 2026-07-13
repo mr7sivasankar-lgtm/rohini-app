@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../utils/api';
+import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
 
 const AuthContext = createContext();
 
@@ -12,33 +14,71 @@ export const AuthProvider = ({ children }) => {
         const saved = localStorage.getItem('deliveryPartner');
         if (token && saved) {
             setPartner(JSON.parse(saved));
+            setTimeout(registerPush, 500);
         }
         setLoading(false);
     }, []);
 
-    const urlBase64ToUint8Array = (b) => {
-        const p = '='.repeat((4 - b.length % 4) % 4);
-        const base64 = (b + p).replace(/-/g, '+').replace(/_/g, '/');
-        const raw = window.atob(base64);
-        return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
-    };
-
+    // Register push notification for Capacitor Android APK (Delivery Partner)
     const registerPush = async () => {
         try {
-            if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') return;
-            const reg = await navigator.serviceWorker.register('/sw.js');
-            const vapidRes = await api.get('/push/vapid-public-key');
-            const vapidKey = vapidRes.data.publicKey;
-            if (!vapidKey) return;
-            const sub = await reg.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(vapidKey)
+            if (!Capacitor.isNativePlatform()) {
+                console.log('[Push] Running on web, skipping native push registration.');
+                return;
+            }
+
+            let permStatus = await PushNotifications.checkPermissions();
+            
+            if (permStatus.receive === 'prompt') {
+                permStatus = await PushNotifications.requestPermissions();
+            }
+
+            if (permStatus.receive !== 'granted') {
+                console.warn('[Push] Partner push notification permissions denied.');
+                return;
+            }
+
+            // Create high priority notification channel for Android heads-up display
+            await PushNotifications.createChannel({
+                id: 'high-priority',
+                name: 'High Priority Alerts',
+                description: 'Alerts for incoming orders, status changes and support updates',
+                importance: 5, // IMPORTANCE_HIGH (Android triggers heads-up banner)
+                visibility: 1, // VISIBILITY_PUBLIC
+                sound: 'default',
+                vibration: true
             });
-            await api.post('/push/subscribe/partner', { subscription: sub });
+
+            await PushNotifications.register();
+
+            // Store FCM token in backend
+            PushNotifications.addListener('registration', async (token) => {
+                console.log('[Push] FCM registration success, token:', token.value);
+                try {
+                    await api.post('/push/fcm-token/partner', { token: token.value });
+                } catch (apiErr) {
+                    console.error('[Push] Failed to register FCM token with server:', apiErr.message);
+                }
+            });
+
+            PushNotifications.addListener('registrationError', (error) => {
+                console.error('[Push] FCM registration error:', error);
+            });
+
+            PushNotifications.addListener('pushNotificationReceived', (notification) => {
+                console.log('[Push] Notification received in foreground:', notification);
+            });
+
+            PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+                console.log('[Push] Action performed on notification:', action);
+                const url = action.notification.data?.url;
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+
         } catch (err) {
-            console.warn('[Push] Partner registration error:', err.message);
+            console.warn('[Push] Capacitor registration error:', err.message);
         }
     };
 

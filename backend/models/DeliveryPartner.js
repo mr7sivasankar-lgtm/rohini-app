@@ -90,6 +90,10 @@ const deliveryPartnerSchema = new mongoose.Schema({
     pushSubscription: {
         type: mongoose.Schema.Types.Mixed,
         default: null
+    },
+    fcmToken: {
+        type: String,
+        default: null
     }
 }, {
     timestamps: true

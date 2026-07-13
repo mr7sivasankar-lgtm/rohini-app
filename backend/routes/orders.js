@@ -305,8 +305,8 @@ router.post('/', protect, async (req, res) => {
         try {
             const Seller = (await import('../models/Seller.js')).default;
             const seller = await Seller.findById(order.seller);
-            if (seller?.pushSubscription) {
-                await sendPush(seller.pushSubscription, {
+            if (seller?.fcmToken || seller?.pushSubscription) {
+                await sendPush(seller.fcmToken || seller.pushSubscription, {
                     title: '🛍️ New Order Received!',
                     body: `₹${totalAmount.toFixed(0)} order from ${user?.name || 'a customer'}`,
                     icon: '/icons/icon-192.png',
@@ -624,7 +624,7 @@ router.put('/seller/:id/status', sellerProtect, async (req, res) => {
         // ── Notify Customer: Seller status update ──
         try {
             const customer = await User.findById(order.user);
-            if (customer?.pushSubscription) {
+            if (customer?.fcmToken || customer?.pushSubscription) {
                 const msgMap = {
                     'Accepted': { title: '✅ Order Accepted!', body: 'Your order has been accepted by the seller.' },
                     'Ready for Pickup': { title: '🎁 Order Ready!', body: 'Your order is packed and ready for pickup.' },
@@ -632,7 +632,7 @@ router.put('/seller/:id/status', sellerProtect, async (req, res) => {
                 };
                 const msg = msgMap[status];
                 if (msg) {
-                    await sendPush(customer.pushSubscription, {
+                    await sendPush(customer.fcmToken || customer.pushSubscription, {
                         ...msg,
                         icon: '/icons/icon-192.png',
                         tag: `order-status-${order._id}`,
@@ -714,8 +714,8 @@ router.put('/seller/:id/item-return', sellerProtect, async (req, res) => {
             // Notify customer
             try {
                 const customer = await User.findById(order.user);
-                if (customer?.pushSubscription) {
-                    await sendPush(customer.pushSubscription, {
+                if (customer?.fcmToken || customer?.pushSubscription) {
+                    await sendPush(customer.fcmToken || customer.pushSubscription, {
                         title: '✅ Return Approved!',
                         body: `Your return for "${item.name}" has been approved. A delivery partner will pick it up soon.`,
                         icon: '/icons/icon-192.png',
@@ -735,8 +735,8 @@ router.put('/seller/:id/item-return', sellerProtect, async (req, res) => {
             // Notify customer of rejection
             try {
                 const customer = await User.findById(order.user);
-                if (customer?.pushSubscription) {
-                    await sendPush(customer.pushSubscription, {
+                if (customer?.fcmToken || customer?.pushSubscription) {
+                    await sendPush(customer.fcmToken || customer.pushSubscription, {
                         title: '❌ Return Rejected',
                         body: `Your return request for "${item.name}" was rejected by the seller.`,
                         icon: '/icons/icon-192.png',
@@ -844,8 +844,8 @@ router.put('/seller/:id/item-received', sellerProtect, async (req, res) => {
         // Notify customer
         try {
             const customer = await User.findById(order.user);
-            if (customer?.pushSubscription) {
-                await sendPush(customer.pushSubscription, {
+            if (customer?.fcmToken || customer?.pushSubscription) {
+                await sendPush(customer.fcmToken || customer.pushSubscription, {
                     title: '📦 Return Completed!',
                     body: `We received your returned item "${item.name}". Refund will be processed shortly.`,
                     icon: '/icons/icon-192.png',
@@ -1124,12 +1124,29 @@ router.get('/admin/all', protect, adminOnly, async (req, res) => {
         const newDeliveryPartnersToday = await DeliveryPartner.countDocuments({ createdAt: { $gte: today } });
         const activeDeliveryPartnersCount = await DeliveryPartner.countDocuments({ isActive: true });
 
+        // --- 7. Notification / Alert counts ---
+        const SupportTicket = (await import('../models/SupportTicket.js')).default;
+        const openSupportTickets = await SupportTicket.countDocuments({ status: 'Open' });
+        const pendingSellers = await Seller.countDocuments({ status: 'Pending' });
+        const pendingDeliveryPartners = await DeliveryPartner.countDocuments({ status: 'Pending Approval' });
+        const placed = await Order.countDocuments({ status: 'Placed' });
+        const returnRequests = await Order.countDocuments({ 'items.status': 'Return Requested' });
+        const exchangeRequests = await Order.countDocuments({ 'items.status': 'Exchange Requested' });
+        const cancelled = await Order.countDocuments({ status: 'Cancelled' });
+
         const stats = {
             today: { ordersToday, deliveredToday, cancelledToday, returnsToday, exchangedToday, productsAddedToday },
             totals: { totalProductsAdded, totalOrders, totalDelivered, totalCancelled, totalReturns, totalExchanged },
             users: { totalUsers, newUsersToday, activeUsersCount },
             sellers: { totalSellers, newSellersToday, activeSellersCount },
-            delivery: { totalDeliveryPartners, newDeliveryPartnersToday, activeDeliveryPartnersCount }
+            delivery: { totalDeliveryPartners, newDeliveryPartnersToday, activeDeliveryPartnersCount },
+            placed,
+            returnRequests,
+            exchangeRequests,
+            cancelled,
+            pendingSellers,
+            pendingDeliveryPartners,
+            openSupportTickets
         };
 
         const charts = {

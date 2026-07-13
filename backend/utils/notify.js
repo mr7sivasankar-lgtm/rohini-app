@@ -1,34 +1,32 @@
-import webpush from 'web-push';
+import { sendFCM } from './fcm.js';
 
 /**
- * Send a Web Push notification to a single subscription object.
- * Silently ignores if subscription is null/undefined.
+ * Send a push notification using Firebase Cloud Messaging (FCM).
+ * Silently ignores if token is null/undefined.
  *
- * @param {Object} subscription - The push subscription { endpoint, keys }
+ * @param {string} token - The FCM registration token
  * @param {Object} payload
  * @param {string} payload.title
  * @param {string} payload.body
- * @param {string} [payload.icon] - URL to icon image
- * @param {number[]} [payload.vibrate] - Vibration pattern e.g. [300,100,300]
- * @param {string} [payload.sound] - Sound hint (used by SW)
- * @param {string} [payload.url] - URL to open on click
+ * @param {string} [payload.icon] - URL to icon image (optional for FCM)
+ * @param {string} [payload.url] - URL/Route path to handle on click
  * @param {string} [payload.tag] - Notification tag (deduplication)
  */
-export const sendPush = async (subscription, payload) => {
-    if (!subscription || !subscription.endpoint) return;
-    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-        console.warn('[Push] VAPID keys not configured — skipping push');
-        return;
-    }
+export const sendPush = async (token, payload) => {
+    if (!token) return;
 
     try {
-        await webpush.sendNotification(subscription, JSON.stringify(payload));
+        await sendFCM(token, {
+            title: payload.title || 'Rohini',
+            body: payload.body || '',
+            data: {
+                url: payload.url || '/',
+                tag: payload.tag || '',
+                icon: payload.icon || ''
+            }
+        });
     } catch (err) {
-        // 410 Gone = subscription is expired/invalid; just log and move on
-        if (err.statusCode === 410 || err.statusCode === 404) {
-            console.warn('[Push] Subscription expired:', err.statusCode);
-        } else {
-            console.error('[Push] Send error:', err.message);
-        }
+        console.error('[Push Notification Error]:', err.message);
     }
 };
+
