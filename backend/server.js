@@ -94,6 +94,11 @@ app.get('/privacy-policy', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'privacy-policy.html'));
 });
 
+// Delete account request page (Google Play requirement)
+app.get('/delete-account', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'delete-account.html'));
+});
+
 // Health check route
 app.get('/health', (req, res) => {
     res.status(200).json({
