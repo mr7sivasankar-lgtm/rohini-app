@@ -567,7 +567,7 @@ const HeroSlideshow = ({ banners, navigate }) => {
     if (slides.length === 0) return null;
 
     return (
-        <div className="slideshow-wrapper" style={{ margin: '0', padding: '0 20px', overflow: 'hidden' }}>
+        <div className="slideshow-wrapper" style={{ margin: '0', padding: '0 10px', overflow: 'hidden' }}>
             <div className="slideshow-track" style={{
                 transform: `translateX(-${active * 100}%)`,
                 display: 'flex',

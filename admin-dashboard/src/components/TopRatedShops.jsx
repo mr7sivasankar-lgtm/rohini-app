@@ -468,13 +468,27 @@ const TopRatedShops = () => {
                                         required={!bannerImage}
                                     />
                                     {previewUrl && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowCrop(true)}
-                                            style={{ padding: '8px 14px', background: '#f1f5f9', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontWeight: 600, fontSize: '13px', cursor: 'pointer', color: '#475569', whiteSpace: 'nowrap' }}
-                                        >
-                                            ✂️ Crop
-                                        </button>
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowCrop(true)}
+                                                style={{ padding: '8px 14px', background: '#f1f5f9', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontWeight: 600, fontSize: '13px', cursor: 'pointer', color: '#475569', whiteSpace: 'nowrap' }}
+                                            >
+                                                ✂️ Crop
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setBannerImage(null);
+                                                    setPreviewUrl(null);
+                                                    setRawPreviewUrl(null);
+                                                    if (fileInputRef.current) fileInputRef.current.value = '';
+                                                }}
+                                                style={{ padding: '8px 14px', background: '#fee2e2', border: '1.5px solid #fecaca', borderRadius: '8px', fontWeight: 600, fontSize: '13px', cursor: 'pointer', color: '#ef4444', whiteSpace: 'nowrap' }}
+                                            >
+                                                ✕ Clear
+                                            </button>
+                                        </>
                                     )}
                                 </div>
                                 <p style={{ fontSize: '11px', color: '#94a3b8', margin: '4px 0 0' }}>Recommended: 750 × 400 px (16:8.5). Use the Crop tool to adjust framing.</p>
