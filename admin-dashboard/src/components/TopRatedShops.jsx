@@ -6,6 +6,7 @@ const TopRatedShops = () => {
     const [banners, setBanners] = useState([]);
     const [loading, setLoading] = useState(true);
     const [bannerTitle, setBannerTitle] = useState('');
+    const [bannerLink, setBannerLink] = useState('');
     const [bannerImage, setBannerImage] = useState(null);
     const [uploadingBanner, setUploadingBanner] = useState(false);
 
@@ -56,6 +57,7 @@ const TopRatedShops = () => {
         const formData = new FormData();
         formData.append('image', bannerImage);
         if (bannerTitle) formData.append('title', bannerTitle);
+        if (bannerLink) formData.append('link', bannerLink);
 
         try {
             setUploadingBanner(true);
@@ -66,6 +68,7 @@ const TopRatedShops = () => {
                 setBanners(prev => [res.data.data, ...prev]);
                 setBannerImage(null);
                 setBannerTitle('');
+                setBannerLink('');
                 e.target.reset();
             }
         } catch (error) {
@@ -112,43 +115,76 @@ const TopRatedShops = () => {
             <div className="card" style={{ marginBottom: '24px' }}>
                 <h3 style={{ margin: '0 0 16px 0', color: '#1e293b' }}>🖼️ Promotion Banners (Top Picks Slide View)</h3>
                 
-                <form onSubmit={handleUploadBanner} style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', marginBottom: '24px', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Banner Title (Optional)</label>
-                        <input 
-                            type="text" 
-                            className="input"
-                            placeholder="e.g. Diwali Sale" 
-                            value={bannerTitle}
-                            onChange={e => setBannerTitle(e.target.value)}
-                        />
+                <form onSubmit={handleUploadBanner} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '200px' }}>
+                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Banner Title (Optional)</label>
+                            <input 
+                                type="text" 
+                                className="input"
+                                placeholder="e.g. Diwali Sale" 
+                                value={bannerTitle}
+                                onChange={e => setBannerTitle(e.target.value)}
+                            />
+                        </div>
+                        <div style={{ flex: 1, minWidth: '200px' }}>
+                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Link to Shop (Optional)</label>
+                            <select
+                                className="input"
+                                style={{ height: '40px', background: 'white' }}
+                                value={bannerLink}
+                                onChange={e => setBannerLink(e.target.value)}
+                            >
+                                <option value="">No Link (Normal Banner)</option>
+                                {sellers.map(shop => (
+                                    <option key={shop._id} value={`/shop/${shop._id}`}>
+                                        {shop.shopName} ({shop.ownerName})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={{ flex: 1, minWidth: '200px' }}>
+                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Banner Image (Required)</label>
+                            <input 
+                                type="file" 
+                                accept="image/*"
+                                className="input"
+                                onChange={e => setBannerImage(e.target.files[0])}
+                                required
+                            />
+                        </div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Banner Image (Required)</label>
-                        <input 
-                            type="file" 
-                            accept="image/*"
-                            className="input"
-                            onChange={e => setBannerImage(e.target.files[0])}
-                            required
-                        />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button type="submit" disabled={uploadingBanner} className="btn btn-primary" style={{ height: '42px', padding: '0 24px' }}>
+                            {uploadingBanner ? 'Uploading...' : '+ Add Banner'}
+                        </button>
                     </div>
-                    <button type="submit" disabled={uploadingBanner} className="btn btn-primary" style={{ height: '42px', padding: '0 24px' }}>
-                        {uploadingBanner ? 'Uploading...' : '+ Add Banner'}
-                    </button>
                 </form>
 
                 {banners.length > 0 ? (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' }}>
-                        {banners.map(banner => (
-                            <div key={banner._id} style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#fff' }}>
-                                <img src={api.defaults.baseURL.replace('/api', '') + banner.image} alt="Banner" style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} />
-                                <div style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontWeight: 600, fontSize: '14px', color: '#334155' }}>{banner.title || 'Untitled Banner'}</span>
-                                    <button onClick={() => handleDeleteBanner(banner._id)} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>Delete</button>
+                        {banners.map(banner => {
+                            const linkedSeller = sellers.find(s => `/shop/${s._id}` === banner.link);
+                            return (
+                                <div key={banner._id} style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#fff' }}>
+                                    <img src={api.defaults.baseURL.replace('/api', '') + banner.image} alt="Banner" style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} />
+                                    <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontWeight: 600, fontSize: '14px', color: '#334155' }}>{banner.title || 'Untitled Banner'}</span>
+                                            <button onClick={() => handleDeleteBanner(banner._id)} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>Delete</button>
+                                        </div>
+                                        {banner.link && (
+                                            <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <span>🔗</span>
+                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {linkedSeller ? `Link: ${linkedSeller.shopName}` : `Link: ${banner.link}`}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
                     <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: '14px', background: '#f8fafc', borderRadius: '8px' }}>
