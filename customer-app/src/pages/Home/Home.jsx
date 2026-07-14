@@ -155,10 +155,10 @@ const Home = () => {
         });
     };
 
-    // Show city or locality — not the full street address
+    // Show full street-level address (displayName) in the header
     const locationLabel = locLoading
         ? 'Detecting...'
-        : (city || locality || pincode || 'Set Location');
+        : (fullAddress || city || locality || pincode || 'Set Location');
 
     return (
         <div className="home-page">

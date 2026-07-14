@@ -14,6 +14,7 @@ export const LocationProvider = ({ children }) => {
         state: '',
         pincode: '',
         fullAddress: '',
+        displayName: '',
         serviceable: null, // null = checking, true/false = result
         loading: true,
         error: null,
@@ -76,7 +77,9 @@ export const LocationProvider = ({ children }) => {
             const city = geo.city || '';
             const state = geo.state || '';
             const pincode = geo.pincode || '';
-            const fullAddress = `${locality}${locality && city ? ', ' : ''}${city}`;
+            const displayName = geo.displayName || '';
+            // Use displayName (street-level) if available, otherwise fallback to locality+city
+            const fullAddress = displayName || `${locality}${locality && city ? ', ' : ''}${city}`;
 
             // Check serviceability
             let serviceable = true;
@@ -97,6 +100,7 @@ export const LocationProvider = ({ children }) => {
                 state,
                 pincode,
                 fullAddress,
+                displayName,
                 serviceable,
                 loading: false,
                 error: null,
@@ -131,7 +135,8 @@ export const LocationProvider = ({ children }) => {
         setLocation(prev => ({ ...prev, loading: true, error: null }));
 
         const { latitude, longitude, locality, city, state, pincode } = result;
-        const fullAddress = `${locality}${locality && city ? ', ' : ''}${city}`;
+        const displayName = result.displayName || '';
+        const fullAddress = displayName || `${locality}${locality && city ? ', ' : ''}${city}`;
 
         // Check serviceability
         let serviceable = true;
@@ -152,6 +157,7 @@ export const LocationProvider = ({ children }) => {
             state,
             pincode,
             fullAddress,
+            displayName,
             serviceable,
             loading: false,
             error: null,
