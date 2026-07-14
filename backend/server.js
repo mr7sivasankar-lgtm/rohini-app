@@ -86,6 +86,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve public static pages (privacy policy, terms, etc.)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Privacy policy page (explicit route for easy sharing)
+app.get('/privacy-policy', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'privacy-policy.html'));
+});
+
 // Health check route
 app.get('/health', (req, res) => {
     res.status(200).json({
