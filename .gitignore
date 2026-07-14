@@ -10,3 +10,6 @@ dist/
 *.patch
 temp.*
 last_commit.*
+# Keystores (sensitive credentials)
+*.jks
+*.keystore
