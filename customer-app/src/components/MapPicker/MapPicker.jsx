@@ -29,28 +29,33 @@ function loadGoogleMaps(callback) {
     document.head.appendChild(s);
 }
 
-/* ── Reverse geocode using Google Geocoding API ── */
-async function reverseGeocodeGoogle(lat, lng) {
-    try {
-        const res = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GMAP_KEY}`
-        );
-        const data = await res.json();
-        if (data.status === 'OK' && data.results[0]) {
-            const r = data.results[0];
-            const get = (type) => r.address_components.find(c => c.types.includes(type))?.long_name || '';
-            return {
-                fullAddress: r.formatted_address,
-                address: [get('sublocality_level_1') || get('sublocality'), get('route')].filter(Boolean).join(', ') || r.formatted_address,
-                locality: get('sublocality_level_1') || get('sublocality') || get('neighborhood'),
-                city: get('locality'),
-                state: get('administrative_area_level_1'),
-                pincode: get('postal_code'),
-            };
+/* ── Reverse geocode using Google Maps SDK Geocoder ── */
+function reverseGeocodeGoogle(lat, lng) {
+    return new Promise((resolve) => {
+        if (!window.google || !window.google.maps || !window.google.maps.Geocoder) {
+            resolve(null);
+            return;
         }
-    } catch { /* silent */ }
-    return null;
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+            if (status === 'OK' && results && results[0]) {
+                const r = results[0];
+                const get = (type) => r.address_components.find(c => c.types.includes(type))?.long_name || '';
+                resolve({
+                    fullAddress: r.formatted_address,
+                    address: [get('sublocality_level_1') || get('sublocality'), get('route')].filter(Boolean).join(', ') || r.formatted_address,
+                    locality: get('sublocality_level_1') || get('sublocality') || get('neighborhood') || get('locality'),
+                    city: get('locality'),
+                    state: get('administrative_area_level_1'),
+                    pincode: get('postal_code'),
+                });
+            } else {
+                resolve(null);
+            }
+        });
+    });
 }
+
 
 const MapPicker = ({ initialLat, initialLng, onConfirm, onClose }) => {
     const mapRef = useRef(null);

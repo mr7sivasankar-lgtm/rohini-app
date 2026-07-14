@@ -381,17 +381,20 @@ export default function Dashboard() {
                 }
             });
 
-            const updatePos = async (lat, lng) => {
+            const updatePos = (lat, lng) => {
                 setRelocatePos({ lat, lng });
-                try {
-                    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GMAP_KEY}`);
-                    const data = await res.json();
-                    if (data.status === 'OK' && data.results[0]) {
-                        setRelocateAddr(data.results[0].formatted_address);
+                if (!window.google || !window.google.maps || !window.google.maps.Geocoder) {
+                    setRelocateAddr(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+                    return;
+                }
+                const geocoder = new window.google.maps.Geocoder();
+                geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                    if (status === 'OK' && results && results[0]) {
+                        setRelocateAddr(results[0].formatted_address);
                     } else {
                         setRelocateAddr(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
                     }
-                } catch { setRelocateAddr(`${lat.toFixed(5)}, ${lng.toFixed(5)}`); }
+                });
             };
 
             pinMarker.addListener('dragend', () => {

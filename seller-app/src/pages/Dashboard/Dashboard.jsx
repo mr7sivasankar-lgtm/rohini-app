@@ -9,6 +9,7 @@ import ReviewsTab from '../../components/ReviewsTab';
 import WalletTab from '../../components/WalletTab';
 import SellerNotificationBanner from '../../components/SellerNotificationBanner';
 import SellerAlertModal from '../../components/SellerAlertModal';
+import LegalTab from '../../components/LegalTab';
 import './Dashboard.css';
 
 // Bottom nav config for mobile (max 5 items — "More" opens the drawer)
@@ -25,6 +26,7 @@ const MORE_ITEMS = [
     { key: 'sales',   icon: '📈', label: 'Sales & Revenue' },
     { key: 'reviews', icon: '⭐', label: 'Reviews'         },
     { key: 'profile', icon: '⚙️', label: 'Shop Profile'    },
+    { key: 'legal',   icon: '📄', label: 'Terms & Privacy' },
     { key: '__support', icon: '💬', label: 'Help & Support' },
 ];
 
@@ -36,6 +38,7 @@ const TAB_LABELS = {
     wallet:    'Wallet & Payouts',
     reviews:   'Customer Reviews',
     profile:   'Shop Profile',
+    legal:     'Terms & Privacy',
 };
 
 const Dashboard = () => {
@@ -155,6 +158,7 @@ const Dashboard = () => {
                     {activeTab === 'wallet'    && <WalletTab />}
                     {activeTab === 'reviews'   && <ReviewsTab />}
                     {activeTab === 'profile'   && <ProfileTab seller={seller} />}
+                    {activeTab === 'legal'     && <LegalTab />}
                 </div>
             </main>
 

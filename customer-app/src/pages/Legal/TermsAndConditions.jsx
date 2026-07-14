@@ -25,30 +25,30 @@ const TermsAndConditions = () => {
                         <polyline points="14 2 14 8 20 8" />
                         <line x1="16" y1="13" x2="8" y2="13" />
                         <line x1="16" y1="17" x2="8" y2="17" />
-                        <polyline points="10 9 9 9 8 9" />
                     </svg>
                 </div>
                 <h2 className="legal-hero-title">Terms of Service</h2>
-                <p className="legal-hero-subtitle">Effective Date: July 9, 2026</p>
+                <p className="legal-hero-subtitle">Effective Date: July 14, 2026</p>
             </div>
 
             {/* Content */}
             <div className="legal-content">
-
                 <div className="legal-intro">
                     <p>
-                        Welcome to <strong>Sifito</strong>. By accessing or using the Sifito mobile application, you agree to these Terms and Conditions.
+                        This Terms and Conditions applies to the Sifito Customer mobile application operated by M Siva Sankar ('Service Provider'). 
+                        Sifito is an instant clothing delivery marketplace connecting customers, registered sellers and delivery partners. 
+                        By downloading or using the Application you agree to this document.
                     </p>
                 </div>
 
                 <div className="legal-section">
                     <div className="legal-section-header">
                         <div className="legal-section-number">01</div>
-                        <h3>Acceptance</h3>
+                        <h3>Eligibility</h3>
                     </div>
                     <div className="legal-section-body">
                         <p>
-                            By creating an account or using Sifito, you agree to comply with these Terms and all applicable laws.
+                            Users must be at least 18 years old or use the Application with the consent of a parent or guardian where permitted by law.
                         </p>
                     </div>
                 </div>
@@ -56,17 +56,11 @@ const TermsAndConditions = () => {
                 <div className="legal-section">
                     <div className="legal-section-header">
                         <div className="legal-section-number">02</div>
-                        <h3>User Account</h3>
+                        <h3>Account Registration</h3>
                     </div>
                     <div className="legal-section-body">
-                        <p>You agree to:</p>
-                        <ul className="legal-list">
-                            <li>Provide accurate and complete information.</li>
-                            <li>Keep your login credentials secure.</li>
-                            <li>Be responsible for all activities performed through your account.</li>
-                        </ul>
-                        <p className="mt-1">
-                            Sifito reserves the right to suspend or terminate accounts that violate these Terms.
+                        <p>
+                            Users must register using a valid mobile number and account registration. You are responsible for maintaining the confidentiality of your account.
                         </p>
                     </div>
                 </div>
@@ -74,14 +68,19 @@ const TermsAndConditions = () => {
                 <div className="legal-section">
                     <div className="legal-section-header">
                         <div className="legal-section-number">03</div>
-                        <h3>Orders</h3>
+                        <h3>Information Collected</h3>
                     </div>
                     <div className="legal-section-body">
+                        <p>We may collect your information including:</p>
                         <ul className="legal-list">
-                            <li>Orders are subject to product availability.</li>
-                            <li>Product availability may change without prior notice.</li>
-                            <li>Prices and offers may change at any time.</li>
-                            <li>Stores reserve the right to reject or cancel orders due to stock unavailability or other operational reasons.</li>
+                            <li>Name</li>
+                            <li>Mobile number (if provided)</li>
+                            <li>Profile information</li>
+                            <li>Address</li>
+                            <li>Approximate location</li>
+                            <li>Order history</li>
+                            <li>Uploaded images</li>
+                            <li>Device information and communications</li>
                         </ul>
                     </div>
                 </div>
@@ -89,18 +88,11 @@ const TermsAndConditions = () => {
                 <div className="legal-section">
                     <div className="legal-section-header">
                         <div className="legal-section-number">04</div>
-                        <h3>Delivery</h3>
+                        <h3>Location Permission</h3>
                     </div>
                     <div className="legal-section-body">
-                        <p>Estimated delivery times are provided for convenience only and may vary due to:</p>
-                        <ul className="legal-list">
-                            <li>Traffic conditions</li>
-                            <li>Weather conditions</li>
-                            <li>High order volume</li>
-                            <li>Operational delays</li>
-                        </ul>
-                        <p className="mt-1">
-                            Sifito is not liable for delays caused by circumstances beyond our reasonable control.
+                        <p>
+                            Location is used to identify nearby stores, assign deliveries, calculate delivery routes and improve the service.
                         </p>
                     </div>
                 </div>
@@ -108,14 +100,11 @@ const TermsAndConditions = () => {
                 <div className="legal-section">
                     <div className="legal-section-header">
                         <div className="legal-section-number">05</div>
-                        <h3>Payments</h3>
+                        <h3>Use of Information</h3>
                     </div>
                     <div className="legal-section-body">
                         <p>
-                            Currently, <strong>Sifito does not provide online payment facilities</strong>.
-                        </p>
-                        <p className="mt-1">
-                            Any payment, if applicable, will be completed using the payment method made available during delivery or as communicated by the seller.
+                            Information is used to provide services, improve user experience, prevent fraud, communicate service updates and comply with legal obligations.
                         </p>
                     </div>
                 </div>
@@ -123,40 +112,40 @@ const TermsAndConditions = () => {
                 <div className="legal-section">
                     <div className="legal-section-header">
                         <div className="legal-section-number">06</div>
-                        <h3>Order Cancellation</h3>
+                        <h3>Third-Party Services</h3>
                     </div>
                     <div className="legal-section-body">
-                        <p>
-                            Orders may be cancelled before the seller starts processing the order. Once an order has been confirmed or prepared for delivery, cancellation may not be possible.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="legal-section">
-                    <div className="legal-section-header">
-                        <div className="legal-section-number">07</div>
-                        <h3>User Responsibilities</h3>
-                    </div>
-                    <div className="legal-section-body">
-                        <p>Users must not:</p>
+                        <p>The Application may use:</p>
                         <ul className="legal-list">
-                            <li>Provide false or misleading information.</li>
-                            <li>Misuse promotional offers.</li>
-                            <li>Attempt unauthorized access to the application.</li>
-                            <li>Use the application for illegal activities.</li>
-                            <li>Abuse or harass delivery personnel, store partners, or customer support.</li>
+                            <li>Google Play Services</li>
+                            <li>Firebase Authentication</li>
+                            <li>Firebase Cloud Messaging</li>
+                            <li>Google Maps APIs</li>
+                            <li>Communication service providers</li>
                         </ul>
                     </div>
                 </div>
 
                 <div className="legal-section">
                     <div className="legal-section-header">
-                        <div className="legal-section-number">08</div>
-                        <h3>Intellectual Property</h3>
+                        <div className="legal-section-number">07</div>
+                        <h3>Orders, Cancellation and Returns</h3>
                     </div>
                     <div className="legal-section-body">
                         <p>
-                            All trademarks, logos, application designs, graphics, and content available in Sifito are the exclusive property of Sifito and may not be copied, reproduced, or distributed without written permission.
+                            Orders are subject to seller availability. Customers should provide accurate delivery information. Cancellation, return and exchange eligibility depends on seller policy and applicable consumer laws.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="legal-section">
+                    <div className="legal-section-header">
+                        <div className="legal-section-number">08</div>
+                        <h3>Prohibited Activities</h3>
+                    </div>
+                    <div className="legal-section-body">
+                        <p>
+                            Users must not submit false information, abuse the platform, interfere with system security, upload unlawful content or attempt unauthorized access.
                         </p>
                     </div>
                 </div>
@@ -164,27 +153,23 @@ const TermsAndConditions = () => {
                 <div className="legal-section">
                     <div className="legal-section-header">
                         <div className="legal-section-number">09</div>
-                        <h3>Limitation of Liability</h3>
+                        <h3>Intellectual Property</h3>
                     </div>
                     <div className="legal-section-body">
-                        <p>Sifito is not responsible for:</p>
-                        <ul className="legal-list">
-                            <li>Temporary service interruptions.</li>
-                            <li>Delayed deliveries beyond our control.</li>
-                            <li>Product quality issues caused by sellers or stores.</li>
-                            <li>User losses resulting from incorrect information provided by the user.</li>
-                        </ul>
+                        <p>
+                            All trademarks, logos, software, databases and content remain the property of the Service Provider unless otherwise stated.
+                        </p>
                     </div>
                 </div>
 
                 <div className="legal-section">
                     <div className="legal-section-header">
                         <div className="legal-section-number">10</div>
-                        <h3>Account Suspension</h3>
+                        <h3>Limitation of Liability</h3>
                     </div>
                     <div className="legal-section-body">
                         <p>
-                            We reserve the right to suspend or permanently terminate any account found violating these Terms or engaging in fraudulent or illegal activities.
+                            The Service Provider is not responsible for losses arising from internet failures, third-party services, delays caused by weather, traffic, force majeure or incorrect information supplied by users.
                         </p>
                     </div>
                 </div>
@@ -192,11 +177,11 @@ const TermsAndConditions = () => {
                 <div className="legal-section">
                     <div className="legal-section-header">
                         <div className="legal-section-number">11</div>
-                        <h3>Changes to Terms</h3>
+                        <h3>Termination</h3>
                     </div>
                     <div className="legal-section-body">
                         <p>
-                            Sifito may update these Terms and Conditions at any time. Continued use of the application after changes are published constitutes acceptance of the updated Terms.
+                            Accounts may be suspended or terminated for violations of these terms, fraudulent activity or misuse of the platform.
                         </p>
                     </div>
                 </div>
@@ -204,11 +189,11 @@ const TermsAndConditions = () => {
                 <div className="legal-section">
                     <div className="legal-section-header">
                         <div className="legal-section-number">12</div>
-                        <h3>Governing Law</h3>
+                        <h3>Changes</h3>
                     </div>
                     <div className="legal-section-body">
                         <p>
-                            These Terms and Conditions are governed by the laws of India. Any disputes arising from the use of the application shall be subject to the jurisdiction of the competent courts in Andhra Pradesh, India.
+                            This document may be updated periodically. Continued use of the Application after changes constitutes acceptance of the revised document.
                         </p>
                     </div>
                 </div>
@@ -221,17 +206,17 @@ const TermsAndConditions = () => {
                         </svg>
                     </div>
                     <div className="legal-contact-text">
-                        <h4>Sifito Customer Support</h4>
+                        <h4>Contact M Siva Sankar</h4>
+                        <p>Email: mr7.sivasankar@gmail.com</p>
                         <p>WhatsApp: +91 9700079239</p>
                     </div>
                     <button
                         className="legal-contact-btn"
                         onClick={() => window.open('https://wa.me/919700079239?text=Hi%2C%20I%20have%20a%20query%20about%20Sifito%20Terms.', '_blank')}
                     >
-                        Contact Us
+                        Chat Now
                     </button>
                 </div>
-
             </div>
         </div>
     );

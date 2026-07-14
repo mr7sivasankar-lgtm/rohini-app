@@ -19,136 +19,164 @@ function loadGM(cb) {
     document.head.appendChild(s);
 }
 
-async function reverseGeocode(lat, lng) {
-    try {
-        const r = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GMAP_KEY}`);
-        const d = await r.json();
-        if (d.status === 'OK' && d.results[0]) {
-            const res = d.results[0];
-            const get = (t) => res.address_components.find(c => c.types.includes(t))?.long_name || '';
-            return {
-                fullAddress: res.formatted_address,
-                locality: get('sublocality_level_1') || get('sublocality') || get('locality'),
-                city: get('locality'),
-                state: get('administrative_area_level_1'),
-                pincode: get('postal_code'),
-            };
+function reverseGeocode(lat, lng) {
+    return new Promise((resolve) => {
+        if (!window.google || !window.google.maps || !window.google.maps.Geocoder) {
+            resolve(null);
+            return;
         }
-    } catch { /* silent */ }
-    return null;
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+            if (status === 'OK' && results && results[0]) {
+                const res = results[0];
+                const get = (t) => res.address_components.find(c => c.types.includes(t))?.long_name || '';
+                resolve({
+                    fullAddress: res.formatted_address,
+                    locality: get('sublocality_level_1') || get('sublocality') || get('locality'),
+                    city: get('locality'),
+                    state: get('administrative_area_level_1'),
+                    pincode: get('postal_code'),
+                });
+            } else {
+                resolve(null);
+            }
+        });
+    });
 }
 
 /* ─────────────────────────────────────────────────────────────────────
    LEGAL CONTENT — Sifito Privacy Policy & Terms and Conditions
-   Effective Date: July 9, 2026
-───────────────────────────────────────────────────────────────────── */
+   Effective Date: July 14, 2026
+   ───────────────────────────────────────────────────────────────────── */
 const PRIVACY_POLICY = {
     title: 'Privacy Policy',
-    lastUpdated: 'July 9, 2026',
+    lastUpdated: 'July 14, 2026',
+    intro: "This Privacy Policy applies to the Sifito Customer mobile application operated by M Siva Sankar ('Service Provider'). Sifito is an instant clothing delivery marketplace connecting customers, registered sellers and delivery partners. By downloading or using the Application you agree to this document.",
     sections: [
         {
-            heading: '1. Information We Collect',
-            body: 'To provide our services, we may collect the following information: Full Name, Mobile Number, Email Address (optional), Delivery Address, Device Location (only with your permission), Device Information (such as device model, operating system, and app version), Order History, and App usage information for improving our services.'
+            heading: '1. Eligibility',
+            body: 'Users must be at least 18 years old or use the Application with the consent of a parent or guardian where permitted by law.'
         },
         {
-            heading: '2. How We Use Your Information',
-            body: 'Your information is used to: create and manage your account, deliver your clothing orders, contact you regarding your orders, improve our application and customer experience, provide customer support, prevent fraud and misuse of our services, and comply with legal obligations.'
+            heading: '2. Account Registration',
+            body: 'Users must register using a valid mobile number and account registration. You are responsible for maintaining the confidentiality of your account.'
         },
         {
-            heading: '3. Location Permission',
-            body: 'Sifito requests access to your device location only to detect your delivery location, show nearby delivery availability, and improve delivery accuracy. You can disable location access at any time through your device settings. Some features may not function correctly without location access.'
+            heading: '3. Information Collected',
+            body: 'We may collect your name, mobile number (if provided), profile information, address, approximate location, order history, uploaded images, device information and communications.'
         },
         {
-            heading: '4. Payments',
-            body: 'Currently, Sifito does not support online payments. Payment, if applicable, is collected through the available payment method offered during delivery or as communicated by the seller. Since we do not process online payments, we do not collect or store your bank account, debit card, credit card, or UPI information.'
+            heading: '4. Location Permission',
+            body: 'Location is used to identify nearby stores, assign deliveries, calculate delivery routes and improve the service.'
         },
         {
-            heading: '5. Sharing Your Information',
-            body: 'We may share limited information with delivery partners for completing deliveries, store partners to process your orders, and government authorities if required by law. We never sell, rent, or trade your personal information to third parties.'
+            heading: '5. Use of Information',
+            body: 'Information is used to provide services, improve user experience, prevent fraud, communicate service updates and comply with legal obligations.'
         },
         {
-            heading: '6. Data Security',
-            body: 'We use reasonable administrative and technical measures to protect your personal information. However, no method of electronic storage or internet transmission is completely secure.'
+            heading: '6. Third-Party Services',
+            body: 'The Application may use Google Play Services, Firebase Authentication, Firebase Cloud Messaging, Google Maps APIs and communication service providers.'
         },
         {
-            heading: '7. Data Retention',
-            body: 'Your information is retained only as long as necessary to provide our services, comply with legal requirements, resolve disputes, and enforce our policies.'
+            heading: '7. Orders, Cancellation and Returns',
+            body: 'Orders are subject to seller availability. Customers should provide accurate delivery information. Cancellation, return and exchange eligibility depends on seller policy and applicable consumer laws.'
         },
         {
-            heading: '8. Your Rights',
-            body: 'You may update your profile information, request correction of inaccurate information, request deletion of your account (subject to legal obligations), and withdraw location permission through your device settings.'
+            heading: '8. Prohibited Activities',
+            body: 'Users must not submit false information, abuse the platform, interfere with system security, upload unlawful content or attempt unauthorized access.'
         },
         {
-            heading: '9. Children\'s Privacy',
-            body: 'Sifito is not intended for children under the age of 13. We do not knowingly collect personal information from children.'
+            heading: '9. Data Retention',
+            body: 'Personal information is retained only as long as necessary for operational, legal and regulatory purposes. Users may request deletion where permitted by law.'
         },
         {
-            heading: '10. Changes to This Policy',
-            body: 'We may update this Privacy Policy from time to time. Updated versions will be available within the application.'
+            heading: '10. Security',
+            body: 'Reasonable technical and organizational safeguards are used to protect personal information from unauthorized access or disclosure.'
         },
         {
-            heading: '11. Contact Us',
-            body: 'If you have any questions regarding this Privacy Policy or need assistance, please contact us through WhatsApp.\n\nSifito Customer Support\nWhatsApp: +91 9700079239'
+            heading: '11. Children\'s Privacy',
+            body: 'The Application is not intended for children under 13 years of age and does not knowingly collect information from children.'
         },
+        {
+            heading: '12. Intellectual Property',
+            body: 'All trademarks, logos, software, databases and content remain the property of the Service Provider unless otherwise stated.'
+        },
+        {
+            heading: '13. Limitation of Liability',
+            body: 'The Service Provider is not responsible for losses arising from internet failures, third-party services, delays caused by weather, traffic, force majeure or incorrect information supplied by users.'
+        },
+        {
+            heading: '14. Termination',
+            body: 'Accounts may be suspended or terminated for violations of these terms, fraudulent activity or misuse of the platform.'
+        },
+        {
+            heading: '15. Changes',
+            body: 'This document may be updated periodically. Continued use of the Application after changes constitutes acceptance of the revised document.'
+        },
+        {
+            heading: '16. Contact Us',
+            body: 'Email: mr7.sivasankar@gmail.com\nWhatsApp Support: +91 9700079239'
+        }
     ]
 };
 
 const TERMS_CONDITIONS = {
     title: 'Terms & Conditions',
-    lastUpdated: 'July 9, 2026',
+    lastUpdated: 'July 14, 2026',
+    intro: "This Terms and Conditions applies to the Sifito Customer mobile application operated by M Siva Sankar ('Service Provider'). Sifito is an instant clothing delivery marketplace connecting customers, registered sellers and delivery partners. By downloading or using the Application you agree to this document.",
     sections: [
         {
-            heading: '1. Acceptance',
-            body: 'By creating an account or using Sifito, you agree to comply with these Terms and all applicable laws.'
+            heading: '1. Eligibility',
+            body: 'Users must be at least 18 years old or use the Application with the consent of a parent or guardian where permitted by law.'
         },
         {
-            heading: '2. User Account',
-            body: 'You agree to provide accurate and complete information, keep your login credentials secure, and be responsible for all activities performed through your account. Sifito reserves the right to suspend or terminate accounts that violate these Terms.'
+            heading: '2. Account Registration',
+            body: 'Users must register using a valid mobile number and account registration. You are responsible for maintaining the confidentiality of your account.'
         },
         {
-            heading: '3. Orders',
-            body: 'Orders are subject to product availability. Product availability may change without prior notice. Prices and offers may change at any time. Stores reserve the right to reject or cancel orders due to stock unavailability or other operational reasons.'
+            heading: '3. Information Collected',
+            body: 'We may collect your name, mobile number (if provided), profile information, address, approximate location, order history, uploaded images, device information and communications.'
         },
         {
-            heading: '4. Delivery',
-            body: 'Estimated delivery times are provided for convenience only and may vary due to traffic conditions, weather conditions, high order volume, or operational delays. Sifito is not liable for delays caused by circumstances beyond our reasonable control.'
+            heading: '4. Location Permission',
+            body: 'Location is used to identify nearby stores, assign deliveries, calculate delivery routes and improve the service.'
         },
         {
-            heading: '5. Payments',
-            body: 'Currently, Sifito does not provide online payment facilities. Any payment, if applicable, will be completed using the payment method made available during delivery or as communicated by the seller.'
+            heading: '5. Use of Information',
+            body: 'Information is used to provide services, improve user experience, prevent fraud, communicate service updates and comply with legal obligations.'
         },
         {
-            heading: '6. Order Cancellation',
-            body: 'Orders may be cancelled before the seller starts processing the order. Once an order has been confirmed or prepared for delivery, cancellation may not be possible.'
+            heading: '6. Third-Party Services',
+            body: 'The Application may use Google Play Services, Firebase Authentication, Firebase Cloud Messaging, Google Maps APIs and communication service providers.'
         },
         {
-            heading: '7. User Responsibilities',
-            body: 'Users must not: provide false or misleading information, misuse promotional offers, attempt unauthorized access to the application, use the application for illegal activities, or abuse or harass delivery personnel, store partners, or customer support.'
+            heading: '7. Orders, Cancellation and Returns',
+            body: 'Orders are subject to seller availability. Customers should provide accurate delivery information. Cancellation, return and exchange eligibility depends on seller policy and applicable consumer laws.'
         },
         {
-            heading: '8. Intellectual Property',
-            body: 'All trademarks, logos, application designs, graphics, and content available in Sifito are the exclusive property of Sifito and may not be copied, reproduced, or distributed without written permission.'
+            heading: '8. Prohibited Activities',
+            body: 'Users must not submit false information, abuse the platform, interfere with system security, upload unlawful content or attempt unauthorized access.'
         },
         {
-            heading: '9. Limitation of Liability',
-            body: 'Sifito is not responsible for temporary service interruptions, delayed deliveries beyond our control, product quality issues caused by sellers or stores, or user losses resulting from incorrect information provided by the user.'
+            heading: '9. Intellectual Property',
+            body: 'All trademarks, logos, software, databases and content remain the property of the Service Provider unless otherwise stated.'
         },
         {
-            heading: '10. Account Suspension',
-            body: 'We reserve the right to suspend or permanently terminate any account found violating these Terms or engaging in fraudulent or illegal activities.'
+            heading: '10. Limitation of Liability',
+            body: 'The Service Provider is not responsible for losses arising from internet failures, third-party services, delays caused by weather, traffic, force majeure or incorrect information supplied by users.'
         },
         {
-            heading: '11. Changes to Terms',
-            body: 'Sifito may update these Terms and Conditions at any time. Continued use of the application after changes are published constitutes acceptance of the updated Terms.'
+            heading: '11. Termination',
+            body: 'Accounts may be suspended or terminated for violations of these terms, fraudulent activity or misuse of the platform.'
         },
         {
-            heading: '12. Governing Law',
-            body: 'These Terms and Conditions are governed by the laws of India. Any disputes arising from the use of the application shall be subject to the jurisdiction of the competent courts in Andhra Pradesh, India.'
+            heading: '12. Changes',
+            body: 'This document may be updated periodically. Continued use of the Application after changes constitutes acceptance of the revised document.'
         },
         {
-            heading: '13. Contact Support',
-            body: 'For any questions, complaints, or assistance regarding these Terms or the Sifito application, please contact us through WhatsApp.\n\nSifito Customer Support\nWhatsApp: +91 9700079239'
-        },
+            heading: '13. Contact Us',
+            body: 'Email: mr7.sivasankar@gmail.com\nWhatsApp Support: +91 9700079239'
+        }
     ]
 };
 

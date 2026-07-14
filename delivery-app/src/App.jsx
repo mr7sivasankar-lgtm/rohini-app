@@ -8,6 +8,7 @@ import OrderDetail from './pages/OrderDetail';
 import Profile from './pages/Profile';
 import History from './pages/History';
 import Wallet from './pages/Wallet';
+import Legal from './pages/Legal';
 
 import BottomNav from './components/BottomNav';
 import OrderBroadcastOverlay from './components/OrderBroadcastOverlay';
@@ -38,6 +39,7 @@ export default function App() {
                     <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
                     <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
                     <Route path="/wallet" element={<PrivateRoute><Wallet /></PrivateRoute>} />
+                    <Route path="/legal" element={<PrivateRoute><Legal /></PrivateRoute>} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </BrowserRouter>
