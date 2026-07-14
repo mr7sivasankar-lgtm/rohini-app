@@ -416,7 +416,7 @@ function App() {
           🏪 Sellers
         </div>
         <div className={`menu-item ${activeTab === 'top-rated' ? 'active' : ''}`} onClick={() => handleTabChange('top-rated')}>
-          ⭐ Top Rated Shops
+          📢 Ad Banners/Advertising
         </div>
         <div className={`menu-item ${activeTab === 'locations' ? 'active' : ''}`} onClick={() => handleTabChange('locations')}>
           🗺️ Locations Map

@@ -10,8 +10,27 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
     try {
-        const banners = await Banner.find({ isActive: true })
+        const { city, pincode } = req.query;
+        let banners = await Banner.find({ isActive: true })
             .sort({ order: 1, createdAt: -1 });
+
+        // Filter based on location targeting if query params are provided
+        if (city || pincode) {
+            banners = banners.filter(banner => {
+                if (!banner.targetType || banner.targetType === 'all') {
+                    return true;
+                }
+                if (banner.targetType === 'city' && city) {
+                    return banner.targetCity.toLowerCase().trim() === city.toLowerCase().trim();
+                }
+                if (banner.targetType === 'pincode' && pincode) {
+                    // Check if targeted pincode matches user's pincode (handle comma-separated list of pincodes)
+                    const targetedPins = banner.targetPincode.split(',').map(p => p.trim());
+                    return targetedPins.includes(pincode.trim());
+                }
+                return false;
+            });
+        }
 
         res.status(200).json({
             success: true,

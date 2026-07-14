@@ -115,7 +115,7 @@
 
 .banner-slide {
     min-width: 100%;
-    height: 180px;
+    height: 200px;
 }
 
 .banner-slide img {
@@ -126,7 +126,7 @@
 
 .banner-placeholder {
     background: linear-gradient(135deg, #15803d 0%, #16a34a 30%, #22c55e 60%, #4ade80 100%);
-    height: 180px;
+    height: 200px;
     display: flex;
     align-items: center;
     padding: 0 32px;

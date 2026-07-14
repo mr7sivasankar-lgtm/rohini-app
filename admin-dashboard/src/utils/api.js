@@ -5,11 +5,13 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 // Base URL for images (no /api suffix)
 export const IMAGE_BASE = API_URL.replace(/\/api$/, '');
 
-// Smart image URL resolver: handles both Cloudinary URLs and legacy /uploads/ paths
 export const getImageUrl = (imagePath) => {
     if (!imagePath) return '';
     if (imagePath.startsWith('http')) return imagePath; // Cloudinary or external URL
-    return `${IMAGE_BASE}${imagePath}`; // Legacy local path
+    const cleanPath = imagePath.replace(/\\/g, '/');
+    const base = IMAGE_BASE.endsWith('/') ? IMAGE_BASE.slice(0, -1) : IMAGE_BASE;
+    const path = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    return `${base}${path}`;
 };
 
 const api = axios.create({

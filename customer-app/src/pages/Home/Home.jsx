@@ -53,7 +53,7 @@ const Home = () => {
     useEffect(() => {
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [latitude, longitude]);
+    }, [latitude, longitude, city, pincode]);
 
     // Auto-rotate banners
     useEffect(() => {
@@ -68,8 +68,9 @@ const Home = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
+            const bannerUrl = `/banners?city=${encodeURIComponent(city || '')}&pincode=${encodeURIComponent(pincode || '')}`;
             const apis = [
-                api.get('/banners'),
+                api.get(bannerUrl),
                 api.get('/sellers/top-rated')
             ];
 
@@ -577,7 +578,7 @@ const HeroSlideshow = ({ banners, navigate }) => {
                     <div className="slideshow-slide" key={slide.type === 'shop' ? slide.data._id : slide.type === 'banner' ? slide.data._id : `welcome-${index}`} style={{ minWidth: '100%', flexBasis: '100%', padding: '0 4px', boxSizing: 'border-box', flexShrink: 0 }}>
 
                         {slide.type === 'welcome' && (
-                            <div className="banner-placeholder" style={{ borderRadius: '16px', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', height: '180px', overflow: 'hidden', position: 'relative' }}>
+                            <div className="banner-placeholder" style={{ borderRadius: '16px', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', height: '200px', overflow: 'hidden', position: 'relative' }}>
                                 <div className="placeholder-content" style={{ zIndex: 2, padding: '24px' }}>
                                     <h2 style={{ fontSize: '26px', marginBottom: '8px' }}>Welcome</h2>
                                     <p style={{ fontSize: '14px', color: '#a0aec0' }}>Your Style, Delivered Instantly</p>
@@ -592,7 +593,7 @@ const HeroSlideshow = ({ banners, navigate }) => {
                                     borderRadius: '16px', 
                                     overflow: 'hidden', 
                                     boxShadow: '0 4px 14px rgba(0,0,0,0.06)', 
-                                    height: '180px',
+                                    height: '200px',
                                     cursor: slide.data.link ? 'pointer' : 'default'
                                 }}
                                 onClick={() => {

@@ -12,6 +12,19 @@ const bannerSchema = new mongoose.Schema({
     link: {
         type: String
     },
+    targetType: {
+        type: String,
+        enum: ['all', 'city', 'pincode'],
+        default: 'all'
+    },
+    targetCity: {
+        type: String,
+        default: ''
+    },
+    targetPincode: {
+        type: String,
+        default: ''
+    },
     order: {
         type: Number,
         default: 0
