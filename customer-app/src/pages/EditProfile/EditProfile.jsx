@@ -199,29 +199,23 @@ const EditProfile = () => {
                     {errors.name && <span className="error-text">{errors.name}</span>}
                 </div>
 
-                {/* Phone Number Field */}
+                {/* Phone Number Field — read-only login credential */}
                 <div className="form-group">
-                    <label htmlFor="phone">Phone Number *</label>
-                    <div className="phone-input">
-                        <span className="phone-prefix">+91</span>
-                        <input
-                            type="tel"
-                            id="phone"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            placeholder="10-digit mobile number"
-                            maxLength="10"
-                            className={errors.phone ? 'error' : ''}
-                        />
-                    </div>
-                    {errors.phone && <span className="error-text">{errors.phone}</span>}
+                    <label htmlFor="phone">Phone Number</label>
+                    <input
+                        type="text"
+                        id="phone"
+                        name="phone"
+                        value={formData.phone ? `+91 ${formData.phone}` : ''}
+                        readOnly
+                        className="phone-readonly"
+                    />
                     <p className="field-hint">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <circle cx="12" cy="12" r="10" />
                             <path d="M12 16v-4M12 8h.01" />
                         </svg>
-                        This is your login phone number
+                        This is your login phone number and cannot be changed here
                     </p>
                 </div>
 
