@@ -6,7 +6,7 @@ import './EditProfile.css';
 
 const EditProfile = () => {
     const navigate = useNavigate();
-    const { user, refreshUser } = useAuth();
+    const { user, refreshUser, logout } = useAuth();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -116,6 +116,33 @@ const EditProfile = () => {
         }
     };
 
+    const handleDeleteAccount = async () => {
+        const confirmDelete = window.confirm(
+            "⚠️ WARNING: Are you sure you want to permanently delete your account? All your orders, cart, and profile information will be deleted forever."
+        );
+        if (!confirmDelete) return;
+
+        const secondConfirm = window.confirm(
+            "Final check: This action CANNOT be undone. Click OK to permanently delete your account."
+        );
+        if (!secondConfirm) return;
+
+        try {
+            setLoading(true);
+            const response = await api.delete('/auth/delete-me');
+            if (response.data.success) {
+                logout();
+                alert("Your account has been deleted successfully.");
+                navigate('/login');
+            }
+        } catch (error) {
+            console.error('Error deleting account:', error);
+            alert(error.response?.data?.message || 'Failed to delete account. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="edit-profile-page">
             {/* Header */}
@@ -214,6 +241,18 @@ const EditProfile = () => {
                         disabled={loading}
                     >
                         {loading ? 'Saving...' : 'Save Changes'}
+                    </button>
+                </div>
+
+                {/* Delete Account Section */}
+                <div className="delete-account-section">
+                    <button
+                        type="button"
+                        className="delete-account-btn"
+                        onClick={handleDeleteAccount}
+                        disabled={loading}
+                    >
+                        🗑️ Delete My Account
                     </button>
                 </div>
             </form>

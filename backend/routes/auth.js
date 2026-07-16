@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
+import Order from '../models/Order.js';
 import { protect } from '../middleware/auth.js';
 import sendOTP from '../utils/sms.js';
 
@@ -329,6 +330,27 @@ router.put('/update-profile', protect, async (req, res) => {
             success: false,
             message: 'Error updating profile'
         });
+    }
+// @route   DELETE /api/auth/delete-me
+// @desc    Delete current logged-in user account
+// @access  Private
+router.delete('/delete-me', protect, async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        // 1. Delete user's orders
+        await Order.deleteMany({ user: userId });
+        
+        // 2. Delete the user
+        await User.findByIdAndDelete(userId);
+
+        res.status(200).json({
+            success: true,
+            message: 'Your account and data have been successfully deleted'
+        });
+    } catch (error) {
+        console.error('Delete account error:', error);
+        res.status(500).json({ success: false, message: 'Failed to delete account' });
     }
 });
 
