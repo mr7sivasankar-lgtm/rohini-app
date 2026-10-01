@@ -5,7 +5,7 @@ import SubscriptionPlan from '../models/SubscriptionPlan.js';
 import SellerSubscription from '../models/SellerSubscription.js';
 import Seller from '../models/Seller.js';
 import { protect, adminOnly } from '../middleware/auth.js';
-import { sellerProtect } from './sellers.js';
+import { sellerProtect } from '../middleware/sellerAuth.js';
 import { sendPush } from '../utils/notify.js';
 
 const router = express.Router();
