@@ -60,7 +60,7 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
         sizes: [], colors: [],
         fabric: '', fit: '', pattern: '', sleeve: '', neck: '', occasion: '',
         returnPolicy: 'No Returns',
-        featured: false, trending: false, newArrival: false, bestSeller: false,
+        featured: false, trending: false, newArrival: false, bestSeller: false, allowOffers: false,
         category: '', subcategory: [], images: []
     });
     const [files, setFiles] = useState([]);
@@ -69,7 +69,8 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
     const fileInputRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [commission, setCommission] = useState(20);
+    // Commission is 0% in new subscription model — seller keeps 100% of selling price
+    const commission = 0;
 
     // Pricing calculator state
     const [pricingMode, setPricingMode] = useState('direct'); // 'direct' | 'calculator'
@@ -87,12 +88,8 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
         api.get('/categories').then(res => {
             if (res.data.success) setAllCategories(res.data.data || []);
         }).catch(() => {});
-        api.get('/config').then(res => {
-            if (res.data.success && res.data.data) {
-                setCommission(res.data.data.commissionPercentage || 20);
-            }
-        }).catch(() => {});
     }, []);
+
 
     useEffect(() => {
         if (product) {
@@ -118,6 +115,7 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
                 trending: product.trending || false,
                 newArrival: product.newArrival || false,
                 bestSeller: product.bestSeller || false,
+                allowOffers: product.allowOffers || false,
                 category: product.category?._id || product.category || '',
                 subcategory: Array.isArray(product.subcategory)
                     ? product.subcategory.map(s => s._id || s) : [],
@@ -231,7 +229,7 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
     const profit = parseFloat(desiredProfit) || 0;
     const commissionRate = commission / 100;
     const recommendedPrice = cost > 0 && profit > 0
-        ? Math.ceil((cost + profit) / (1 - commissionRate))
+        ? Math.ceil(cost + profit)
         : 0;
     const adminCommissionAmt = recommendedPrice * commissionRate;
     const youReceive = recommendedPrice - adminCommissionAmt;
@@ -569,13 +567,29 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
                             {checkboxLabel('🆕 New Arrival', 'newArrival')}
                             {checkboxLabel('🏆 Best Seller', 'bestSeller')}
                         </div>
+                        <div style={{ marginTop: 16, padding: '14px 16px', background: '#eff6ff', borderRadius: 12, border: '1.5px solid #c7d2fe' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+                                <div style={{ position: 'relative', width: 44, height: 24, flexShrink: 0 }}>
+                                    <input type="checkbox" name="allowOffers" checked={formData.allowOffers} onChange={handleChange}
+                                        style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }} />
+                                    <div onClick={() => setFormData(prev => ({ ...prev, allowOffers: !prev.allowOffers }))}
+                                        style={{ position: 'absolute', inset: 0, background: formData.allowOffers ? '#4f46e5' : '#cbd5e1', borderRadius: 12, cursor: 'pointer', transition: 'background 0.2s' }}>
+                                        <div style={{ position: 'absolute', top: 2, left: formData.allowOffers ? 22 : 2, width: 20, height: 20, background: 'white', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>🤝 Allow Customer Offers</div>
+                                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Customers can negotiate the price for this product</div>
+                                </div>
+                            </label>
+                        </div>
                     </div>
 
                     {/* ── 6. PRICING & STOCK (LAST STEP) ────────────────── */}
                     <div style={{ marginBottom: 28 }}>
                         <h3 style={{ ...h3, color: '#059669' }}>💰 Pricing & Stock</h3>
                         <p style={{ margin: '0 0 16px', fontSize: 13, color: '#475569', background: '#f0fdf4', padding: '10px 14px', borderRadius: 8, border: '1px solid #bbf7d0' }}>
-                            ℹ️ Platform commission is <strong>{commission}%</strong> of your selling price. You receive the rest.
+                            ℹ️ With Sifito's subscription model, you keep 100% of your selling price. No per-sale commission.
                         </p>
 
                         {/* Pricing mode toggle */}
@@ -600,18 +614,6 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
                                 <div>
                                     <label style={lbl}>Selling Price *</label>
                                     <input type="number" name="sellingPrice" value={formData.sellingPrice} onChange={handleChange} required style={inp} min="0" placeholder="₹ 0" />
-                                    {formData.sellingPrice > 0 && (
-                                        <div style={{ marginTop: 10, padding: '12px 14px', background: '#ecfdf5', borderRadius: 10, border: '1px solid #6ee7b7' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
-                                                <span style={{ color: '#047857' }}>Platform Commission ({commission}%)</span>
-                                                <span style={{ fontWeight: 700, color: '#047857' }}>₹{((formData.sellingPrice * commission) / 100).toFixed(2)}</span>
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
-                                                <span style={{ color: '#065f46', fontWeight: 700 }}>💵 You Will Receive</span>
-                                                <span style={{ fontWeight: 800, color: '#065f46' }}>₹{(formData.sellingPrice - (formData.sellingPrice * commission) / 100).toFixed(2)}</span>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                                 <div>
                                     <label style={lbl}>Stock (Qty) *</label>
@@ -653,13 +655,6 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
                                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, background: '#eff6ff', borderRadius: 8, padding: '8px 12px' }}>
                                                 <span style={{ fontWeight: 700, color: '#1e40af' }}>🏷️ Recommended Selling Price</span>
                                                 <span style={{ fontWeight: 800, color: '#1e40af', fontSize: 16 }}>₹{recommendedPrice}</span>
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#6b7280' }}>
-                                                <span>Admin Commission ({commission}%)</span><span style={{ fontWeight: 600 }}>₹{adminCommissionAmt.toFixed(2)}</span>
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, background: '#ecfdf5', borderRadius: 8, padding: '8px 12px' }}>
-                                                <span style={{ fontWeight: 700, color: '#065f46' }}>💵 You Will Receive</span>
-                                                <span style={{ fontWeight: 800, color: '#065f46', fontSize: 16 }}>₹{youReceive.toFixed(2)}</span>
                                             </div>
                                         </div>
                                         <button type="button" onClick={applyCalculatedPrice}

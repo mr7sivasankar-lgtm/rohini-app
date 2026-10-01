@@ -10,6 +10,8 @@ import WalletTab from '../../components/WalletTab';
 import SellerNotificationBanner from '../../components/SellerNotificationBanner';
 import SellerAlertModal from '../../components/SellerAlertModal';
 import LegalTab from '../../components/LegalTab';
+import SubscriptionTab from '../../components/SubscriptionTab';
+import OffersTab from '../../components/OffersTab';
 import './Dashboard.css';
 
 // Bottom nav config for mobile (max 5 items — "More" opens the drawer)
@@ -21,12 +23,13 @@ const BOTTOM_NAV = [
     { key: '__more',    icon: '☰',  label: 'More'      },
 ];
 
-// Everything inside "More" drawer
 const MORE_ITEMS = [
     { key: 'sales',   icon: '📈', label: 'Sales & Revenue' },
     { key: 'reviews', icon: '⭐', label: 'Reviews'         },
     { key: 'profile', icon: '⚙️', label: 'Shop Profile'    },
     { key: 'legal',   icon: '📄', label: 'Terms & Privacy' },
+    { key: 'subscription', icon: '🔑', label: 'Subscription' },
+    { key: 'offers', icon: '🤝', label: 'Offers' },
     { key: '__support', icon: '💬', label: 'Help & Support' },
 ];
 
@@ -39,6 +42,8 @@ const TAB_LABELS = {
     reviews:   'Customer Reviews',
     profile:   'Shop Profile',
     legal:     'Terms & Privacy',
+    subscription: 'Subscription',
+    offers: 'Offers & Negotiations',
 };
 
 const Dashboard = () => {
@@ -159,6 +164,8 @@ const Dashboard = () => {
                     {activeTab === 'reviews'   && <ReviewsTab />}
                     {activeTab === 'profile'   && <ProfileTab seller={seller} />}
                     {activeTab === 'legal'     && <LegalTab />}
+                    {activeTab === 'subscription' && <SubscriptionTab />}
+                    {activeTab === 'offers' && <OffersTab />}
                 </div>
             </main>
 

@@ -64,6 +64,14 @@ const ProductDetail = () => {
     const [submittingReview, setSubmittingReview] = useState(false);
     const [showReviewForm, setShowReviewForm] = useState(false);
 
+    // Offer state
+    const [showOfferModal, setShowOfferModal] = useState(false);
+    const [offerPrice, setOfferPrice] = useState('');
+    const [offerQty, setOfferQty] = useState(1);
+    const [sendingOffer, setSendingOffer] = useState(false);
+    const [offerError, setOfferError] = useState('');
+    const [offerSuccess, setOfferSuccess] = useState(false);
+
     // Swipe handling
     const touchStartX = useRef(0);
     const touchEndX = useRef(0);
@@ -178,6 +186,42 @@ const ProductDetail = () => {
     const handleBuyNow = async () => {
         await handleAddToCart();
         navigate('/cart');
+    };
+
+    const handleMakeOffer = () => {
+        setOfferPrice('');
+        setOfferQty(quantity || 1);
+        setOfferError('');
+        setOfferSuccess(false);
+        setShowOfferModal(true);
+    };
+
+    const handleSendOffer = async () => {
+        const price = parseFloat(offerPrice);
+        const qty = parseInt(offerQty);
+        if (!price || price <= 0) { setOfferError('Please enter a valid offer price'); return; }
+        if (!qty || qty < 1) { setOfferError('Please enter a valid quantity'); return; }
+        if (price >= product.sellingPrice) { setOfferError('Your offer should be less than the selling price'); return; }
+
+        try {
+            setSendingOffer(true);
+            setOfferError('');
+            const res = await api.post('/offers', {
+                productId: product._id,
+                quantity: qty,
+                offeredUnitPrice: price,
+                selectedSize: selectedSize || '',
+                selectedColor: selectedColor || ''
+            });
+            if (res.data.success) {
+                setOfferSuccess(true);
+                setTimeout(() => { setShowOfferModal(false); setOfferSuccess(false); }, 2500);
+            }
+        } catch (err) {
+            setOfferError(err.response?.data?.message || 'Failed to send offer. Please try again.');
+        } finally {
+            setSendingOffer(false);
+        }
     };
 
     const switchImage = (newIndex) => {
@@ -492,6 +536,103 @@ const ProductDetail = () => {
                             Buy Now
                         </button>
                     </div>
+                    {/* Make an Offer button — only shown if seller enabled it */}
+                    {product.allowOffers && product.stock > 0 && (
+                        <div style={{ marginTop: 10, paddingHorizontal: 0 }}>
+                            <button
+                                onClick={handleMakeOffer}
+                                style={{
+                                    width: '100%',
+                                    padding: '14px',
+                                    background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: 14,
+                                    fontSize: 15,
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 8
+                                }}
+                            >
+                                🤝 Make an Offer
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Make an Offer Modal */}
+                    {showOfferModal && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                            <div style={{ background: 'white', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 480, padding: 24, paddingBottom: 40 }}>
+                                {offerSuccess ? (
+                                    <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                                        <div style={{ fontSize: 56, marginBottom: 12 }}>✅</div>
+                                        <div style={{ fontSize: 20, fontWeight: 800, color: '#16a34a', marginBottom: 8 }}>Offer Sent!</div>
+                                        <p style={{ color: '#64748b' }}>The seller will review your offer and respond shortly.</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a' }}>🤝 Make an Offer</h3>
+                                            <button onClick={() => setShowOfferModal(false)} style={{ background: '#f1f5f9', border: 'none', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', fontSize: 16 }}>✕</button>
+                                        </div>
+
+                                        <div style={{ background: '#f8fafc', borderRadius: 12, padding: 14, marginBottom: 20 }}>
+                                            <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a', marginBottom: 4 }}>{product.name}</div>
+                                            <div style={{ fontSize: 14, color: '#64748b' }}>Seller Price: <strong style={{ color: '#0f172a' }}>₹{product.sellingPrice}</strong></div>
+                                        </div>
+
+                                        <div style={{ marginBottom: 16 }}>
+                                            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 6 }}>QUANTITY</label>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                <button onClick={() => setOfferQty(q => Math.max(1, q - 1))} style={{ width: 36, height: 36, borderRadius: '50%', border: '1.5px solid #e2e8f0', background: 'white', fontSize: 18, cursor: 'pointer' }}>−</button>
+                                                <span style={{ fontSize: 18, fontWeight: 700, minWidth: 30, textAlign: 'center' }}>{offerQty}</span>
+                                                <button onClick={() => setOfferQty(q => Math.min(product.stock, q + 1))} style={{ width: 36, height: 36, borderRadius: '50%', border: '1.5px solid #e2e8f0', background: 'white', fontSize: 18, cursor: 'pointer' }}>+</button>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ marginBottom: 16 }}>
+                                            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 6 }}>YOUR OFFER PRICE (per unit)</label>
+                                            <div style={{ position: 'relative' }}>
+                                                <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 16, fontWeight: 700, color: '#475569' }}>₹</span>
+                                                <input
+                                                    type="number"
+                                                    value={offerPrice}
+                                                    onChange={e => setOfferPrice(e.target.value)}
+                                                    placeholder={Math.floor(product.sellingPrice * 0.85)}
+                                                    min="1"
+                                                    style={{ width: '100%', padding: '12px 14px 12px 32px', border: '1.5px solid #e2e8f0', borderRadius: 12, fontSize: 18, fontWeight: 700, boxSizing: 'border-box' }}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {offerPrice > 0 && (
+                                            <div style={{ background: '#eff6ff', borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 13 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span style={{ color: '#64748b' }}>Offer Total</span>
+                                                    <span style={{ fontWeight: 800, color: '#4f46e5', fontSize: 16 }}>₹{(parseFloat(offerPrice) * offerQty).toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {offerError && (
+                                            <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 13 }}>⚠️ {offerError}</div>
+                                        )}
+
+                                        <button
+                                            onClick={handleSendOffer}
+                                            disabled={sendingOffer || !offerPrice}
+                                            style={{ width: '100%', padding: 15, background: sendingOffer || !offerPrice ? '#94a3b8' : 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: sendingOffer || !offerPrice ? 'not-allowed' : 'pointer' }}
+                                        >
+                                            {sendingOffer ? '⏳ Sending...' : '📤 SEND OFFER'}
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Reviews Section ───────────────── */}

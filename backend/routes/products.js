@@ -20,7 +20,25 @@ router.get('/', async (req, res) => {
 
         const query = { isActive: true };
 
-        if (sellerId) query.seller = sellerId;
+        if (sellerId) {
+            // Seller viewing their own products — no subscription filter
+            query.seller = sellerId;
+        } else {
+            // Customer/public view: only show products from active subscription sellers
+            // Get list of sellers with active subscriptions
+            const Seller = (await import('../models/Seller.js')).default;
+            const now = new Date();
+            const activeSellers = await Seller.find({
+                $or: [
+                    { subscriptionStatus: 'ACTIVE', subscriptionExpiryDate: { $gt: now } },
+                    // Also allow sellers with NONE status (newly approved, not yet subscribed) to show products
+                    // Remove this line once all sellers are on subscription model
+                    { subscriptionStatus: 'NONE' }
+                ]
+            }).select('_id').lean();
+            const activeSellerIds = activeSellers.map(s => s._id);
+            query.seller = { $in: activeSellerIds };
+        }
         if (category) query.category = category;
         if (gender) query.gender = gender;
         if (featured) query.featured = true;

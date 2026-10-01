@@ -32,6 +32,8 @@ import walletRoutes from './routes/wallet.js';
 import paymentRoutes from './routes/payment.js';
 import pushRoutes from './routes/push.js';
 import supportRoutes from './routes/support.js';
+import subscriptionRoutes from './routes/subscriptions.js';
+import offerRoutes from './routes/offers.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -130,6 +132,8 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/offers', offerRoutes);
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({

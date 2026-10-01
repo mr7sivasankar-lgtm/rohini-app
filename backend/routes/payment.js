@@ -83,7 +83,7 @@ router.post('/create-order', protect, async (req, res) => {
             }
         }
         const finalDeliveryFee = Math.round(calculatedDeliveryFee);
-        const totalAmount = sellingPriceTotal + finalDeliveryFee + platformFee;
+        const totalAmount = sellingPriceTotal + finalDeliveryFee; // No platformFee in new model
 
         // Create Razorpay order (amount must be in paise)
         const razorpay = getRazorpay();
@@ -182,6 +182,16 @@ router.post('/verify', protect, async (req, res) => {
         // Delivery fee
         const Seller = (await import('../models/Seller.js')).default;
         const sellerObj = await Seller.findById(orderSeller);
+
+        // === Verify Seller Subscription is ACTIVE ===
+        if (!sellerObj || sellerObj.subscriptionStatus !== 'ACTIVE' || !sellerObj.subscriptionExpiryDate || sellerObj.subscriptionExpiryDate < new Date()) {
+            return res.status(400).json({
+                success: false,
+                message: 'This seller is currently not accepting new orders.',
+                code: 'SELLER_SUBSCRIPTION_INACTIVE'
+            });
+        }
+
         let sellerLocation = null;
         if (sellerObj?.location?.coordinates) {
             sellerLocation = { lng: sellerObj.location.coordinates[0], lat: sellerObj.location.coordinates[1] };
@@ -199,10 +209,10 @@ router.post('/verify', protect, async (req, res) => {
         }
         const finalDeliveryFee = Math.round(calculatedDeliveryFee);
 
-        const commissionAmount = Math.round(sellingPriceTotal * (commissionPercentage / 100));
-        const sellerEarning = sellingPriceTotal - commissionAmount;
+        const commissionAmount = 0; // Product commission = ₹0 (new subscription model)
+        const sellerEarning = sellingPriceTotal;
         const deliveryEarning = finalDeliveryFee;
-        const totalAmount = sellingPriceTotal + finalDeliveryFee + platformFee;
+        const totalAmount = sellingPriceTotal + finalDeliveryFee; // No platformFee in new model
         const paymentGatewayFee = Math.round(totalAmount * (paymentGatewayPercentage / 100));
 
         const order = await Order.create({
@@ -217,7 +227,7 @@ router.post('/verify', protect, async (req, res) => {
             mrpTotal,
             sellingPriceTotal,
             deliveryFee: finalDeliveryFee,
-            platformFee,
+            platformFee: 0,          // platformFee removed in new subscription model
             commissionAmount,
             sellerEarning,
             deliveryEarning,

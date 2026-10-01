@@ -128,6 +128,12 @@ const productSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
         index: true
+    },
+    // Offer/Negotiation — seller enables this per product
+    allowOffers: {
+        type: Boolean,
+        default: false,
+        index: true
     }
 }, {
     timestamps: true

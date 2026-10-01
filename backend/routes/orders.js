@@ -86,6 +86,10 @@ router.post('/', protect, async (req, res) => {
             });
         }
 
+        // === Seller Subscription Check ===
+        // We need to check the seller of the first product. We'll do it after fetching products.
+        // The subscription check is done after building orderItems below.
+
         // === Service Area Validation ===
         // Check if ANY active area covers the customer's city/pincode
         const { city: customerCity, pincode: customerPincode } = shippingAddress || {};
@@ -191,6 +195,15 @@ router.post('/', protect, async (req, res) => {
         const Seller = (await import('../models/Seller.js')).default;
         const sellerObj = await Seller.findById(orderSeller);
 
+        // === Verify Seller Subscription is ACTIVE ===
+        if (!sellerObj || sellerObj.subscriptionStatus !== 'ACTIVE' || !sellerObj.subscriptionExpiryDate || sellerObj.subscriptionExpiryDate < new Date()) {
+            return res.status(400).json({
+                success: false,
+                message: 'This seller is currently not accepting new orders. Their subscription may have expired.',
+                code: 'SELLER_SUBSCRIPTION_INACTIVE'
+            });
+        }
+
         let sellerLocation = null;
         if (sellerObj && sellerObj.location && sellerObj.location.coordinates) {
             sellerLocation = {
@@ -218,12 +231,9 @@ router.post('/', protect, async (req, res) => {
         // Ensure we strictly adopt the backend calculation to mitigate client-side tampering
         const finalDeliveryFee = Math.round(calculatedDeliveryFee);
 
-        // === Commission System & Payout Math ===
-        // Commission applies ONLY on the sellingPriceTotal (Admin receives this)
-        const commissionAmount = Math.round(sellingPriceTotal * (commissionPercentage / 100));
-
-        // Seller gets selling price minus commission
-        const sellerEarning = sellingPriceTotal - commissionAmount;
+        // === New Revenue Model: Zero product commission. Seller pays subscription separately. ===
+        const commissionAmount = 0; // Product commission = ₹0 (new subscription model)
+        const sellerEarning = sellingPriceTotal; // Seller keeps full product price
 
         // Delivery Partner natively earns the delivery fee (always full — never reduced by promo)
         const deliveryEarning = finalDeliveryFee;
@@ -257,8 +267,8 @@ router.post('/', protect, async (req, res) => {
             }
         }
 
-        // Customer pays sellingPrice + customerDeliveryCharge + platformFee
-        const totalAmount = sellingPriceTotal + customerDeliveryCharge + platformFee;
+        // Customer pays sellingPrice + customerDeliveryCharge (no platformFee in new model)
+        const totalAmount = sellingPriceTotal + customerDeliveryCharge;
 
         // Payment gateway fee (estimated on full order total paid by customer)
         const paymentGatewayFee = Math.round(totalAmount * (paymentGatewayPercentage / 100));
@@ -276,7 +286,7 @@ router.post('/', protect, async (req, res) => {
             mrpTotal,
             sellingPriceTotal,
             deliveryFee: customerDeliveryCharge,   // what customer paid
-            platformFee,
+            platformFee: 0,          // platformFee removed in new subscription model
             commissionAmount,
             sellerEarning,
             deliveryEarning,                        // always full fee for delivery partner

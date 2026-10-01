@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import MapPicker from '../../components/MapPicker/MapPicker';
@@ -46,7 +46,6 @@ const StepIndicator = ({ step, maxSteps = 6 }) => (
 const Register = () => {
     const [step, setStep] = useState(1);
     const [phone, setPhone] = useState('');
-    const [commissionRate, setCommissionRate] = useState(null); // dynamic from backend
     const [bankSearch, setBankSearch] = useState('');
     const [showBankDropdown, setShowBankDropdown] = useState(false);
 
@@ -71,17 +70,9 @@ const Register = () => {
 
     const navigate = useNavigate();
 
-    // Fetch platform commission rate on mount
-    useEffect(() => {
-        api.get('/config').then(res => {
-            if (res.data.success && res.data.data?.commissionPercentage) {
-                setCommissionRate(res.data.data.commissionPercentage);
-            }
-        }).catch(() => {});
-    }, []);
-
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
     const handleFileChange = (e) => setDocs({ ...docs, [e.target.name]: e.target.files[0] });
+
 
     const nextStep = () => {
         setError('');
@@ -113,7 +104,7 @@ const Register = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        if (!form.commissionAgreementAccepted) return setError('You must accept the commission agreement to register.');
+        if (!form.commissionAgreementAccepted) return setError('You must accept the platform terms to register.');
         setIsLoading(true);
         const payload = new FormData();
         payload.append('phone', `+91${phone}`);
@@ -143,8 +134,6 @@ const Register = () => {
             </div>
         );
     }
-
-    const commission = commissionRate !== null ? commissionRate : '...';
 
     return (
         <>
@@ -330,22 +319,20 @@ const Register = () => {
                     {step === 6 && (
                         <form onSubmit={handleSubmit} className="auth-form">
                             <h3>📜 Final Review & Agreement</h3>
-                            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-                                <h4 style={{ color: '#b91c1c', marginTop: 0, marginBottom: '8px' }}>Platform Commission Agreement</h4>
-                                <p style={{ fontSize: '13px', color: '#7f1d1d', margin: 0, lineHeight: 1.5 }}>
-                                    By proceeding, you agree to the platform logistics model.{' '}
-                                    {commissionRate !== null
-                                        ? <><strong>The platform deducts a {commissionRate}% commission</strong> on all fulfilled orders.</>
-                                        : 'A platform commission will be deducted on all fulfilled orders.'
-                                    }{' '}
+                            <div style={{ background: '#eff6ff', border: '1px solid #93c5fd', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                                <h4 style={{ color: '#1d4ed8', marginTop: 0, marginBottom: '8px' }}>🔑 Sifito Subscription Model</h4>
+                                <p style={{ fontSize: '13px', color: '#1e3a5f', margin: 0, lineHeight: 1.6 }}>
+                                    Sifito operates on a <strong>seller subscription model</strong>. There is <strong>no per-sale commission</strong> — you keep 100% of your product revenue.
+                                    <br /><br />
+                                    To receive customers and orders through Sifito, an active <strong>daily seller subscription</strong> is required. Subscriptions are paid online via Razorpay after your account is approved.
+                                    <br /><br />
                                     All deliveries are fulfilled exclusively via our in-house delivery partner network.
                                 </p>
                             </div>
                             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '14px', cursor: 'pointer', marginBottom: '20px' }}>
                                 <input type="checkbox" name="commissionAgreementAccepted" checked={form.commissionAgreementAccepted} onChange={e => setForm({ ...form, commissionAgreementAccepted: e.target.checked })} style={{ marginTop: '3px', transform: 'scale(1.2)' }} />
                                 <span>
-                                    I explicitly agree to the{commissionRate !== null ? ` ${commissionRate}%` : ''} platform commission and terms of service.
-                                    I understand my account will be manually vetted by an Administrator before activation.
+                                    I agree to Sifito's platform terms of service and understand that a daily subscription fee is required to receive orders. I understand my account will be manually vetted by an Administrator before activation.
                                 </span>
                             </label>
                             <button type="submit" className="btn-primary full-width" disabled={isLoading || !form.commissionAgreementAccepted} style={{ padding: '14px', fontSize: '16px' }}>

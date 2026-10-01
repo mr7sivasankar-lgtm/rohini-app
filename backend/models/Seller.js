@@ -173,6 +173,20 @@ const sellerSchema = new mongoose.Schema({
     fcmToken: {
         type: String,
         default: null
+    },
+    // === Subscription Cache Fields (updated on payment verification) ===
+    subscriptionStatus: {
+        type: String,
+        enum: ['NONE', 'ACTIVE', 'EXPIRED', 'SUSPENDED', 'CANCELLED'],
+        default: 'NONE'
+    },
+    subscriptionPlanId: {
+        type: String,
+        default: null
+    },
+    subscriptionExpiryDate: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true

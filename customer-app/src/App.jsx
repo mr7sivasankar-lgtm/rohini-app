@@ -33,6 +33,8 @@ import Favorites from './pages/Favorites/Favorites';
 import ShopProfile from './pages/ShopProfile/ShopProfile';
 import PrivacyPolicy from './pages/Legal/PrivacyPolicy';
 import TermsAndConditions from './pages/Legal/TermsAndConditions';
+import MyOffers from './pages/Offers/MyOffers';
+import OfferDetail from './pages/Offers/OfferDetail';
 
 // Protected Route Component
 import { useAuth } from './contexts/AuthContext';
@@ -183,6 +185,18 @@ const AppRoutes = () => {
         <Route path="/favorites" element={
           <ProtectedRoute>
             <Favorites />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/offers" element={
+          <ProtectedRoute>
+            <MyOffers />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/offers/:id" element={
+          <ProtectedRoute>
+            <OfferDetail />
           </ProtectedRoute>
         } />
 
