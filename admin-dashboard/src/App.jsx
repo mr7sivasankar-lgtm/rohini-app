@@ -388,7 +388,7 @@ function App() {
       {/* Mobile Top Header */}
       <div className="mobile-header">
         <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)}>
-          â˜°
+          &#9776;
         </button>
         <h2>Admin Panel</h2>
       </div>
@@ -397,7 +397,7 @@ function App() {
       {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
 
       <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <h2 className="sidebar-title">ðŸ“¦ Admin Panel</h2>
+        <h2 className="sidebar-title">Admin Panel</h2>
         <div className={`menu-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleTabChange('dashboard')}>
           Dashboard
         </div>
@@ -418,34 +418,34 @@ function App() {
           Products
         </div>
         <div className={`menu-item ${activeTab === 'service-areas' ? 'active' : ''}`} onClick={() => handleTabChange('service-areas')}>
-          ðŸ“ Service Areas
+          Service Areas
         </div>
         <div className={`menu-item ${activeTab === 'users' ? 'active' : ''}`} onClick={() => handleTabChange('users')}>
-          ðŸ‘¥ Users
+          Users
         </div>
         <div className={`menu-item ${activeTab === 'sellers' ? 'active' : ''}`} onClick={() => handleTabChange('sellers')}>
-          ðŸª Sellers
+          Sellers
         </div>
         <div className={`menu-item ${activeTab === 'top-rated' ? 'active' : ''}`} onClick={() => handleTabChange('top-rated')}>
-          ðŸ“¢ Ad Banners/Advertising
+          Ad Banners/Advertising
         </div>
         <div className={`menu-item ${activeTab === 'locations' ? 'active' : ''}`} onClick={() => handleTabChange('locations')}>
-          ðŸ—ºï¸ Locations Map
+          Locations Map
         </div>
         <div className={`menu-item ${activeTab === 'delivery-partners' ? 'active' : ''}`} onClick={() => handleTabChange('delivery-partners')}>
-          ðŸš´ Delivery Partners
+          Delivery Partners
         </div>
         <div className={`menu-item ${activeTab === 'revenue' ? 'active' : ''}`} onClick={() => handleTabChange('revenue')}>
-          ðŸ’° Revenue & Profit
+          Revenue & Profit
         </div>
         <div className={`menu-item ${activeTab === 'payouts' ? 'active' : ''}`} onClick={() => handleTabChange('payouts')}>
-          ðŸ’¸ Payouts Center
+          Payouts Center
         </div>
         <div className={`menu-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => handleTabChange('settings')}>
-          âš™ï¸ Global Settings
+          Global Settings
         </div>
         <div className={`menu-item ${activeTab === 'support' ? 'active' : ''}`} onClick={() => handleTabChange('support')}>
-          ðŸ’¬ Support
+          Support
           {newSupportTicketsCount > 0 && <span style={{
             background: '#06b6d4',
             color: 'white',
@@ -458,13 +458,13 @@ function App() {
           }}>{newSupportTicketsCount}</span>}
         </div>
         <div className={`menu-item ${activeTab === 'subscriptions' ? 'active' : ''}`} onClick={() => handleTabChange('subscriptions')}>
-          ðŸ”‘ Subscriptions
+          Subscriptions
         </div>
         <div className={`menu-item ${activeTab === 'subscription-plans' ? 'active' : ''}`} onClick={() => handleTabChange('subscription-plans')}>
-          ðŸ“‹ Sub. Plans
+          Sub. Plans
         </div>
         <div className={`menu-item ${activeTab === 'offers' ? 'active' : ''}`} onClick={() => handleTabChange('offers')}>
-          ðŸ¤ Offers
+          Offers
         </div>
         <div className="menu-item" onClick={handleLogout}>
           Logout
@@ -505,7 +505,7 @@ function App() {
                 fontSize: '13px'
               }}
             >
-              View Orders â†’
+              View Orders →
             </button>
             <button
               onClick={() => setNotifDismissed(true)}
@@ -519,7 +519,7 @@ function App() {
                 marginLeft: '8px'
               }}
             >
-              âœ•
+              ✕
             </button>
           </div>
         )}
@@ -540,7 +540,7 @@ function App() {
             animation: 'slideDown 0.3s ease'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '20px' }}>âš ï¸</span>
+              <span style={{ fontSize: '20px' }}>⚠️</span>
               <span style={{ fontWeight: '600' }}>
                 {newCancelledCount} Order{newCancelledCount > 1 ? 's' : ''} Cancelled
               </span>
@@ -558,7 +558,7 @@ function App() {
                 fontSize: '13px'
               }}
             >
-              View Orders â†’
+              View Orders →
             </button>
             <button
               onClick={() => setCancelNotifDismissed(true)}
@@ -572,7 +572,7 @@ function App() {
                 marginLeft: '8px'
               }}
             >
-              âœ•
+              ✕
             </button>
           </div>
         )}
@@ -597,8 +597,8 @@ function App() {
                 {newPendingSellersCount} seller{newPendingSellersCount > 1 ? 's' : ''} pending approval!
               </span>
             </div>
-            <button onClick={() => setActiveTab('sellers')} style={{ background: 'white', color: '#4f46e5', border: 'none', padding: '6px 16px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Review Sellers â†’</button>
-            <button onClick={() => setSellerNotifDismissed(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: '18px', cursor: 'pointer', padding: '0 4px', marginLeft: '8px' }}>âœ•</button>
+            <button onClick={() => setActiveTab('sellers')} style={{ background: 'white', color: '#4f46e5', border: 'none', padding: '6px 16px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Review Sellers →</button>
+            <button onClick={() => setSellerNotifDismissed(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: '18px', cursor: 'pointer', padding: '0 4px', marginLeft: '8px' }}>✕</button>
           </div>
         )}
 
@@ -617,13 +617,13 @@ function App() {
             animation: 'slideDown 0.3s ease'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '20px' }}>ðŸš´</span>
+              <span style={{ fontSize: '20px' }}>🚴</span>
               <span style={{ fontWeight: '600' }}>
                 {newPendingDPCount} delivery partner{newPendingDPCount > 1 ? 's' : ''} pending approval!
               </span>
             </div>
-            <button onClick={() => setActiveTab('delivery-partners')} style={{ background: 'white', color: '#d97706', border: 'none', padding: '6px 16px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Review Partners â†’</button>
-            <button onClick={() => setDpNotifDismissed(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: '18px', cursor: 'pointer', padding: '0 4px', marginLeft: '8px' }}>âœ•</button>
+            <button onClick={() => setActiveTab('delivery-partners')} style={{ background: 'white', color: '#d97706', border: 'none', padding: '6px 16px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Review Partners →</button>
+            <button onClick={() => setDpNotifDismissed(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: '18px', cursor: 'pointer', padding: '0 4px', marginLeft: '8px' }}>✕</button>
           </div>
         )}
 
@@ -642,13 +642,13 @@ function App() {
             animation: 'slideDown 0.3s ease'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '20px' }}>ðŸ’¬</span>
+              <span style={{ fontSize: '20px' }}>💬</span>
               <span style={{ fontWeight: '600' }}>
                 {newSupportTicketsCount} open support ticket{newSupportTicketsCount > 1 ? 's' : ''} waiting!
               </span>
             </div>
-            <button onClick={() => setActiveTab('support')} style={{ background: 'white', color: '#0891b2', border: 'none', padding: '6px 16px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>View Tickets â†’</button>
-            <button onClick={() => setSupportNotifDismissed(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: '18px', cursor: 'pointer', padding: '0 4px', marginLeft: '8px' }}>âœ•</button>
+            <button onClick={() => setActiveTab('support')} style={{ background: 'white', color: '#0891b2', border: 'none', padding: '6px 16px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>View Tickets →</button>
+            <button onClick={() => setSupportNotifDismissed(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: '18px', cursor: 'pointer', padding: '0 4px', marginLeft: '8px' }}>✕</button>
           </div>
         )}
 
@@ -682,7 +682,7 @@ function App() {
                     <>
                       {/* Today's Snapshot */}
                       <div>
-                        <SectionLabel icon="ðŸ“…" label="Today's Snapshot" />
+                        <SectionLabel icon="📅" label="Today's Snapshot" />
                         <div className="stats-grid">
                           <Card label="Orders Today" value={stats.today?.ordersToday || 0} color="#1d4ed8" borderColor="#3b82f6" />
                           <Card label="Delivered Orders" value={stats.today?.deliveredToday || 0} color="#16a34a" borderColor="#22c55e" />
@@ -695,7 +695,7 @@ function App() {
 
                       {/* Orders Totals */}
                       <div>
-                        <SectionLabel icon="ðŸ“¦" label="Orders Totals" />
+                        <SectionLabel icon="📦" label="Orders Totals" />
                         <div className="stats-grid">
                           <Card label="Total products added by sellers" value={stats.totals?.totalProductsAdded || 0} color="#1e293b" borderColor="#64748b" />
                           <Card label="Total orders" value={stats.totals?.totalOrders || 0} color="#1d4ed8" borderColor="#3b82f6" />
@@ -743,7 +743,7 @@ function App() {
 
                       {/* Delivery Boys registered */}
                       <div>
-                        <SectionLabel icon="ðŸšš" label="Delivery Boys registered - count" />
+                        <SectionLabel icon="🚚" label="Delivery Boys registered - count" />
                         <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                           <Card label="Total Count" value={stats.delivery?.totalDeliveryPartners || 0} color="#1e293b" borderColor="#64748b" />
                           <Card label="New delivery partners" value={stats.delivery?.newDeliveryPartnersToday || 0} color="#047857" borderColor="#10b981" />
@@ -865,7 +865,7 @@ function App() {
                       <button
                         onClick={() => setProductSearchQuery('')}
                         style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '16px' }}
-                      >âœ•</button>
+                      >✕</button>
                     )}
                   </div>
                 </div>
@@ -1134,7 +1134,7 @@ const OrderManagementTab = ({ orders, updateOrderStatus, deleteOrder, handleUpda
             <button
               onClick={() => setSearchQuery('')}
               style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '16px' }}
-            >âœ•</button>
+            >✕</button>
           )}
         </div>
       </div>
@@ -1170,7 +1170,7 @@ const OrderManagementTab = ({ orders, updateOrderStatus, deleteOrder, handleUpda
       <div className="card" style={{ marginBottom: 0 }}>
         {filteredOrders.length === 0 ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#94a3b8' }}>
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>ðŸ“‹</div>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>📋</div>
             <div style={{ fontWeight: 600, fontSize: '16px' }}>No orders found</div>
             <div style={{ fontSize: '14px', marginTop: '4px' }}>Try adjusting your search or filter</div>
           </div>
@@ -1329,7 +1329,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                         fontWeight: 600
                       }}
                     >
-                      ðŸ“ View on Map
+                      📍 View on Map
                     </a>
                   )}
                 </td>
@@ -1354,7 +1354,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                           borderRadius: '8px', padding: '5px 10px',
                           fontWeight: 800, fontSize: '14px'
                         }}>
-                          {netProfit >= 0 ? 'ðŸ’°' : 'âš ï¸'} â‚¹{netProfit.toFixed(2)}
+                          {netProfit >= 0 ? '💰' : '⚠️'} â‚¹{netProfit.toFixed(2)}
                         </div>
                         {/* Promo badge */}
                         {order.promoCode && (
@@ -1383,11 +1383,11 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                             </div>
                           )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '2px', marginTop: '1px' }}>
-                            <span style={{ color: '#3b82f6' }}>â†’ Seller Gets</span>
+                            <span style={{ color: '#3b82f6' }}>→ Seller Gets</span>
                             <span style={{ fontWeight: 600, color: '#3b82f6' }}>â‚¹{sellerEarning.toFixed(2)}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-                            <span style={{ color: '#f97316' }}>â†’ Delivery Gets</span>
+                            <span style={{ color: '#f97316' }}>→ Delivery Gets</span>
                             <span style={{ fontWeight: 600, color: '#f97316' }}>â‚¹{deliveryEarning.toFixed(2)}</span>
                           </div>
                         </div>
@@ -1444,7 +1444,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                           background: 'linear-gradient(135deg, #f97316, #fb923c)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: '16px', flexShrink: 0
-                        }}>ðŸš´</div>
+                        }}>🚴</div>
                         <div>
                           <div style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b' }}>
                             {order.deliveryPartner.name}
@@ -1597,7 +1597,7 @@ const OrdersTable = ({ orders, updateStatus, deleteOrder, handleUpdateItemStatus
                     <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', paddingTop: '12px' }}>
                       {/* Order Status Timeline */}
                       <div style={{ minWidth: '220px' }}>
-                        <div style={{ fontWeight: 700, fontSize: '13px', color: '#334155', marginBottom: '8px' }}>ðŸ“¦ Order Status History</div>
+                        <div style={{ fontWeight: 700, fontSize: '13px', color: '#334155', marginBottom: '8px' }}>📦 Order Status History</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           {(order.statusHistory || []).map((h, i) => (
                             <div key={i} style={{ display: 'flex', gap: '8px', fontSize: '12px', alignItems: 'flex-start' }}>
@@ -1738,7 +1738,7 @@ const DeliveryPartnersTab = () => {
   return (
     <div>
       <div className="page-header">
-        <h1>ðŸš´ Delivery Partners</h1>
+        <h1>🚴 Delivery Partners</h1>
         <p>Manage your delivery team</p>
       </div>
 
@@ -1773,7 +1773,7 @@ const DeliveryPartnersTab = () => {
           <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loadingâ€¦</div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>ðŸš´</div>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚴</div>
             <div>{search ? 'No partners match your search' : 'No delivery partners registered yet'}</div>
           </div>
         ) : (
@@ -1799,7 +1799,7 @@ const DeliveryPartnersTab = () => {
                     <tr style={{ opacity: partner.isActive ? 1 : partner.status === 'Pending Approval' ? 1 : 0.6 }}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #f97316, #fb923c)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>ðŸš´</div>
+                          <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #f97316, #fb923c)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚴</div>
                           <div>
                             <div style={{ fontWeight: 600, fontSize: '14px' }}>{partner.name}</div>
                             <div style={{ fontSize: '11px', color: '#64748b' }}>ID: {partner._id?.slice(-6).toUpperCase()}</div>
@@ -1893,7 +1893,7 @@ const DeliveryPartnersTab = () => {
                           {(partner.status === 'Pending Approval' || !partner.status) ? (
                             <>
                               <button onClick={() => updateApprovalStatus(partner, 'Approved')} style={{ padding: '5px 10px', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: '#22c55e', color: 'white' }}>âœ“ Approve</button>
-                              <button onClick={() => updateApprovalStatus(partner, 'Rejected')} style={{ padding: '5px 10px', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: '#ef4444', color: 'white' }}>âœ• Reject</button>
+                              <button onClick={() => updateApprovalStatus(partner, 'Rejected')} style={{ padding: '5px 10px', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: '#ef4444', color: 'white' }}>✕ Reject</button>
                             </>
                           ) : (
                             <button
@@ -2014,7 +2014,7 @@ const DeliveryPartnersTab = () => {
                                       </span>
                                       {session.endTime && (
                                         <>
-                                          <span style={{ color: '#94a3b8', margin: '0 4px' }}>â†’</span>
+                                          <span style={{ color: '#94a3b8', margin: '0 4px' }}>→</span>
                                           <span style={{ fontWeight: 500 }}>
                                             {new Date(session.endTime).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })}
                                           </span>
@@ -2131,7 +2131,7 @@ const LocationsTab = () => {
                             <hr style="margin: 5px 0; border: 0; border-top: 1px solid #e5e7eb;"/>
                             <div style="color: #6b7280; font-size: 11px;">${seller.addressText || 'No address text'}</div>
                             <div style="margin-top: 5px;">
-                                <a href="https://www.google.com/maps/dir/?api=1&destination=${seller.lat},${seller.lng}" target="_blank" style="color: #2563eb; text-decoration: none; font-size: 12px; font-weight: bold;">ðŸ—ºï¸ View on Maps</a>
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=${seller.lat},${seller.lng}" target="_blank" style="color: #2563eb; text-decoration: none; font-size: 12px; font-weight: bold;">🗺️ View on Maps</a>
                             </div>
                         </div>
                     `);
@@ -2183,7 +2183,7 @@ const LocationsTab = () => {
   return (
     <div>
       <div className="page-header">
-        <h1>ðŸ—ºï¸ Entities Locations Map</h1>
+        <h1>🗺️ Entities Locations Map</h1>
         <p>View all customer and seller locations placed on the map</p>
       </div>
 

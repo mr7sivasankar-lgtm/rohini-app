@@ -96,13 +96,6 @@ const SettingsTab = () => {
         fontWeight: '500'
     };
 
-    const IconRevenue = () => (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="1" x2="12" y2="23"></line>
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-        </svg>
-    );
-
     const IconPayment = () => (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
@@ -160,28 +153,6 @@ const SettingsTab = () => {
             
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column' }}>
                 
-                {/* Revenue & Fees */}
-                <div style={cardStyle}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
-                        <div style={{ width: 48, height: 48, borderRadius: 14, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <IconRevenue />
-                        </div>
-                        <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Revenue & Commissions</h3>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' }}>
-                        <div>
-                            <label style={labelStyle}>Seller Commission (%)</label>
-                            <input type="number" name="commissionPercentage" value={config.commissionPercentage} onChange={handleChange} min="0" max="100" style={inputStyle} disabled={!isEditing} required />
-                            <small style={hintStyle}>Percentage deducted from the final selling price</small>
-                        </div>
-                        <div>
-                            <label style={labelStyle}>Platform Fee (₹)</label>
-                            <input type="number" name="platformFee" value={config.platformFee} onChange={handleChange} min="0" style={inputStyle} disabled={!isEditing} required />
-                            <small style={hintStyle}>Flat fee charged directly to the customer</small>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Payment Gateway */}
                 <div style={cardStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
