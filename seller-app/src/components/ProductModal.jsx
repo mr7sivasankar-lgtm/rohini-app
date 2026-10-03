@@ -585,105 +585,89 @@ const ProductModal = ({ product, onClose, onSuccess }) => {
                         </div>
                     </div>
 
-                    {/* ── 6. PRICING & STOCK (LAST STEP) ────────────────── */}
+                    {/* ── 6. PRICING & STOCK ────────────────────────────── */}
                     <div style={{ marginBottom: 28 }}>
                         <h3 style={{ ...h3, color: '#059669' }}>💰 Pricing & Stock</h3>
-                        <p style={{ margin: '0 0 16px', fontSize: 13, color: '#475569', background: '#f0fdf4', padding: '10px 14px', borderRadius: 8, border: '1px solid #bbf7d0' }}>
-                            ℹ️ With Sifito's subscription model, you keep 100% of your selling price. No per-sale commission.
+                        <p style={{ margin: '0 0 20px', fontSize: 13, color: '#475569', background: '#f0fdf4', padding: '10px 14px', borderRadius: 8, border: '1px solid #bbf7d0' }}>
+                            ℹ️ You keep 100% of your selling price — no per-sale commission with Sifito's subscription model.
                         </p>
 
-                        {/* Pricing mode toggle */}
-                        <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-                            <button type="button" onClick={() => setPricingMode('direct')}
-                                style={{ flex: 1, padding: '10px', borderRadius: 10, border: `2px solid ${pricingMode === 'direct' ? '#6366f1' : '#e2e8f0'}`, background: pricingMode === 'direct' ? '#eff6ff' : '#f8fafc', fontWeight: 700, fontSize: 13, cursor: 'pointer', color: pricingMode === 'direct' ? '#4f46e5' : '#64748b' }}>
-                                ✏️ Enter Price Directly
-                            </button>
-                            <button type="button" onClick={() => setPricingMode('calculator')}
-                                style={{ flex: 1, padding: '10px', borderRadius: 10, border: `2px solid ${pricingMode === 'calculator' ? '#6366f1' : '#e2e8f0'}`, background: pricingMode === 'calculator' ? '#eff6ff' : '#f8fafc', fontWeight: 700, fontSize: 13, cursor: 'pointer', color: pricingMode === 'calculator' ? '#4f46e5' : '#64748b' }}>
-                                🧮 Profit Calculator
-                            </button>
+                        {/* ── Final price fields (always visible) ── */}
+                        <div style={row}>
+                            <div>
+                                <label style={lbl}>MRP / Original Price <span style={{ color: '#94a3b8', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                                <small style={{ display: 'block', color: '#94a3b8', fontSize: 11, marginBottom: 5 }}>Strike-through price shown to customers</small>
+                                <input type="number" name="mrpPrice" value={formData.mrpPrice} onChange={handleChange} style={inp} min="0" placeholder="₹ 0" />
+                            </div>
+                            <div>
+                                <label style={lbl}>Selling Price *</label>
+                                <small style={{ display: 'block', color: '#94a3b8', fontSize: 11, marginBottom: 5 }}>Price customers pay — what you earn</small>
+                                <input
+                                    type="number" name="sellingPrice" value={formData.sellingPrice}
+                                    onChange={handleChange} required style={{ ...inp, borderColor: formData.sellingPrice ? '#6ee7b7' : '#e2e8f0', fontWeight: formData.sellingPrice ? 700 : 400 }}
+                                    min="0" placeholder="₹ 0"
+                                />
+                            </div>
+                            <div>
+                                <label style={lbl}>Stock (Qty) *</label>
+                                <small style={{ display: 'block', color: '#94a3b8', fontSize: 11, marginBottom: 5 }}>How many units you have available</small>
+                                <input type="number" name="stock" value={formData.stock} onChange={handleChange} required style={inp} min="0" placeholder="0" />
+                                <small style={{ color: Number(formData.stock) > 0 ? '#16a34a' : '#dc2626', fontSize: 12 }}>
+                                    {Number(formData.stock) > 0 ? '✅ In Stock' : '❌ Out of Stock'}
+                                </small>
+                            </div>
                         </div>
 
-                        {/* Direct Entry Mode */}
-                        {pricingMode === 'direct' && (
-                            <div style={row}>
-                                <div>
-                                    <label style={lbl}>MRP (Original Price)</label>
-                                    <input type="number" name="mrpPrice" value={formData.mrpPrice} onChange={handleChange} style={inp} min="0" placeholder="₹ 0" />
-                                </div>
-                                <div>
-                                    <label style={lbl}>Selling Price *</label>
-                                    <input type="number" name="sellingPrice" value={formData.sellingPrice} onChange={handleChange} required style={inp} min="0" placeholder="₹ 0" />
-                                </div>
-                                <div>
-                                    <label style={lbl}>Stock (Qty) *</label>
-                                    <input type="number" name="stock" value={formData.stock} onChange={handleChange} required style={inp} min="0" placeholder="0" />
-                                    <small style={{ color: Number(formData.stock) > 0 ? '#16a34a' : '#dc2626', fontSize: 12 }}>
-                                        {Number(formData.stock) > 0 ? '✅ In Stock' : '❌ Out of Stock'}
-                                    </small>
-                                </div>
-                            </div>
-                        )}
+                        {/* ── Profit Calculator (collapsible helper) ── */}
+                        <div style={{ marginTop: 20, border: '1.5px solid #e0e7ff', borderRadius: 14, overflow: 'hidden' }}>
+                            <button
+                                type="button"
+                                onClick={() => setPricingMode(pricingMode === 'calculator' ? 'direct' : 'calculator')}
+                                style={{ width: '100%', padding: '12px 16px', background: pricingMode === 'calculator' ? '#eff6ff' : '#f8fafc', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontWeight: 700, fontSize: 14, color: '#4f46e5' }}
+                            >
+                                <span>🧮 Profit Calculator <span style={{ fontWeight: 400, color: '#64748b', fontSize: 12 }}>— optional helper to set your price</span></span>
+                                <span style={{ fontSize: 18, transition: 'transform 0.2s', transform: pricingMode === 'calculator' ? 'rotate(180deg)' : 'none' }}>▾</span>
+                            </button>
 
-                        {/* Profit Calculator Mode */}
-                        {pricingMode === 'calculator' && (
-                            <div style={{ background: 'linear-gradient(135deg, #f0fdf4, #eff6ff)', borderRadius: 14, padding: 20, border: '1.5px solid #a5f3fc' }}>
-                                <div style={{ ...row, marginBottom: 16 }}>
-                                    <div>
-                                        <label style={{ ...lbl, color: '#065f46' }}>Cost Price (₹)</label>
-                                        <small style={{ display: 'block', color: '#6b7280', fontSize: 11, marginBottom: 5 }}>What you spend to make/buy this</small>
-                                        <input type="number" value={costPrice} onChange={e => setCostPrice(e.target.value)} style={{ ...inp, borderColor: '#6ee7b7' }} min="0" placeholder="₹ 400" />
-                                    </div>
-                                    <div>
-                                        <label style={{ ...lbl, color: '#065f46' }}>Desired Profit (₹)</label>
-                                        <small style={{ display: 'block', color: '#6b7280', fontSize: 11, marginBottom: 5 }}>How much you want to earn</small>
-                                        <input type="number" value={desiredProfit} onChange={e => setDesiredProfit(e.target.value)} style={{ ...inp, borderColor: '#6ee7b7' }} min="0" placeholder="₹ 100" />
-                                    </div>
-                                </div>
-
-                                {recommendedPrice > 0 && (
-                                    <div style={{ background: 'white', borderRadius: 12, padding: 18, border: '1.5px solid #6ee7b7', marginBottom: 16 }}>
-                                        <div style={{ fontSize: 13, color: '#374151', marginBottom: 12, fontWeight: 600, textAlign: 'center', letterSpacing: '0.3px', textTransform: 'uppercase' }}>📊 Price Breakdown</div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#374151' }}>
-                                                <span>Cost Price</span><span style={{ fontWeight: 600 }}>₹{cost.toFixed(2)}</span>
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#374151' }}>
-                                                <span>Your Desired Profit</span><span style={{ fontWeight: 600 }}>₹{profit.toFixed(2)}</span>
-                                            </div>
-                                            <div style={{ borderTop: '1px dashed #d1d5db', margin: '4px 0' }} />
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, background: '#eff6ff', borderRadius: 8, padding: '8px 12px' }}>
-                                                <span style={{ fontWeight: 700, color: '#1e40af' }}>🏷️ Recommended Selling Price</span>
-                                                <span style={{ fontWeight: 800, color: '#1e40af', fontSize: 16 }}>₹{recommendedPrice}</span>
-                                            </div>
+                            {pricingMode === 'calculator' && (
+                                <div style={{ padding: 16, background: 'linear-gradient(135deg, #f0fdf4, #eff6ff)', borderTop: '1.5px solid #e0e7ff' }}>
+                                    <div style={{ ...row, marginBottom: 16 }}>
+                                        <div>
+                                            <label style={{ ...lbl, color: '#065f46' }}>Cost Price (₹)</label>
+                                            <small style={{ display: 'block', color: '#6b7280', fontSize: 11, marginBottom: 5 }}>What you spend to make/buy this item</small>
+                                            <input type="number" value={costPrice} onChange={e => setCostPrice(e.target.value)} style={{ ...inp, borderColor: '#6ee7b7' }} min="0" placeholder="e.g. 400" />
                                         </div>
-                                        <button type="button" onClick={applyCalculatedPrice}
-                                            style={{ marginTop: 14, width: '100%', padding: '11px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-                                            ✅ Use Selling Price ₹{recommendedPrice}
-                                        </button>
+                                        <div>
+                                            <label style={{ ...lbl, color: '#065f46' }}>Desired Profit (₹)</label>
+                                            <small style={{ display: 'block', color: '#6b7280', fontSize: 11, marginBottom: 5 }}>How much profit you want to make</small>
+                                            <input type="number" value={desiredProfit} onChange={e => setDesiredProfit(e.target.value)} style={{ ...inp, borderColor: '#6ee7b7' }} min="0" placeholder="e.g. 100" />
+                                        </div>
                                     </div>
-                                )}
 
-                                {/* Still need MRP + Stock */}
-                                <div style={row}>
-                                    <div>
-                                        <label style={lbl}>MRP (Original Price)</label>
-                                        <input type="number" name="mrpPrice" value={formData.mrpPrice} onChange={handleChange} style={inp} min="0" placeholder="₹ 0" />
-                                    </div>
-                                    <div>
-                                        <label style={lbl}>Selling Price *</label>
-                                        <input type="number" name="sellingPrice" value={formData.sellingPrice} onChange={handleChange} required style={{ ...inp, borderColor: formData.sellingPrice ? '#6ee7b7' : '#e2e8f0', fontWeight: formData.sellingPrice ? 700 : 400 }} min="0" placeholder="₹ use calculator above" />
-                                    </div>
-                                    <div>
-                                        <label style={lbl}>Stock (Qty) *</label>
-                                        <input type="number" name="stock" value={formData.stock} onChange={handleChange} required style={inp} min="0" placeholder="0" />
-                                        <small style={{ color: Number(formData.stock) > 0 ? '#16a34a' : '#dc2626', fontSize: 12 }}>
-                                            {Number(formData.stock) > 0 ? '✅ In Stock' : '❌ Out of Stock'}
-                                        </small>
-                                    </div>
+                                    {recommendedPrice > 0 && (
+                                        <div style={{ background: 'white', borderRadius: 12, padding: 16, border: '1.5px solid #6ee7b7' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#374151' }}>
+                                                    <span>Your Cost</span><span style={{ fontWeight: 600 }}>₹{cost.toFixed(0)}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#374151' }}>
+                                                    <span>+ Desired Profit</span><span style={{ fontWeight: 600 }}>₹{profit.toFixed(0)}</span>
+                                                </div>
+                                                <div style={{ borderTop: '1px dashed #d1d5db', margin: '4px 0' }} />
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#eff6ff', borderRadius: 8, padding: '10px 12px' }}>
+                                                    <span style={{ fontWeight: 700, color: '#1e40af', fontSize: 14 }}>Suggested Selling Price</span>
+                                                    <span style={{ fontWeight: 900, color: '#1e40af', fontSize: 20 }}>₹{recommendedPrice}</span>
+                                                </div>
+                                            </div>
+                                            <button type="button" onClick={applyCalculatedPrice}
+                                                style={{ marginTop: 12, width: '100%', padding: '11px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                                                ✅ Apply ₹{recommendedPrice} as Selling Price
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
 
                     {/* Actions */}

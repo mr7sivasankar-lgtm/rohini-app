@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import api from '../../utils/api';
 import DashboardTab from '../../components/DashboardTab';
 import OrdersTab from '../../components/OrdersTab';
 import ProductsTab from '../../components/ProductsTab';
@@ -13,6 +14,149 @@ import LegalTab from '../../components/LegalTab';
 import SubscriptionTab from '../../components/SubscriptionTab';
 import OffersTab from '../../components/OffersTab';
 import './Dashboard.css';
+
+/* ── Subscription Gate Modal ── */
+const SubscriptionGate = ({ onSuccess }) => {
+    const { seller } = useAuth();
+    const [plans, setPlans] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [payLoading, setPayLoading] = useState(false);
+
+    useEffect(() => {
+        api.get('/subscriptions/plans')
+            .then(res => { if (res.data.success) setPlans(res.data.data); })
+            .catch(() => {})
+            .finally(() => setLoading(false));
+    }, []);
+
+    const handleSubscribe = async (plan) => {
+        if (payLoading) return;
+        try {
+            setPayLoading(true);
+            const res = await api.post('/subscriptions/create-payment', { planId: plan.planId });
+            if (!res.data.success) throw new Error(res.data.message);
+
+            const { razorpayOrderId, amount, keyId, planId, planName } = res.data.data;
+
+            if (!window.Razorpay) {
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.body.appendChild(script);
+                });
+            }
+
+            const rzp = new window.Razorpay({
+                key: keyId,
+                amount: Math.round(amount * 100),
+                currency: 'INR',
+                name: 'Sifito',
+                description: `${planName} Subscription`,
+                order_id: razorpayOrderId,
+                handler: async (response) => {
+                    try {
+                        const verifyRes = await api.post('/subscriptions/verify-payment', {
+                            razorpayOrderId: response.razorpay_order_id,
+                            razorpayPaymentId: response.razorpay_payment_id,
+                            razorpaySignature: response.razorpay_signature,
+                            planId
+                        });
+                        if (verifyRes.data.success) {
+                            onSuccess();
+                        } else {
+                            alert('Payment verification failed. Contact support.');
+                        }
+                    } catch (e) {
+                        alert('Verification error: ' + (e.response?.data?.message || e.message));
+                    } finally {
+                        setPayLoading(false);
+                    }
+                },
+                prefill: { name: seller?.ownerName || '', contact: seller?.phone || '' },
+                theme: { color: '#16a34a' },
+                modal: { ondismiss: () => setPayLoading(false) }
+            });
+            rzp.open();
+        } catch (err) {
+            setPayLoading(false);
+            alert('Payment error: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    return (
+        <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+        }}>
+            <div style={{
+                background: 'white', borderRadius: 20, width: '100%', maxWidth: 420,
+                maxHeight: '90vh', overflowY: 'auto',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.4)'
+            }}>
+                {/* Header */}
+                <div style={{
+                    background: 'linear-gradient(135deg, #052e16 0%, #15803d 100%)',
+                    borderRadius: '20px 20px 0 0', padding: '28px 24px', color: 'white', textAlign: 'center'
+                }}>
+                    <div style={{ fontSize: 48, marginBottom: 8 }}>🔑</div>
+                    <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Subscription Required</h2>
+                    <p style={{ margin: '8px 0 0', opacity: 0.85, fontSize: 14 }}>
+                        Subscribe to access your seller dashboard and receive orders
+                    </p>
+                </div>
+
+                <div style={{ padding: 24 }}>
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: 40, color: '#64748b' }}>Loading plans...</div>
+                    ) : plans.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>
+                            No plans available. Contact support.
+                        </div>
+                    ) : (
+                        plans.map(plan => (
+                            <div key={plan._id} style={{
+                                border: '2px solid #e2e8f0', borderRadius: 16, padding: 20, marginBottom: 16
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                    <div>
+                                        <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>{plan.name}</div>
+                                        <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+                                            {plan.description || `${plan.duration} ${plan.durationType.toLowerCase()} access`}
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: 26, fontWeight: 900, color: '#16a34a' }}>₹{plan.price}</div>
+                                        <div style={{ fontSize: 11, color: '#64748b' }}>/{plan.durationType.toLowerCase()}</div>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => handleSubscribe(plan)}
+                                    disabled={payLoading}
+                                    style={{
+                                        width: '100%', padding: '14px',
+                                        background: payLoading ? '#94a3b8' : 'linear-gradient(135deg, #16a34a, #15803d)',
+                                        color: 'white', border: 'none', borderRadius: 12,
+                                        fontSize: 15, fontWeight: 700,
+                                        cursor: payLoading ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    {payLoading ? '⏳ Processing...' : `Subscribe for ₹${plan.price}`}
+                                </button>
+                            </div>
+                        ))
+                    )}
+
+                    <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', margin: '8px 0 0' }}>
+                        Secure payment via Razorpay. Access unlocked immediately after payment.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // Bottom nav config for mobile (max 5 items — "More" opens the drawer)
 const BOTTOM_NAV = [
@@ -50,6 +194,26 @@ const Dashboard = () => {
     const { seller, logout } = useAuth();
     const [activeTab, setActiveTab]   = useState('dashboard');
     const [moreOpen, setMoreOpen]     = useState(false);
+    const [showSubGate, setShowSubGate] = useState(false);
+
+    // On mount: check if seller has an active subscription
+    useEffect(() => {
+        const checkSubscription = async () => {
+            try {
+                const res = await api.get('/subscriptions/seller/current');
+                const sub = res.data.data;
+                const now = new Date();
+                const isActive = sub && sub.status === 'ACTIVE' && new Date(sub.expiryDate) > now;
+                if (!isActive) {
+                    setShowSubGate(true);
+                }
+            } catch (err) {
+                // If endpoint fails silently, don't block the seller
+                console.warn('Subscription check failed:', err.message);
+            }
+        };
+        if (seller) checkSubscription();
+    }, [seller]);
 
     const handleNav = (key) => {
         if (key === '__more') { setMoreOpen(true); return; }
@@ -73,6 +237,9 @@ const Dashboard = () => {
 
     return (
         <div className="seller-dashboard">
+
+            {/* ── Subscription Gate: shown when seller has no active subscription ── */}
+            {showSubGate && <SubscriptionGate onSuccess={() => setShowSubGate(false)} />}
 
             {/* ── Global notification banners & big popups ── */}
             <SellerNotificationBanner onView={handleNotifView} />
