@@ -331,6 +331,8 @@ router.put('/update-profile', protect, async (req, res) => {
             message: 'Error updating profile'
         });
     }
+});
+
 // @route   DELETE /api/auth/delete-me
 // @desc    Delete current logged-in user account
 // @access  Private
