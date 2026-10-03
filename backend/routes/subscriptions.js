@@ -20,14 +20,12 @@ const getRazorpay = () => {
     });
 };
 
-// Helper: compute expiry date based on plan
+// Helper: compute expiry date based on plan duration
 function computeExpiryDate(startDate, duration, durationType) {
     const expiry = new Date(startDate);
-    if (durationType === 'DAY') expiry.setDate(expiry.getDate() + duration);
-    else if (durationType === 'WEEK') expiry.setDate(expiry.getDate() + duration * 7);
+    if (durationType === 'DAY') expiry.setTime(expiry.getTime() + duration * 24 * 60 * 60 * 1000);
+    else if (durationType === 'WEEK') expiry.setTime(expiry.getTime() + duration * 7 * 24 * 60 * 60 * 1000);
     else if (durationType === 'MONTH') expiry.setMonth(expiry.getMonth() + duration);
-    // Set to end of day
-    expiry.setHours(23, 59, 59, 999);
     return expiry;
 }
 
@@ -71,12 +69,30 @@ router.get('/plans', async (req, res) => {
 router.get('/seller/current', sellerProtect, async (req, res) => {
     try {
         const now = new Date();
-        const sub = await SellerSubscription.findOne({
+        const activeSubs = await SellerSubscription.find({
             seller: req.seller._id,
             status: 'ACTIVE',
             expiryDate: { $gt: now }
-        }).sort({ expiryDate: -1 });
-        res.json({ success: true, data: sub || null });
+        }).sort({ startDate: 1 });
+
+        if (!activeSubs || activeSubs.length === 0) {
+            return res.json({ success: true, data: null });
+        }
+
+        // The furthest expiryDate among all active subscriptions
+        const latestSub = activeSubs.reduce((prev, curr) => (new Date(curr.expiryDate) > new Date(prev.expiryDate) ? curr : prev), activeSubs[0]);
+
+        // Find the subscription covering now (started <= now), or the earliest active one.
+        // This ensures 'startDate' shows the current date when the seller subscribed, NOT a future date from extensions.
+        const currentRunningSub = activeSubs.find(s => new Date(s.startDate) <= now && new Date(s.expiryDate) >= now) || activeSubs[0];
+
+        const data = {
+            ...latestSub.toObject(),
+            startDate: currentRunningSub.startDate,
+            expiryDate: latestSub.expiryDate
+        };
+
+        res.json({ success: true, data });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -166,7 +182,7 @@ router.post('/verify-payment', sellerProtect, async (req, res) => {
             expiryDate: { $gt: now }
         }).sort({ expiryDate: -1 });
 
-        const startDate = existingActive ? new Date(existingActive.expiryDate.getTime() + 1000) : now;
+        const startDate = existingActive ? new Date(existingActive.expiryDate) : now;
         const expiryDate = computeExpiryDate(startDate, plan.duration, plan.durationType);
 
         // 5. Create subscription record
