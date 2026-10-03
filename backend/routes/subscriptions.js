@@ -258,6 +258,33 @@ router.put('/admin/plans/:id', protect, adminOnly, async (req, res) => {
     }
 });
 
+// DELETE /api/subscriptions/admin/plans/:id — delete plan
+router.delete('/admin/plans/:id', protect, adminOnly, async (req, res) => {
+    try {
+        const plan = await SubscriptionPlan.findById(req.params.id);
+        if (!plan) return res.status(404).json({ success: false, message: 'Plan not found' });
+
+        // Safety check: don't allow deleting if sellers are actively subscribed
+        const now = new Date();
+        const activeCount = await SellerSubscription.countDocuments({
+            planId: plan.planId,
+            status: 'ACTIVE',
+            expiryDate: { $gt: now }
+        });
+        if (activeCount > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot delete — ${activeCount} seller(s) currently have active subscriptions on this plan.`
+            });
+        }
+
+        await SubscriptionPlan.findByIdAndDelete(req.params.id);
+        res.json({ success: true, message: 'Plan deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // GET /api/subscriptions/admin/all — all seller subscriptions
 router.get('/admin/all', protect, adminOnly, async (req, res) => {
     try {

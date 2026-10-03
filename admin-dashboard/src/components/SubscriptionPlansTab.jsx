@@ -41,6 +41,16 @@ const SubscriptionPlansTab = () => {
         } finally { setSaving(false); }
     };
 
+    const handleDelete = async (plan) => {
+        if (!window.confirm(`Delete plan "${plan.name}" (${plan.planId})?\n\nThis cannot be undone.`)) return;
+        try {
+            await api.delete(`/subscriptions/admin/plans/${plan._id}`);
+            fetchPlans();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to delete plan');
+        }
+    };
+
     const inp = { padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: 14, width: '100%', boxSizing: 'border-box' };
 
     return (
@@ -69,7 +79,10 @@ const SubscriptionPlansTab = () => {
                             <div style={{ fontSize: 32, fontWeight: 900, color: '#16a34a', marginBottom: 4 }}>₹{plan.price}</div>
                             <div style={{ fontSize: 13, color: '#64748b', marginBottom: 12 }}>{plan.duration} {plan.durationType.toLowerCase()} access</div>
                             {plan.description && <div style={{ fontSize: 13, color: '#475569', marginBottom: 12 }}>{plan.description}</div>}
-                            <button onClick={() => openEdit(plan)} style={{ width: '100%', padding: '9px', background: '#eff6ff', color: '#2563eb', border: '1px solid #93c5fd', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>✏️ Edit Plan</button>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <button onClick={() => openEdit(plan)} style={{ flex: 1, padding: '9px', background: '#eff6ff', color: '#2563eb', border: '1px solid #93c5fd', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>✏️ Edit</button>
+                                <button onClick={() => handleDelete(plan)} style={{ flex: 1, padding: '9px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>🗑️ Delete</button>
+                            </div>
                         </div>
                     ))}
                 </div>
