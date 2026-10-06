@@ -78,7 +78,8 @@ const Register = () => {
         setError('');
         if (step === 3) {
             if (!form.ownerName || !form.password || !form.shopName) return setError('Please fill all mandatory Basic & Shop Info.');
-            if (form.password !== form.confirmPassword) return setError('Passwords do not match.');
+            if (!/^\d{4}$/.test(form.password)) return setError('Please enter a 4-digit Security PIN (numbers only).');
+            if (form.password !== form.confirmPassword) return setError('PINs do not match.');
         }
         if (step === 4) {
             if (!form.shopAddress || !form.city || !form.pincode) return setError('Please fill your complete address.');
@@ -158,7 +159,7 @@ const Register = () => {
                                 <label>Mobile Number</label>
                                 <div className="phone-row">
                                     <span className="phone-prefix">+91</span>
-                                    <input type="tel" placeholder="9700079239" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} required />
+                                    <input type="tel" placeholder="Enter 10-digit mobile number" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} required />
                                 </div>
                             </div>
                             <button type="submit" className="btn-primary full-width" disabled={isLoading}>{isLoading ? 'Please wait...' : 'Continue →'}</button>
@@ -174,8 +175,8 @@ const Register = () => {
                             <div className="two-col-form">
                                 <div className="form-group"><label>Owner Name *</label><input type="text" name="ownerName" value={form.ownerName} onChange={handleChange} required /></div>
                                 <div className="form-group"><label>Email (Optional)</label><input type="email" name="email" value={form.email} onChange={handleChange} /></div>
-                                <div className="form-group"><label>Password *</label><input type="password" name="password" value={form.password} onChange={handleChange} required /></div>
-                                <div className="form-group"><label>Confirm *</label><input type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} required /></div>
+                                <div className="form-group"><label>4-Digit Login PIN *</label><input type="password" inputMode="numeric" maxLength="4" placeholder="e.g. 1234" name="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value.replace(/\D/g, '').slice(0, 4) })} required /></div>
+                                <div className="form-group"><label>Confirm PIN *</label><input type="password" inputMode="numeric" maxLength="4" placeholder="e.g. 1234" name="confirmPassword" value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value.replace(/\D/g, '').slice(0, 4) })} required /></div>
                                 <div className="form-group full-width"><label>Shop Name *</label><input type="text" name="shopName" value={form.shopName} onChange={handleChange} required /></div>
                                 <div className="form-group"><label>Shop Category</label><select name="shopCategory" value={form.shopCategory} onChange={handleChange} className="styled-select">{SHOP_CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
                                 <div className="form-group"><label>GSTIN (Optional)</label><input type="text" name="gstNumber" value={form.gstNumber} onChange={handleChange} style={{ textTransform: 'uppercase' }} /></div>

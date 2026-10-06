@@ -71,6 +71,7 @@ const ProductDetail = () => {
     const [sendingOffer, setSendingOffer] = useState(false);
     const [offerError, setOfferError] = useState('');
     const [offerSuccess, setOfferSuccess] = useState(false);
+    const [acceptedOffer, setAcceptedOffer] = useState(null);
 
     // Swipe handling
     const touchStartX = useRef(0);
@@ -94,6 +95,24 @@ const ProductDetail = () => {
                 if (prod.category) {
                     const catId = typeof prod.category === 'object' ? prod.category._id : prod.category;
                     fetchSimilar(catId, prod._id);
+                }
+            }
+
+            // Check if logged-in customer has an accepted offer for this product
+            if (isAuthenticated) {
+                try {
+                    const offerRes = await api.get('/offers/customer');
+                    if (offerRes.data.success) {
+                        const userOffers = offerRes.data.data || [];
+                        const validAccepted = userOffers.find(o =>
+                            (o.product?._id === id || o.product === id) &&
+                            ['ACCEPTED', 'CUSTOMER_ACCEPTED'].includes(o.status) &&
+                            new Date(o.expiresAt) > new Date()
+                        );
+                        if (validAccepted) setAcceptedOffer(validAccepted);
+                    }
+                } catch (e) {
+                    // ignore
                 }
             }
         } catch (error) {
@@ -186,6 +205,18 @@ const ProductDetail = () => {
     const handleBuyNow = async () => {
         await handleAddToCart();
         navigate('/cart');
+    };
+
+    const handleBuyAcceptedOffer = async () => {
+        if (!acceptedOffer) return;
+        try {
+            const res = await api.get(`/offers/customer/${acceptedOffer._id}/checkout-data`);
+            if (res.data.success) {
+                navigate('/checkout', { state: { fromOffer: true, offerCheckoutData: res.data.data } });
+            }
+        } catch (err) {
+            alert(err.response?.data?.message || 'Could not proceed to checkout for this offer');
+        }
     };
 
     const handleMakeOffer = () => {
@@ -386,11 +417,29 @@ const ProductDetail = () => {
                     </div>
 
                     <div className="price-section">
-                        <span className="current-price-large">₹{discountedPrice.toFixed(2)}</span>
-                        {product.mrpPrice > product.sellingPrice && (
+                        {acceptedOffer ? (
+                            <div>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                                    <span className="current-price-large" style={{ color: '#16a34a' }}>
+                                        ₹{(acceptedOffer.agreedUnitPrice || acceptedOffer.offeredUnitPrice).toFixed(2)}
+                                    </span>
+                                    <span className="original-price-large" style={{ textDecoration: 'line-through', color: '#94a3b8' }}>
+                                        ₹{product.sellingPrice.toFixed(2)}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'inline-block', background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 800, marginTop: 4 }}>
+                                    🎉 Special Offer Accepted by Seller!
+                                </div>
+                            </div>
+                        ) : (
                             <>
-                                <span className="original-price-large">₹{product.mrpPrice.toFixed(2)}</span>
-                                <span className="save-amount">Save ₹{(product.mrpPrice - discountedPrice).toFixed(2)}</span>
+                                <span className="current-price-large">₹{discountedPrice.toFixed(2)}</span>
+                                {product.mrpPrice > product.sellingPrice && (
+                                    <>
+                                        <span className="original-price-large">₹{product.mrpPrice.toFixed(2)}</span>
+                                        <span className="save-amount">Save ₹{(product.mrpPrice - discountedPrice).toFixed(2)}</span>
+                                    </>
+                                )}
                             </>
                         )}
                     </div>
@@ -520,52 +569,98 @@ const ProductDetail = () => {
                     )}
 
                     {/* Action Buttons */}
-                    <div className="action-buttons">
-                        <button
-                            className="btn btn-secondary btn-lg"
-                            onClick={handleAddToCart}
-                            disabled={addingToCart || product.stock === 0}
-                        >
-                            {addingToCart ? 'Adding...' : 'Add to Cart'}
-                        </button>
-                        <button
-                            className="btn btn-primary btn-lg"
-                            onClick={handleBuyNow}
-                            disabled={product.stock === 0}
-                        >
-                            Buy Now
-                        </button>
-                    </div>
-                    {/* Make an Offer button — only shown if seller enabled it */}
-                    {product.allowOffers && product.stock > 0 && (
-                        <div style={{ marginTop: 10, paddingHorizontal: 0 }}>
+                    {acceptedOffer ? (
+                        <div className="action-buttons" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10 }}>
                             <button
+                                className="btn btn-secondary btn-lg"
+                                onClick={handleAddToCart}
+                                disabled={addingToCart || product.stock === 0}
+                            >
+                                {addingToCart ? 'Adding...' : 'Add to Cart'}
+                            </button>
+                            <button
+                                className="btn btn-primary btn-lg"
+                                onClick={handleBuyAcceptedOffer}
+                                style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', fontWeight: 800 }}
+                                disabled={product.stock === 0}
+                            >
+                                ⚡ Buy for ₹{(acceptedOffer.agreedUnitPrice || acceptedOffer.offeredUnitPrice).toFixed(0)}
+                            </button>
+                        </div>
+                    ) : product.allowOffers && product.stock > 0 ? (
+                        <div className="action-buttons" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: 8 }}>
+                            <button
+                                className="btn btn-secondary btn-lg"
+                                onClick={handleAddToCart}
+                                disabled={addingToCart || product.stock === 0}
+                                style={{ padding: '12px 6px', fontSize: '13px' }}
+                            >
+                                {addingToCart ? '...' : 'Add Cart'}
+                            </button>
+                            <button
+                                type="button"
                                 onClick={handleMakeOffer}
                                 style={{
-                                    width: '100%',
-                                    padding: '14px',
                                     background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
                                     color: 'white',
                                     border: 'none',
-                                    borderRadius: 14,
-                                    fontSize: 15,
+                                    borderRadius: 12,
+                                    fontSize: '13px',
                                     fontWeight: 700,
                                     cursor: 'pointer',
+                                    padding: '12px 6px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    gap: 8
+                                    gap: 4
                                 }}
                             >
-                                🤝 Make an Offer
+                                🤝 Offer
+                            </button>
+                            <button
+                                className="btn btn-primary btn-lg"
+                                onClick={handleBuyNow}
+                                disabled={product.stock === 0}
+                                style={{ padding: '12px 8px', fontSize: '14px', fontWeight: 800 }}
+                            >
+                                Buy Now
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="action-buttons">
+                            <button
+                                className="btn btn-secondary btn-lg"
+                                onClick={handleAddToCart}
+                                disabled={addingToCart || product.stock === 0}
+                            >
+                                {addingToCart ? 'Adding...' : 'Add to Cart'}
+                            </button>
+                            <button
+                                className="btn btn-primary btn-lg"
+                                onClick={handleBuyNow}
+                                disabled={product.stock === 0}
+                            >
+                                Buy Now
                             </button>
                         </div>
                     )}
 
                     {/* Make an Offer Modal */}
                     {showOfferModal && (
-                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                            <div style={{ background: 'white', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 480, padding: 24, paddingBottom: 40 }}>
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 99999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                            <div style={{
+                                background: 'white',
+                                borderRadius: '24px 24px 0 0',
+                                width: '100%',
+                                maxWidth: 480,
+                                maxHeight: '85vh',
+                                overflowY: 'auto',
+                                WebkitOverflowScrolling: 'touch',
+                                padding: '24px 20px',
+                                paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 24px))',
+                                boxSizing: 'border-box',
+                                boxShadow: '0 -8px 32px rgba(0,0,0,0.2)'
+                            }}>
                                 {offerSuccess ? (
                                     <div style={{ textAlign: 'center', padding: '24px 0' }}>
                                         <div style={{ fontSize: 56, marginBottom: 12 }}>✅</div>

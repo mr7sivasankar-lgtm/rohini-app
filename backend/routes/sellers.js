@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import Seller from '../models/Seller.js';
+import User from '../models/User.js';
 import { protect, adminOnly } from '../middleware/auth.js';
 import sendOTP from '../utils/sms.js';
 import { upload, uploadSingle } from '../middleware/upload.js';
@@ -166,7 +167,22 @@ router.post('/register', upload.fields([
                 status: seller.status
             }
         });
-        // ── Log for admin awareness (admin sees this via dashboard polling) ──
+        // ── Push Notification to Admin for New Seller Approval ──
+        try {
+            const adminUsers = await User.find({ role: 'admin' });
+            for (const admin of adminUsers) {
+                if (admin.fcmToken || admin.pushSubscription) {
+                    await sendPush(admin.fcmToken || admin.pushSubscription, {
+                        title: '🏪 New Seller Registration!',
+                        body: `"${seller.shopName}" (${seller.phone}) applied for approval. Tap to review.`,
+                        tag: `new-seller-${seller._id}`,
+                        url: '/admin'
+                    });
+                }
+            }
+        } catch (notifErr) {
+            console.error('[Push] Admin new seller notification error:', notifErr.message);
+        }
         console.log(`🏪 [Admin Alert] New Seller Registration: "${seller.shopName}" (${seller.phone}) is pending approval.`);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -209,15 +225,25 @@ router.post('/login', async (req, res) => {
 // @access  Public
 router.post('/login-phone', async (req, res) => {
     try {
-        const { phone } = req.body;
+        const { phone, pin, password } = req.body;
         if (!phone) return res.status(400).json({ success: false, message: 'Phone number required' });
 
-        const seller = await Seller.findOne({ phone });
+        const enteredPin = pin || password;
+        if (!enteredPin) {
+            return res.status(400).json({ success: false, message: '4-digit Security PIN is required to login' });
+        }
+
+        const seller = await Seller.findOne({ phone }).select('+password');
         if (!seller) {
             return res.status(404).json({ success: false, message: 'No seller account found with this phone number. Please register first.' });
         }
         if (seller.status === 'Suspended' || seller.status === 'Deactivated') {
             return res.status(403).json({ success: false, message: 'Your account has been deactivated or suspended by admin. Please contact support.' });
+        }
+
+        const isMatch = await seller.matchPassword(enteredPin);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: 'Invalid 4-digit PIN. Please try again.' });
         }
 
         res.json({

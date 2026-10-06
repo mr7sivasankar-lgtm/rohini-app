@@ -173,7 +173,6 @@ const MORE_ITEMS = [
     { key: 'profile', icon: '⚙️', label: 'Shop Profile'    },
     { key: 'legal',   icon: '📄', label: 'Terms & Privacy' },
     { key: 'subscription', icon: '🔑', label: 'Subscription' },
-    { key: 'offers', icon: '🤝', label: 'Offers' },
     { key: '__support', icon: '💬', label: 'Help & Support' },
 ];
 

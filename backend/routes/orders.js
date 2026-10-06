@@ -417,6 +417,30 @@ router.get('/seller/alerts', sellerProtect, async (req, res) => {
             });
         });
 
+        // 3. Customer offers pending seller review
+        try {
+            const Offer = (await import('../models/Offer.js')).default;
+            const pendingOffers = await Offer.find({
+                seller: req.seller._id,
+                status: 'PENDING'
+            }).populate('product', 'name').lean();
+
+            pendingOffers.forEach(off => {
+                alerts.push({
+                    id: `offer_${off._id}`,
+                    type: 'new_offer',
+                    title: '🤝 Customer Offer',
+                    dbId: off._id,
+                    message: `🤝 Customer offered ₹${off.offeredUnitPrice} for "${off.product?.name || 'Product'}" (Qty: ${off.quantity})`,
+                    icon: '🤝',
+                    goTo: 'orders',
+                    createdAt: off.createdAt
+                });
+            });
+        } catch (offerErr) {
+            console.error('[Alerts] Pending offer check error:', offerErr.message);
+        }
+
         res.json({ success: true, data: alerts });
     } catch (e) {
         console.error('Seller alerts error:', e);

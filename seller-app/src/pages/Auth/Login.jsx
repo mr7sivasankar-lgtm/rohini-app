@@ -242,6 +242,7 @@ const LegalModal = ({ data, onClose }) => {
 
 const Login = () => {
     const [phone, setPhone] = useState('');
+    const [pin, setPin] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [legalModal, setLegalModal] = useState(null); // null | PRIVACY_POLICY | TERMS_CONDITIONS
@@ -256,18 +257,22 @@ const Login = () => {
             setError('Please enter a valid 10-digit phone number.');
             return;
         }
+        if (!/^\d{4}$/.test(pin)) {
+            setError('Please enter your 4-digit Security PIN.');
+            return;
+        }
         setIsLoading(true);
         try {
-            const res = await api.post('/sellers/login-phone', { phone: `+91${phone}` });
+            const res = await api.post('/sellers/login-phone', { phone: `+91${phone}`, pin });
             if (res.data.success) {
                 localStorage.setItem('sellerToken', res.data.data.token);
                 await checkAuth();
                 navigate('/dashboard');
             } else {
-                setError(res.data.message || 'Login failed. Please try again.');
+                setError(res.data.message || 'Login failed. Please check your phone number and PIN.');
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed. Check your phone number.');
+            setError(err.response?.data?.message || 'Login failed. Check your phone number and PIN.');
         } finally {
             setIsLoading(false);
         }
@@ -291,7 +296,7 @@ const Login = () => {
                             <span className="phone-prefix">+91</span>
                             <input
                                 type="tel"
-                                placeholder="Enter your phone number"
+                                placeholder="Enter 10-digit mobile number"
                                 value={phone}
                                 onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                 autoComplete="off"
@@ -301,8 +306,22 @@ const Login = () => {
                         </div>
                     </div>
 
-                    <button type="submit" className="btn-primary" disabled={isLoading}>
-                        {isLoading ? 'Logging in...' : 'Login'}
+                    <div className="form-group" style={{ marginTop: '14px' }}>
+                        <label>4-Digit Security PIN</label>
+                        <input
+                            type="password"
+                            inputMode="numeric"
+                            placeholder="••••"
+                            maxLength="4"
+                            value={pin}
+                            onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                            style={{ letterSpacing: '8px', fontSize: '20px', textAlign: 'center', fontWeight: 'bold' }}
+                            required
+                        />
+                    </div>
+
+                    <button type="submit" className="btn-primary" disabled={isLoading} style={{ marginTop: '16px' }}>
+                        {isLoading ? 'Logging in...' : 'Login with PIN'}
                     </button>
 
                     <div style={{ textAlign: 'center', fontSize: '12px', color: '#64748b', marginTop: '16px', lineHeight: '1.5' }}>

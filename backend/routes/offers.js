@@ -298,10 +298,10 @@ router.put('/seller/:id/accept', sellerProtect, async (req, res) => {
             if (customer?.fcmToken || customer?.pushSubscription) {
                 await sendPush(customer.fcmToken || customer.pushSubscription, {
                     title: '🎉 Offer Accepted!',
-                    body: `Your offer of ₹${offer.agreedUnitPrice} has been accepted! Proceed to checkout.`,
+                    body: `Your offer of ₹${offer.agreedUnitPrice} has been accepted! Tap to buy now.`,
                     icon: '/icons/icon-192.png',
                     tag: `offer-accepted-${offer._id}`,
-                    url: '/offers'
+                    url: `/products/${offer.product}`
                 });
             }
         } catch (e) { console.warn('[Push]', e.message); }

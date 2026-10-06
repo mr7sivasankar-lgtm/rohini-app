@@ -3,7 +3,7 @@ import api from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const SubscriptionTab = () => {
-    const { seller } = useAuth();
+    const { seller, checkAuth } = useAuth();
     const [currentSub, setCurrentSub] = useState(null);
     const [plans, setPlans] = useState([]);
     const [history, setHistory] = useState([]);
@@ -61,6 +61,7 @@ const SubscriptionTab = () => {
                         });
                         if (verifyRes.data.success) {
                             alert('\u2705 Subscription activated successfully!');
+                            if (checkAuth) await checkAuth();
                             fetchAll();
                         } else {
                             alert('Payment verification failed. Contact support.');
@@ -110,7 +111,7 @@ const SubscriptionTab = () => {
         return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     };
 
-    const isExpired = !currentSub || seller?.subscriptionStatus !== 'ACTIVE' || getDaysRemaining(currentSub?.expiryDate) === 0;
+    const isExpired = !currentSub || currentSub.status !== 'ACTIVE' || new Date(currentSub.expiryDate) <= new Date();
     const defaultPlan = plans[0];
 
     if (loading) return <div style={{ padding: 24, textAlign: 'center' }}><div className="spinner" style={{ borderTopColor: '#16a34a', margin: '40px auto' }} /></div>;

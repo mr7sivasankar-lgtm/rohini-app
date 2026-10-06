@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api, { getImageUrl } from '../utils/api';
+import OffersTab from './OffersTab';
 
 const OrderItemDetailModal = ({ item, order, onClose }) => {
     if (!item) return null;
@@ -76,6 +77,7 @@ const TABS = [
 ];
 
 const OrdersTab = () => {
+    const [mainSection, setMainSection] = useState('orders'); // 'orders' | 'offers'
     const [selectedItem, setSelectedItem] = useState(null);
     const [orders, setOrders]       = useState([]);
     const [loading, setLoading]     = useState(true);
@@ -175,15 +177,49 @@ const OrdersTab = () => {
                 }
             `}</style>
 
-            {/* Header */}
-            <div style={{ marginBottom: '16px' }}>
-                <h2 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>
-                    Order Management
-                </h2>
-                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-                    Accept, prepare, and manage customer orders.
-                </p>
+            {/* Top Toggle: Orders vs Offers */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', background: '#e2e8f0', padding: '4px', borderRadius: '12px' }}>
+                <button
+                    onClick={() => setMainSection('orders')}
+                    style={{
+                        flex: 1, padding: '10px 14px', borderRadius: '9px', border: 'none',
+                        background: mainSection === 'orders' ? '#fff' : 'transparent',
+                        color: mainSection === 'orders' ? '#0f172a' : '#64748b',
+                        fontWeight: 800, fontSize: '13px', cursor: 'pointer',
+                        boxShadow: mainSection === 'orders' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                        transition: 'all 0.15s'
+                    }}
+                >
+                    📦 Customer Orders
+                </button>
+                <button
+                    onClick={() => setMainSection('offers')}
+                    style={{
+                        flex: 1, padding: '10px 14px', borderRadius: '9px', border: 'none',
+                        background: mainSection === 'offers' ? '#fff' : 'transparent',
+                        color: mainSection === 'offers' ? '#4f46e5' : '#64748b',
+                        fontWeight: 800, fontSize: '13px', cursor: 'pointer',
+                        boxShadow: mainSection === 'offers' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                        transition: 'all 0.15s'
+                    }}
+                >
+                    🤝 Price Offers &amp; Negotiations
+                </button>
             </div>
+
+            {mainSection === 'offers' ? (
+                <OffersTab />
+            ) : (
+                <>
+                    {/* Header */}
+                    <div style={{ marginBottom: '16px' }}>
+                        <h2 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800, color: '#1e293b' }}>
+                            Order Management
+                        </h2>
+                        <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                            Accept, prepare, and manage customer orders.
+                        </p>
+                    </div>
 
             {/* Tab bar — horizontally scrollable */}
             <div className="orders-tab-wrap" style={{ overflowX: 'auto', marginBottom: '16px' }}>
@@ -639,6 +675,8 @@ const OrdersTab = () => {
                         );
                     })}
                 </div>
+            )}
+            </>
             )}
             {/* Item Detail Modal */}
             {selectedItem && (
